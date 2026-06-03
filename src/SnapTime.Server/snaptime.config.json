@@ -1,0 +1,34 @@
+{
+  "$schema": "snaptime.config.schema.json",
+  "database": {
+    "path": "SnapTime.db"
+  },
+  "analysis": {
+    "confidenceThreshold": 80,
+    "maxConcurrency": 4,
+    "batchSize": 100,
+    "imageExtensions": [".jpg", ".jpeg"],
+    "videoExtensions": [".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"]
+  },
+  "heuristics": [
+    { "id": "H-001", "enabled": true, "weight": 1.0 },
+    { "id": "H-002", "enabled": true, "weight": 1.0 },
+    { "id": "H-003", "enabled": true, "weight": 1.0 },
+    { "id": "H-004", "enabled": true, "weight": 0.5 },
+    { "id": "H-005", "enabled": true, "weight": 0.7 },
+    { "id": "H-006", "enabled": true, "weight": 1.0 }
+  ],
+  "ollama": {
+    "endpoint": "http://localhost:11434",
+    "model": "llama3.2",
+    "timeoutSeconds": 60
+  },
+  "thumbnails": {
+    "maxDimension": 300,
+    "quality": 80
+  },
+  "logging": {
+    "level": "Information",
+    "file": "snaptime.log"
+  }
+}
