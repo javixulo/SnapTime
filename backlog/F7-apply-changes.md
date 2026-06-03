@@ -12,8 +12,8 @@
 - Zona horaria: siempre 5:00 AM (canonical)
 - Campo a escribir: `DateTimeOriginal` (EXIF tag)
 - Dry-run: simula la escritura, devuelve el resultado sin modificar el archivo
-- Aplicación real: escribe en el archivo, registra en auditoría, marca foto como `Completed`
-- Modal de confirmación antes de aplicar: lista de cambios (foto, fecha actual → fecha nueva)
+- Aplicación real: escribe en el archivo, registra en auditoría, marca el archivo como `Completed`
+- Modal de confirmación antes de aplicar: lista de cambios (archivo, fecha actual → fecha nueva)
 - Si falla la escritura → se registra error, no se detiene el lote
 
 **Contrato (pendiente de desglosar en US):**

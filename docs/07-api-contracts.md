@@ -15,27 +15,31 @@
 ```csharp
 // SnapTime.Client/Models/ (y SnapTime.Server/Models/)
 
+public enum MediaType { Image, Video }
+
 public enum SelectionState { Selected, None, Partial }
 
-public enum PhotoStatus { Pending, Review, Approved, Rejected }
+public enum MediaStatus { Pending, Review, Approved, Rejected }
 
 public enum JobStatus { Running, Paused, Completed, Cancelled, Error }
 
-public record PhotoDto(
+public record MediaAssetDto(
     Guid Id,
     string FilePath,
     string FileName,
+    MediaType MediaType,
     DateTime? DateTimeOriginal,
     DateTime? SuggestedDate,
     int ConfidenceScore,
     string? SuggestedByHeuristic,
-    PhotoStatus Status
+    MediaStatus Status
 );
 
-public record PhotoDetailDto(
+public record MediaAssetDetailDto(
     Guid Id,
     string FilePath,
     string FileName,
+    MediaType MediaType,
     long FileSize,
     DateTime? DateTimeOriginal,
     string? SubSecDateTimeOriginal,
@@ -84,12 +88,12 @@ public record PaginatedResponse<T>(
 );
 
 public record BatchReviewRequest(
-    List<Guid> PhotoIds,
+    List<Guid> MediaAssetIds,
     string Action  // "approve" | "reject"
 );
 
 public record ApplyChangesRequest(
-    List<Guid> PhotoIds,
+    List<Guid> MediaAssetIds,
     bool DryRun  // true = simulación, false = escritura real
 );
 
@@ -98,7 +102,7 @@ public record ApplyChangesResponse(
 );
 
 public record ApplyResult(
-    Guid PhotoId,
+    Guid MediaAssetId,
     bool Success,
     string? Error
 );
@@ -145,13 +149,13 @@ public record HeuristicConfigDto(
 | GET | `/folders/tree` | — | `List<FolderTreeNodeDto>` | Árbol completo con estado |
 | POST | `/folders/selection` | `{ path: string, selected: bool }` | `List<FolderTreeNodeDto>` | Cambiar selección (cascada) |
 
-### Fotos
+### Archivos multimedia
 
 | Método | Ruta | Request Query | Response | Descripción |
 |--------|------|---------------|----------|-------------|
-| GET | `/photos` | `folderPath?`, `minConfidence?`, `maxConfidence?`, `status?`, `sortBy?`, `sortDir?`, `page`, `pageSize` | `PaginatedResponse<PhotoDto>` | Listado paginado con filtros |
-| GET | `/photos/{id}` | — | `PhotoDetailDto` | Detalle con evidencia |
-| GET | `/thumbnails/{photoId}` | `maxDimension?` (default 300) | `FileStream` (image/jpeg) | Miniatura bajo demanda |
+| GET | `/media-assets` | `folderPath?`, `mediaType?`, `minConfidence?`, `maxConfidence?`, `status?`, `sortBy?`, `sortDir?`, `page`, `pageSize` | `PaginatedResponse<MediaAssetDto>` | Listado paginado con filtros |
+| GET | `/media-assets/{id}` | — | `MediaAssetDetailDto` | Detalle con evidencia |
+| GET | `/thumbnails/{mediaAssetId}` | `maxDimension?` (default 300) | `FileStream` (image/jpeg) | Miniatura o icono de vídeo bajo demanda |
 
 ### Revisión y aplicación
 
@@ -176,6 +180,6 @@ public record HeuristicConfigDto(
 ## 4) Notas técnicas
 
 - **Progreso de jobs**: el frontend puede hacer polling a `GET /jobs/{id}`. Para Fase 2 considerar SSE si el polling es insuficiente.
-- **Miniaturas**: el servidor las genera bajo demanda y las cachea en disco (`thumbnails/`). No se sirven desde SQLite.
-- **Lazy loading**: cuando `pageSize=0`, el backend devuelve todas las fotos en una sola respuesta. El frontend usa `Virtualize` para el render.
+- **Miniaturas**: el servidor las genera bajo demanda y las cachea en disco (`thumbnails/`). Para vídeos se genera un icono/marco representativo o un frame del vídeo.
+- **Lazy loading**: cuando `pageSize=0`, el backend devuelve todos los archivos en una sola respuesta. El frontend usa `Virtualize` para el render.
 - **MCP tools** tienen contratos separados definidos en `docs/03-blueprint.md §3`.

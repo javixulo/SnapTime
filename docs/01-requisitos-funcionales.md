@@ -2,7 +2,7 @@
 
 ## FR-01 Selección de biblioteca
 
-El sistema debe permitir seleccionar una ruta raíz local para escanear imágenes.
+El sistema debe permitir seleccionar una ruta raíz local para escanear archivos multimedia (imágenes y vídeos).
 
 ### Criterios de aceptación
 
@@ -12,12 +12,13 @@ El sistema debe permitir seleccionar una ruta raíz local para escanear imágene
 
 ## FR-02 Descubrimiento de archivos
 
-El sistema debe descubrir archivos JPG/JPEG y registrar inventario inicial.
+El sistema debe descubrir archivos de imagen (JPG/JPEG) y vídeo (MP4, MOV, y otros extensiones configurables) y registrar inventario inicial.
 
 ### Criterios de aceptación
 
 - Se contabilizan archivos candidatos y archivos descartados.
 - Se informa motivo de descarte (extensión no soportada, archivo corrupto, etc.).
+- Las extensiones soportadas son configurables en `snaptime.config.json`.
 
 ## FR-03 Extracción de metadatos de fecha
 
@@ -25,13 +26,14 @@ El sistema debe extraer metadatos de fecha relevantes por archivo.
 
 ### Criterios de aceptación
 
-- Soporta al menos: `EXIF:DateTimeOriginal`, `EXIF:CreateDate`, `EXIF:ModifyDate`.
+- Soporta al menos: `EXIF:DateTimeOriginal`, `EXIF:CreateDate`, `EXIF:ModifyDate` (fotos) y `QuickTime:CreationDate`, `QuickTime:CreateDate`, `QuickTime:MediaCreateDate` (vídeos).
 - Registra fechas de sistema de archivos (`mtime`/`ctime`) como evidencia secundaria.
 - Guarda origen de cada valor (tag exacto/fuente).
+- Detecta automáticamente el tipo de archivo y aplica el extractor de metadatos correspondiente (EXIF para imágenes, QuickTime para vídeos).
 
 ## FR-04 Análisis de coherencia y scoring
 
-El sistema debe calcular una confianza (0-100) sobre la fecha actual de cada foto.
+El sistema debe calcular una confianza (0-100) sobre la fecha actual de cada archivo multimedia.
 
 ### Criterios de aceptación
 
@@ -71,7 +73,7 @@ El sistema debe detectar pistas temporales en nombres (por ejemplo, "cumpleaños
 
 ## FR-08 Panel de revisión en UI
 
-La UI debe mostrar un grid navegable de miniaturas de fotos con resultados de análisis.
+La UI debe mostrar un grid navegable de miniaturas de archivos multimedia con resultados de análisis.
 
 ### Criterios de aceptación
 
@@ -97,7 +99,7 @@ El sistema debe permitir aceptar/rechazar sugerencias por ítem o por lote.
 ### Criterios de aceptación
 
 - Soporta selección múltiple por filtros.
-- Muestra resumen previo (dry-run) en modal con lista de cambios: foto, fecha actual → fecha nueva.
+- Muestra resumen previo (dry-run) en modal con lista de cambios: archivo, fecha actual → fecha nueva.
 - Requiere confirmación explícita para aplicar (botón "Aplicar" / "Cancelar" en el modal).
 
 ## FR-11 Aplicación de cambios de metadatos
@@ -173,11 +175,11 @@ La UI debe incluir un panel de carpetas con estructura en árbol estilo explorad
 - La selección de una carpeta actualiza consistentemente nodos descendientes y estado del nodo padre.
 - El nodo padre soporta estado indeterminado (parcial) cuando hay selección mixta en descendientes.
 - En el árbol se muestra icono de carpeta y nombre de carpeta.
-- Al hacer clic en una carpeta, el panel derecho muestra las imágenes asociadas de esa carpeta y sus subcarpetas.
+- Al hacer clic en una carpeta, el panel derecho muestra los archivos asociados de esa carpeta y sus subcarpetas.
 
 ## FR-18 Paginación configurable de imágenes
 
-La UI debe paginar el contenido de imágenes mostrado en el panel derecho.
+La UI debe paginar el contenido de archivos mostrado en el panel derecho.
 
 ### Criterios de aceptación
 

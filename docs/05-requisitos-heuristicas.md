@@ -43,20 +43,20 @@ Cada heurística se documentará con esta plantilla:
 
 - **Identificador:** H-006
 - **Nombre:** Parseo de fecha en nombre de archivo (formato móvil)
-- **Descripción:** Los móviles y cámaras generan nombres de archivo con la fecha como prefijo (ej: `20250315_123456.jpg`). Esta heurística extrae la fecha del nombre del archivo. Si existe `EXIF:DateTimeOriginal`, compara contra él. Si no existe, la fecha del nombre se usa directamente como sugerencia. En ambos casos, si hay discrepancia o ausencia de EXIF, se sugiere la fecha extraída del nombre con hora 5:00 AM.
+- **Descripción:** Los móviles y cámaras generan nombres de archivo con la fecha como prefijo (ej: `20250315_123456.jpg`, `20250315_123456.mp4`). Esta heurística extrae la fecha del nombre del archivo (funciona igual para imágenes y vídeos). Si existe fecha en metadatos (EXIF o QuickTime), compara contra ella. Si no existe, la fecha del nombre se usa directamente como sugerencia. En ambos casos, si hay discrepancia o ausencia de fecha en metadatos, se sugiere la fecha extraída del nombre con hora 5:00 AM.
 - **Entradas necesarias:**
   - Nombre del archivo (sin extensión).
-  - `EXIF:DateTimeOriginal` del archivo (opcional).
+  - Fecha canónica del archivo (primer tag con valor en la lista de prioridad: `SubSecDateTimeOriginal` → `DateTimeOriginal` → `CreationDate` → etc.).
 - **Regla de cálculo / decisión:**
   1. Intentar parsear el inicio del nombre del archivo con el patrón `yyyyMMdd` (año+mes+día, 8 dígitos consecutivos).
   2. Si no coincide, intentar `yyyy-MM-dd` (con guiones).
   3. Si no se puede parsear ninguna fecha → la heurística no emite señal.
   4. Si se extrae una fecha del nombre:
-     - Si existe `EXIF:DateTimeOriginal`, comparar solo año, mes y día (la hora se ignora).
-       - Si coinciden → evidencia positiva (la fecha del nombre respalda la fecha EXIF).
-       - Si no coinciden → anomalía: la fecha del nombre sugiere que la fecha EXIF podría ser incorrecta.
-     - Si no existe `EXIF:DateTimeOriginal` → no hay fecha actual que evaluar; se propone la fecha del nombre como sugerencia directamente.
-  5. En caso de anomalía o EXIF ausente, la sugerencia se compone con la fecha extraída del nombre y hora fijada a las 5:00 AM.
+     - Si existe fecha canónica en los metadatos del archivo, comparar solo año, mes y día (la hora se ignora).
+       - Si coinciden → evidencia positiva (la fecha del nombre respalda la metadato).
+       - Si no coinciden → anomalía: la fecha del nombre sugiere que la fecha en metadatos podría ser incorrecta.
+     - Si no existe fecha en metadatos → no hay fecha actual que evaluar; se propone la fecha del nombre como sugerencia directamente.
+  5. En caso de anomalía o metadatos ausentes, la sugerencia se compone con la fecha extraída del nombre y hora fijada a las 5:00 AM.
 - **Impacto esperado en score:**
   - Coincidencia: impacto positivo moderado (la EXIF se refuerza).
   - Discrepancia: impacto negativo significativo (la EXIF es sospechosa).
@@ -66,11 +66,13 @@ Cada heurística se documentará con esta plantilla:
   - Formatos de fecha no estándar en el nombre (ej: `IMG_20250315.jpg` con prefijo variable).
   - Teléfonos que usan `yyyyMMdd_HHmmss` (el parseo debe ignorar lo que sigue a los 8 dígitos).
 - **Tests unitarios mínimos asociados:**
-  - Nombre `20250315_123456.jpg` con EXIF del mismo día → coincide.
-  - Nombre `20250315_123456.jpg` con EXIF de 2024-07-10 → anomalía, sugerencia 2025-03-15 05:00.
+  - Nombre `20250315_123456.jpg` con metadatos del mismo día → coincide.
+  - Nombre `20250315_123456.jpg` con metadatos de 2024-07-10 → anomalía, sugerencia 2025-03-15 05:00.
+  - Nombre `20250315_123456.mp4` con metadatos del mismo día → coincide (vídeo).
+  - Nombre `20250315_123456.mp4` sin metadatos → sugerencia 2025-03-15 05:00 (vídeo).
   - Nombre `IMG_20250315.jpg` → no se puede parsear (prefijo variable), sin señal.
   - Nombre `vacaciones.jpg` → sin fecha, sin señal.
-  - Nombre `20250315_123456.jpg` sin EXIF → sugerencia 2025-03-15 05:00.
+  - Nombre `20250315_123456.jpg` sin metadatos → sugerencia 2025-03-15 05:00.
 - **Estado:** activa.
 
 ## 7) Nota sobre dataset de validación

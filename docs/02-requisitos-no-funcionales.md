@@ -8,7 +8,7 @@
 
 ## NFR-02 Rendimiento y escalabilidad local
 
-- El sistema debe soportar bibliotecas grandes (objetivo inicial: 100k fotos) de forma incremental.
+- El sistema debe soportar bibliotecas grandes (objetivo inicial: 100k archivos) de forma incremental.
 - Procesamiento por lotes y pipeline asíncrono para no bloquear UI.
 - Posibilidad de limitar concurrencia para no saturar CPU/disco.
 

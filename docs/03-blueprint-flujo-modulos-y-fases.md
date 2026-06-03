@@ -18,9 +18,8 @@ flowchart TB
         CHAT["Chat Backend"]
         JOBS["Control de jobs"]
         CORE["Core de Dominio<br/>• Heurísticas (H-001 a H-006)<br/>• Motor de scoring<br/>• Reglas de decisión"]
-        INFRA["Infraestructura<br/>• Adaptador EXIF<br/>• Filesystem<br/>• EF Core + SQLite<br/>• ConfigService<br/>• Serilog"]
+        INFRA["Infraestructura<br/>• Adaptador EXIF/QuickTime<br/>• Filesystem<br/>• EF Core + SQLite<br/>• ConfigService<br/>• Serilog"]
         WORKER["Worker de procesamiento<br/>• Escaneo asíncrono<br/>• Checkpoints<br/>• Pipeline batch"]
-
         MCP --> CORE
         CHAT --> CORE
         JOBS --> CORE
@@ -39,7 +38,7 @@ flowchart TB
 | MCP Server | C#/.NET | Tools para agentes IA y chat conversacional. Comparte core con API. |
 | Chat Backend | C#/.NET | Recibe mensajes del chat, consulta Ollama con tool calling, devuelve respuesta. |
 | Core de Dominio | C#/.NET | Heurísticas, scoring, sugerencias, reglas de decisión. Framework-agnóstico. |
-| Infraestructura | C#/.NET | Adaptadores EXIF, filesystem, EF Core + SQLite, ConfigService, Serilog. |
+| Infraestructura | C#/.NET | Adaptadores EXIF y QuickTime, filesystem, EF Core + SQLite, ConfigService, Serilog. |
 | Worker | C#/.NET | Procesamiento asíncrono con checkpoints y cancelación. |
 
 ### 1.2) Decisiones tecnológicas por módulo
@@ -107,16 +106,18 @@ flowchart TB
 | Tool | Descripción |
 |------|-------------|
 | `scan_library(root_path, options)` | Iniciar análisis de biblioteca |
-| `list_low_confidence(threshold, limit, filters)` | Listar fotos con baja confianza |
-| `get_photo_evidence(photo_id)` | Obtener evidencias de una foto |
-| `suggest_date(photo_id)` | Pedir sugerencia de fecha |
-| `apply_fix(photo_id, mode, confirm_token)` | Aplicar cambio (dry_run o commit) |
+| `list_low_confidence(threshold, limit, filters)` | Listar archivos con baja confianza |
+| `get_media_evidence(media_id)` | Obtener evidencias de un archivo multimedia |
+| `suggest_date(media_id)` | Pedir sugerencia de fecha |
+| `apply_fix(media_id, mode, confirm_token)` | Aplicar cambio (dry_run o commit) |
 
 ## 4) Reglas de decisión iniciales (baseline)
 
 ### 4.1) Campo canónico de fecha de captura
-- `SubSecDateTimeOriginal` > `DateTimeOriginal` es el campo canónico. Siempre es la fuente de verdad para lecturas, comparaciones y escrituras.
+- Prioridad unificada para fotos y vídeos: `SubSecDateTimeOriginal` → `SubSecCreateDate` → `DateTimeOriginal` → `CreationDate` → `CreateDate` → `MediaCreateDate` → fallback filesystem.
 - Al escribir, se fija hora 5:00 AM en todas las correcciones automáticas.
+  - Fotos: se escribe en `EXIF:DateTimeOriginal`.
+  - Vídeos: se escribe en `QuickTime:CreateDate`.
 - Referencia: `docs/00-vision-y-alcance.md §8`.
 
 ### 4.2) Reglas baseline

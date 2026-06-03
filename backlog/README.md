@@ -11,7 +11,7 @@
 | ID | Nombre | Estado | Docs relacionadas |
 |----|--------|--------|-------------------|
 | F0 | Scaffolding del proyecto | 🏗️ Backlog definido | |
-| F1 | Escaneo y extracción EXIF | 🏗️ Backlog definido | FR-01, FR-02, FR-03, FR-09 |
+| F1 | Escaneo y extracción de metadatos (EXIF + QuickTime) | 🏗️ Backlog definido | FR-01, FR-02, FR-03, FR-09 |
 | F2 | Heurística H-006 (fecha desde filename) | ⏳ Pendiente | docs/05-heuristicas.md |
 | F3 | Árbol de carpetas (panel izquierdo) | ⏳ Pendiente | FR-17 |
 | F4 | Grid de fotos (panel central) | ⏳ Pendiente | FR-08, FR-18 |

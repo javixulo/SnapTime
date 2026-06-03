@@ -56,34 +56,37 @@ POCOs en `SnapTime.Domain.Entities/`.
 
 ```csharp
 // F0-US-003
-public class Photo {
+public enum MediaType { Image, Video }
+
+public class MediaAsset {
     public Guid Id { get; set; }
     public string FilePath { get; set; } = string.Empty;
     public string FileName { get; set; } = string.Empty;
+    public MediaType MediaType { get; set; }
     public long FileSize { get; set; }
     public DateTime? FileCreatedAt { get; set; }
     public DateTime? FileModifiedAt { get; set; }
     public int ConfidenceScore { get; set; }
     public DateTime? SuggestedDate { get; set; }
     public string? SuggestedByHeuristic { get; set; }
-    public PhotoStatus Status { get; set; }
+    public MediaStatus Status { get; set; }
     public Guid ScanJobId { get; set; }
     public ScanJob ScanJob { get; set; } = null!;
     public List<MetadataEntry> MetadataEntries { get; set; } = [];
     public List<EvidenceEntry> EvidenceEntries { get; set; } = [];
 }
 
-public enum PhotoStatus { Pending, Review, Approved, Rejected }
+public enum MediaStatus { Pending, Review, Approved, Rejected }
 
 public enum EvidenceDirection { Positive, Negative }
 
 public class MetadataEntry {
     public Guid Id { get; set; }
-    public string Tag { get; set; } = string.Empty;  // "EXIF:DateTimeOriginal", "Filesystem:mtime", ...
+    public string Tag { get; set; } = string.Empty;  // "Exif SubIFD:DateTime Original", "QuickTime:CreateDate", ...
     public string? Value { get; set; }
-    public string Source { get; set; } = string.Empty; // "exif" | "filesystem"
-    public Guid PhotoId { get; set; }
-    public Photo Photo { get; set; } = null!;
+    public string Source { get; set; } = string.Empty; // "exif" | "quicktime" | "filesystem"
+    public Guid MediaAssetId { get; set; }
+    public MediaAsset MediaAsset { get; set; } = null!;
 }
 
 public class EvidenceEntry {
@@ -93,8 +96,8 @@ public class EvidenceEntry {
     public double Weight { get; set; }
     public EvidenceDirection Direction { get; set; }
     public string Description { get; set; } = string.Empty;
-    public Guid PhotoId { get; set; }
-    public Photo Photo { get; set; } = null!;
+    public Guid MediaAssetId { get; set; }
+    public MediaAsset MediaAsset { get; set; } = null!;
 }
 
 public class ScanJob {
@@ -106,7 +109,7 @@ public class ScanJob {
     public int ErrorCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
-    public List<Photo> Photos { get; set; } = [];
+    public List<MediaAsset> MediaAssets { get; set; } = [];
 }
 
 public enum JobStatus { Running, Paused, Completed, Cancelled, Error }
@@ -130,7 +133,7 @@ public class AuditEntry {
 `SnapTimeDbContext` en Infrastructure con DbSets y configuración con Fluent API.
 
 **Incluye:**
-- DbSet<Photo>, DbSet<MetadataEntry>, DbSet<EvidenceEntry>, DbSet<ScanJob>, DbSet<AuditEntry>
+- DbSet<MediaAsset>, DbSet<MetadataEntry>, DbSet<EvidenceEntry>, DbSet<ScanJob>, DbSet<AuditEntry>
 - Configuraciones de índice (FilePath con unique, ScanJobId)
 - ConnectionString construido en DbContext desde `ConfigService.DatabasePath` (file path → `Data Source={path}`)
 - Migración inicial con `dotnet ef migrations add InitialCreate` (requiere `dotnet ef` tool instalada)
@@ -151,6 +154,8 @@ Servicio singleton que lee y expone `SnapTimeConfig`.
 public class SnapTimeConfig {
     public string DatabasePath { get; set; } = "snaptime.db";  // ruta al archivo SQLite
     public int ConfidenceThreshold { get; set; } = 80;
+    public string[] ImageExtensions { get; set; } = [".jpg", ".jpeg"];
+    public string[] VideoExtensions { get; set; } = [".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"];
     public string OllamaEndpoint { get; set; } = "http://localhost:11434";
     public string OllamaModel { get; set; } = "llama3.2";
     public List<HeuristicConfig> Heuristics { get; set; } = [];

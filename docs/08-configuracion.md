@@ -19,7 +19,9 @@ La configuración se almacena en un archivo JSON (`snaptime.config.json`) ubicad
   "analysis": {
     "confidenceThreshold": 50,
     "maxConcurrency": 4,
-    "batchSize": 100
+    "batchSize": 100,
+    "imageExtensions": [".jpg", ".jpeg"],
+    "videoExtensions": [".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"]
   },
 
   // --- Heurísticas ---
@@ -89,7 +91,9 @@ La configuración se almacena en un archivo JSON (`snaptime.config.json`) ubicad
 |-------|------|---------|-------------|
 | `confidenceThreshold` | int | `50` | Umbral global de confianza (0-100). Por debajo de este valor se genera sugerencia. |
 | `maxConcurrency` | int | `4` | Número máximo de análisis en paralelo. |
-| `batchSize` | int | `100` | Fotos por lote en cada iteración de escaneo. |
+| `batchSize` | int | `100` | Archivos por lote en cada iteración de escaneo. |
+| `imageExtensions` | string[] | `[".jpg", ".jpeg"]` | Extensiones de imagen a incluir en el escaneo. |
+| `videoExtensions` | string[] | `[".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"]` | Extensiones de vídeo a incluir en el escaneo. |
 
 ### heuristics
 Array de objetos con:
@@ -122,6 +126,7 @@ Array de objetos con:
 
 - **Singleton** en el contenedor DI.
 - Carga el JSON al arrancar en `SnapTime.Domain/Config/SnapTimeConfig.cs`.
+- Expone listas `ImageExtensions` y `VideoExtensions` que el scanner usa como filtro.
 - Expone la configuración actual como `SnapTimeConfig Current`.
 - Expone un evento `event Action<SnapTimeConfig> OnConfigChanged`.
 - **FileSystemWatcher** sobre el archivo para detectar cambios externos (edición manual).

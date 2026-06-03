@@ -96,8 +96,9 @@ SnapTime is a **local-first** application for analyzing photo libraries and vali
 | Backend | C# 14, .NET 10, EF Core 10, SQLite |
 | Frontend | Blazor WebAssembly (.NET 10) |
 | Architecture | Clean Architecture (Domain → Infrastructure → Server → Client) |
-| Date canonical | `SubSecDateTimeOriginal` > `DateTimeOriginal`. Write always at 5:00 AM |
-| H-006 | Parse filename `yyyyMMdd`, compare with EXIF, suggest filename date at 5:00 AM |
+| Media types | Imágenes (JPG/JPEG) y vídeos (MP4, MOV, etc.) con `MediaType` enum |
+| Date canonical | Prioridad unificada: `SubSecDateTimeOriginal` → `DateTimeOriginal` → `CreationDate` → `CreateDate` → `MediaCreateDate` → fallback fs. Write at 5:00 AM. |
+| H-006 | Parse filename `yyyyMMdd`, compare with canonical date, suggest filename date at 5:00 AM |
 | LLM | Ollama (localhost:11434, default `llama3.2`) |
 | Logging | Serilog |
 | Testing | xUnit + NSubstitute |

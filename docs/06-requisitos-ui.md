@@ -21,9 +21,9 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Input de texto para escribir o pegar la ruta.
 - Botón "Examinar" junto al input (usando input file del SO).
 
-### 4.2) Panel derecho: grid de miniaturas
-- Cuadrícula de fotos con miniatura.
-- Indicadores visuales sobre la miniatura (badge de score bajo/alto, icono de estado de revisión).
+### 4.2) Panel central: grid de archivos multimedia
+- Cuadrícula de archivos con miniatura (fotos) o icono de vídeo (vídeos, con indicador de duración).
+- Indicadores visuales sobre la miniatura/icono (badge de score bajo/alto, icono de estado de revisión, icono de tipo de archivo).
 - Al hacer clic en una miniatura, se expande inline mostrando detalle con evidencias.
 - **Solo visualización** en MVP. Sin acciones (aceptar/rechazar) desde el grid.
 
@@ -34,7 +34,7 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 ### 4.4) Panel superior
 - Controles de ejecución: iniciar, pausar, reanudar y cancelar.
 - Botón para abrir configuración (modal).
-- Métricas: progreso de fotos procesadas + resumen de confianza (altas, revisar, sugerir corrección).
+- Métricas: progreso de archivos procesados + resumen de confianza (altas, revisar, sugerir corrección).
 - Estados de proceso visibles: en curso, pausado, cancelado, finalizado, error.
 
 ### 4.5) Pantalla de configuración (modal)
@@ -51,7 +51,7 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - El usuario puede cambiar el criterio de ordenación.
 
 ### 4.7) Dry-run y aplicación
-- Modal con lista de cambios: foto, fecha actual → fecha nueva para cada ítem.
+- Modal con lista de cambios: archivo, fecha actual → fecha nueva para cada ítem.
 - Botón "Aplicar" o "Cancelar".
 - Requiere confirmación explícita.
 
@@ -72,7 +72,7 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Selección en cascada descendente y actualización consistente de estado en nodos padre.
 - Los nodos padre usarán estado visual de tres valores: seleccionado, no seleccionado e indeterminado (parcial).
 - En el árbol se muestra, para cada carpeta, icono de carpeta y nombre.
-- Al hacer clic en una carpeta, el panel derecho muestra miniaturas de las fotos contenidas en esa carpeta y sus subcarpetas.
+- Al hacer clic en una carpeta, el panel derecho muestra los archivos multimedia contenidos en esa carpeta y sus subcarpetas.
 - La carga de miniaturas debe ser bajo demanda (lazy loading).
 
 ## 6) Requisitos de rendimiento en listados grandes
@@ -93,6 +93,6 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 ## 8) Decisiones de diseño
 
 ### Subpanel de metainformación de carpeta
-- Ubicación definitiva: **zona inferior del panel central (grid)**, debajo de las miniaturas.
-- Muestra: número de archivos de la carpeta seleccionada y resumen rápido de confianza (altas / revisar / sugerir corrección).
+- Ubicación definitiva: **zona inferior del panel central (grid)**, debajo de las miniaturas/iconos.
+- Muestra: número de archivos de la carpeta seleccionada (desglosado por tipo: imagen/vídeo) y resumen rápido de confianza (altas / revisar / sugerir corrección).
 - Ocupa el ancho completo del panel central.

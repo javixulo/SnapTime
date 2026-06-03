@@ -6,7 +6,7 @@
 
 ## F1-US-001 — Scanner de directorios
 
-Walk recursivo del sistema de archivos desde una ruta raíz.
+Walk recursivo del sistema de archivos desde una ruta raíz, soportando imágenes y vídeos.
 
 **Interfaz:**
 ```csharp
@@ -14,16 +14,18 @@ Walk recursivo del sistema de archivos desde una ruta raíz.
 public interface IDirectoryWalker {
     IAsyncEnumerable<FileInfo> WalkAsync(
         string rootPath,
-        string[] allowedExtensions,
+        string[] imageExtensions,
+        string[] videoExtensions,
         CancellationToken ct);
 }
 ```
 
 **Reglas:**
-- Solo archivos con extensión en `allowedExtensions` (por defecto `.jpg`, `.jpeg`)
+- Archivos de imagen: extensiones en `imageExtensions` (por defecto `.jpg`, `.jpeg`)
+- Archivos de vídeo: extensiones en `videoExtensions` (por defecto `.mp4`, `.mov`, `.avi`, `.mkv`, `.webm`, `.m4v`)
 - Omite directorios sin permiso de lectura (log + sigue)
-- Reporta archivos descartados con motivo (extensión, permisos, ausente)
-- Devuelve `FileInfo` con ruta completa y tamaño
+- Reporta archivos descartados con motivo (extensión no soportada, permisos, ausente)
+- Devuelve `FileInfo` con ruta completa, tamaño y extensión (para determinar `MediaType`)
 
 **Criterios de aceptación:**
 - WalkAsync recorre subdirectorios recursivamente.
@@ -33,45 +35,58 @@ public interface IDirectoryWalker {
 
 ---
 
-## F1-US-002 — Extracción EXIF
+## F1-US-002 — Extracción de metadatos (EXIF + QuickTime)
 
-Extraer metadatos de fecha EXIF de cada archivo.
+Extraer metadatos de fecha de cada archivo. Usa EXIF para imágenes y QuickTime para vídeos.
 
 **Interfaz:**
 ```csharp
 // [F1-US-002]
-public interface IExifExtractor {
-    Task<List<MetadataEntry>> ExtractAsync(string filePath, CancellationToken ct);
+public interface IMetadataExtractor {
+    Task<List<MetadataEntry>> ExtractAsync(string filePath, MediaType mediaType, CancellationToken ct);
 }
 ```
 
-**Tags a extraer:**
-| Tag EXIF | Propiedad |
-|----------|-----------|
-| `EXIF:DateTimeOriginal` | Fecha de captura original |
-| `EXIF:SubSecDateTimeOriginal` | Fecha con subsegundos |
-| `EXIF:CreateDate` | Fecha de creación digital |
-| `EXIF:ModifyDate` | Fecha de modificación digital |
+**Tags a extraer por tipo:**
 
-**Reglas:**
-- Usar MetadataExtractor (librería .NET)
-- Parsear a `DateTime?`. Si el tag no existe o no se puede parsear → `null`
-- El tag `MetadataEntry.Tag` se compone como `"{DirectoryName}:{TagName}"` (ej: `"Exif SubIFD:DateTimeOriginal"`)
-- Devolver `List<MetadataEntry>` con `Source = "exif"`
+| Tipo | Directorio MetadataExtractor | Tags |
+|------|------------------------------|------|
+| Image | `ExifSubIfdDirectory` | DateTime Original, Sub Sec Time Original |
+| Image | `ExifIfd0Directory` | Date/Time Digitized, Date/Time |
+| Video | `QuickTimeMovieHeaderDirectory` | Create Date, Modify Date |
+| Video | `QuickTimeMetadataDirectory` | Creation Date |
+| Video | `QuickTimeTrackHeaderDirectory` | Track Create Date, Track Modify Date |
 
-**Mapeo de nombres MetadataExtractor:**
+**Mapeo de nombres MetadataExtractor — Imágenes:**
 
-| Tag lógico | Directory de MetadataExtractor | Tag Name |
-|------------|-------------------------------|----------|
+| Tag lógico | Directory | Tag Name |
+|------------|-----------|----------|
 | DateTimeOriginal | Exif SubIFD | DateTime Original |
 | SubSecDateTimeOriginal | Exif SubIFD | Sub Sec Time Original |
 | CreateDate | Exif IFD0 | Date/Time Digitized |
 | ModifyDate | Exif IFD0 | Date/Time |
 
+**Mapeo de nombres MetadataExtractor — Vídeos:**
+
+| Tag lógico | Directory | Tag Name |
+|------------|-----------|----------|
+| QuickTime:CreateDate | QuickTime Movie Header | Create Date |
+| QuickTime:ModifyDate | QuickTime Movie Header | Modify Date |
+| QuickTime:CreationDate | QuickTime Metadata | Creation Date |
+| QuickTime:MediaCreateDate | QuickTime Media Header | Media Create Date |
+| QuickTime:TrackCreateDate | QuickTime Track Header | Track Create Date |
+
+**Reglas:**
+- Usar MetadataExtractor con el directorio adecuado según `MediaType`
+- Parsear a `DateTime?`. Si el tag no existe o no se puede parsear → `null`
+- El tag `MetadataEntry.Tag` se compone como `"{DirectoryName}:{TagName}"` (ej: `"Exif SubIFD:DateTime Original"`, `"QuickTime Movie Header:Create Date"`)
+- Devolver `List<MetadataEntry>` con `Source = "exif"` para imágenes y `Source = "quicktime"` para vídeos
+
 **Criterios de aceptación:**
-- Extrae correctamente los 4 tags de una imagen con metadatos completos.
-- Devuelve lista vacía si la imagen no tiene metadatos (no lanza).
-- Soporta JPEG estándar.
+- Extrae correctamente los 4 tags EXIF de una imagen con metadatos completos.
+- Extrae correctamente los 5 tags QuickTime de un vídeo con metadatos completos.
+- Devuelve lista vacía si el archivo (imagen o vídeo) no tiene metadatos (no lanza).
+- Soporta JPEG estándar y contenedores MOV/MP4.
 
 ---
 
@@ -129,10 +144,11 @@ Completed | Cancelled | Error
 
 **Pipeline por archivo:**
 1. Walk → obtiene `FileInfo`
-2. EXIF → `List<MetadataEntry>`
-3. Filesystem → `List<MetadataEntry>`
-4. Crear `Photo` + `MetadataEntries` → persistir en SQLite
-5. Incrementar `ProcessedFiles`
+2. Determinar `MediaType` por extensión: si está en `imageExtensions` → `Image`, si está en `videoExtensions` → `Video`
+3. Metadatos → `List<MetadataEntry>` (EXIF o QuickTime según MediaType)
+4. Filesystem → `List<MetadataEntry>`
+5. Crear `MediaAsset` + `MetadataEntries` → persistir en SQLite
+6. Incrementar `ProcessedFiles`
 
 **Reglas:**
 - Cooperative cancellation via `CancellationToken`
@@ -196,24 +212,25 @@ Endpoints REST para control de jobs.
 
 ## F1-US-007 — Persistencia de resultados
 
-Cada foto escaneada + sus metadatos se guardan en SQLite.
+Cada archivo escaneado + sus metadatos se guardan en SQLite.
 
 ```csharp
 // [F1-US-007] — dentro del pipeline
-await _dbContext.Photos.AddAsync(photo, ct);
-await _dbContext.MetadataEntries.AddRangeAsync(photo.MetadataEntries, ct);
+await _dbContext.MediaAssets.AddAsync(mediaAsset, ct);
+await _dbContext.MetadataEntries.AddRangeAsync(mediaAsset.MetadataEntries, ct);
 await _dbContext.SaveChangesAsync(ct);
 ```
 
 **Reglas:**
-- Guardar foto y metadatos en la misma transacción.
+- Guardar `MediaAsset` y metadatos en la misma transacción.
 - Si falla el guardado → errorCount++ y se registra el error, no se detiene el job.
-- Batch de 50 fotos antes de SaveChanges para evitar transacciones largas (configurable).
-- Upsert por `FilePath` normalizado ( `Path.GetFullPath` ): misma ruta absoluta → misma entidad. Si la foto ya existe, se actualizan metadatos y se incrementa `ScanJobId`.
+- Batch de 50 archivos antes de SaveChanges para evitar transacciones largas (configurable).
+- Upsert por `FilePath` normalizado (`Path.GetFullPath`): misma ruta absoluta → misma entidad. Si el archivo ya existe, se actualizan metadatos y `ScanJobId`.
+- `MediaType` se determina por extensión al insertar y no cambia en upserts.
 
 **Criterios de aceptación:**
-- Las fotos aparecen en SQLite después del scan.
-- Los metadatos están linkeados a la foto correcta.
+- Los archivos aparecen en SQLite después del scan.
+- Los metadatos están linkeados al archivo correcto.
 - Dos scans de la misma carpeta: upsert por `FilePath` (no duplicados).
 
 ---
@@ -225,7 +242,8 @@ await _dbContext.SaveChangesAsync(ct);
 ```
 
 **Casos:**
-- Directorio con 10 fotos .jpg → 10 archivos devueltos
+- Directorio con 10 archivos .jpg → 10 archivos devueltos (todos Image)
+- Directorio con mezcla .jpg / .mp4 / .mov → 10 archivos (3 Image, 7 Video)
 - Directorio con mezcla .jpg / .png / .txt → solo .jpg/.jpeg
 - Directorio sin permisos → skip + log, no exception
 - Subdirectorios anidados → recorrido completo
@@ -235,19 +253,22 @@ await _dbContext.SaveChangesAsync(ct);
 
 ---
 
-## F1-US-009 — Tests de extracción EXIF
+## F1-US-009 — Tests de extracción de metadatos
 
 ```csharp
 // [F1-US-009]
 ```
 
 **Casos:**
-- Imagen con todos los tags → 4 MetadataEntry
+- Imagen con todos los tags EXIF → 4 MetadataEntry con Source="exif"
 - Imagen sin metadatos → lista vacía
-- Archivo corrupto → lista vacía, log de error
+- Archivo de imagen corrupto → lista vacía, log de error
 - DateTimeOriginal con formato no estándar → null (no crash)
+- Vídeo MOV con metadatos QuickTime completos → 5 MetadataEntry con Source="quicktime"
+- Vídeo MP4 sin metadatos → lista vacía
+- Archivo de vídeo corrupto → lista vacía, log de error
 
-**Mock:** `IExifExtractor` con imágenes de muestra embedidas.
+**Mock:** `IMetadataExtractor` con archivos de muestra embedidos (JPEG y MOV/MP4).
 
 ---
 
@@ -265,4 +286,4 @@ await _dbContext.SaveChangesAsync(ct);
 - Error en un archivo → errorCount++, no se detiene el job
 - rootPath inválido → estado Error con mensaje
 
-**Mock:** `IDirectoryWalker` + `IExifExtractor` + `IFileSystemMetadataExtractor` inyectados como mocks.
+**Mock:** `IDirectoryWalker` + `IMetadataExtractor` + `IFileSystemMetadataExtractor` inyectados como mocks.
