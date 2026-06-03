@@ -238,7 +238,7 @@ app.MapGet("/api/photos", async (IPhotoRepository repo, [AsParameters] PhotoFilt
 
 ## Pipeline
 
-You follow the strict **Green → Refactor** pipeline:
+You follow the strict **Green → Refactor → DB Migration** pipeline:
 
 ### 🟢 Green Phase — Implement the Minimum
 
@@ -263,6 +263,27 @@ Clean up your own code while keeping all tests green. Apply SOLID, security hard
 - [ ] All tests remain green after refactor
 - [ ] No security regressions (path traversal, null checks, info disclosure)
 - [ ] No dead code or unused imports
+
+### 🗄️ DB Migration Phase
+
+If you modified entities or `SnapTimeDbContext`, generate and apply the migration:
+
+```bash
+dotnet ef migrations add <Name> --project src/SnapTime.Infrastructure
+dotnet ef database update --project src/SnapTime.Infrastructure
+```
+
+After applying, run a quick smoke test to verify integrity:
+```bash
+sqlite3 src/SnapTime.Infrastructure/SnapTime.db ".tables"
+sqlite3 src/SnapTime.Infrastructure/SnapTime.db ".schema <NewTable>"
+```
+
+**Checklist:**
+- [ ] `dotnet ef migrations add` succeeded
+- [ ] `dotnet ef database update` succeeded
+- [ ] Smoke test: insert a row, read it back, delete test data
+- [ ] Build still passes (`dotnet build`)
 
 ## Workflows
 

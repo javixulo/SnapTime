@@ -22,9 +22,10 @@ Every User Story follows this strict workflow:
 1. 🔴 **Janus** writes failing tests first
 2. 🟢 **Kip** implements the minimum code to pass
 3. 🔵 **Kip** refactors his own code (tests must stay green)
-4. 👁 **Gavin** reviews everything
-5. If Gavin finds issues, Janus fixes test issues and Kip fixes code issues
-6. Repeat from step 3/4 until Gavin approves
+4. 🗄️ **Kip** generates EF migration if entities/DbContext changed (`dotnet ef migrations add`, `database update`, smoke test insert/read)
+5. 👁 **Gavin** reviews everything
+6. If Gavin finds issues, Janus fixes test issues and Kip fixes code issues
+7. Repeat from step 3/4 until Gavin approves
 
 ## Stack and architecture
 
