@@ -29,7 +29,12 @@
 - El LLM interpreta el mensaje en lenguaje natural, ejecuta la tool correspondiente y devuelve la respuesta formateada.
 - No se envía información a internet (alineado con principio local-first).
 
-## 5) Logging
+## 5) Configuración
+- Formato: JSON (`snaptime.config.json`).
+- Servicio singleton con FileSystemWatcher para cambios en runtime.
+- Validación de valores antes de aplicar.
+
+## 6) Logging
 - Librería seleccionada: Serilog.
 - Integración recomendada: `Microsoft.Extensions.Logging` + Serilog.
 - Debe mantenerse logging estructurado como estándar del proyecto.
