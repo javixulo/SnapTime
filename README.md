@@ -25,7 +25,7 @@ Todo el procesamiento es **100% local**. No se envía ninguna imagen, metadato n
 
 ## Estado actual
 
-**Fase 0 — Requisitos y diseño.** La documentación de visión, requisitos funcionales y no funcionales, arquitectura, decisiones tecnológicas y ADRs está completa y disponible en [`docs/`](docs/).
+**Fase 0 — Requisitos y diseño.** La documentación de visión, requisitos funcionales y no funcionales, arquitectura, heurísticas y configuración está completa y disponible en [`docs/`](docs/).
 
 ## Stack tecnológico
 
@@ -51,13 +51,11 @@ Todo el procesamiento es **100% local**. No se envía ninguna imagen, metadato n
 | [00 - Visión y alcance](docs/00-vision-y-alcance.md) | Visión del producto, problema, principios de diseño y alcance |
 | [01 - Requisitos funcionales](docs/01-requisitos-funcionales.md) | FR-01 a FR-18 con criterios de aceptación |
 | [02 - Requisitos no funcionales](docs/02-requisitos-no-funcionales.md) | NFR-01 a NFR-10 |
-| [03 - Blueprint y fases](docs/03-blueprint-flujo-modulos-y-fases.md) | Arquitectura de módulos, flujo E2E, plan por fases (0-3) |
+| [03 - Arquitectura del sistema](docs/03-blueprint-flujo-modulos-y-fases.md) | Módulos, decisiones tecnológicas, contratos API/MCP, fases |
 | [04 - Proceso de desarrollo](docs/04-proceso-de-desarrollo-tdd.md) | Política TDD y reglas de ejecución de tests |
-| [05 - Heurísticas](docs/05-requisitos-heuristicas.md) | Especificación de heurísticas (H-001 a H-005) |
-| [06 - Requisitos de UI](docs/06-requisitos-ui.md) | Estructura visual, árbol de carpetas, paginación |
-| [07 - Decisiones tecnológicas](docs/07-decisiones-tecnologicas.md) | Stack detallado y justificaciones |
-| [ADR-001](docs/ADR-001-blazor-wasm.md) | Blazor WASM como framework de UI |
-| [ADR-002](docs/ADR-002-ef-core-code-first.md) | EF Core code-first con POCO para persistencia |
+| [05 - Heurísticas](docs/05-requisitos-heuristicas.md) | Especificación de heurísticas (H-001 a H-006) |
+| [06 - Requisitos de UI](docs/06-requisitos-ui.md) | Estructura visual, árbol de carpetas, paginación, chat |
+| [08 - Configuración](docs/08-configuracion.md) | Esquema de configuración JSON del sistema |
 
 ## Licencia
 
