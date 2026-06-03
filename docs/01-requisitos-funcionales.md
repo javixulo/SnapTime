@@ -190,3 +190,18 @@ La UI debe paginar el contenido de imágenes mostrado en el panel derecho.
 - Orden por defecto en MVP: nombre.
 - El usuario puede cambiar el criterio de ordenación.
 
+## FR-19 Chat conversacional con MCP
+
+La UI debe incluir un panel de chat conversacional que permita ejecutar acciones del sistema mediante lenguaje natural.
+
+### Criterios de aceptación
+
+- Panel de chat en el lado derecho de la interfaz (15% ancho).
+- El usuario escribe mensajes en lenguaje natural y el sistema responde.
+- El backend utiliza un LLM local (Ollama) para interpretar los mensajes.
+- El LLM tiene acceso a las MCP tools como herramientas (tool calling).
+- El chat refleja el resultado de las operaciones en lenguaje natural.
+- Las operaciones ejecutadas desde el chat tienen efecto en los demás paneles de la UI.
+- Indicador visual de "escribiendo..." mientras el LLM procesa.
+- Historial de conversación visible en el panel.
+

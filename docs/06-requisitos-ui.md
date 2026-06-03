@@ -9,11 +9,11 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 
 ## 3) Estructura visual del MVP
 - **Pantalla única** con paneles (sin navegación entre páginas).
-- **Panel izquierdo**: estructura de carpetas en árbol estilo Windows.
-- **Panel derecho**: grid de miniaturas con expandir inline para detalle.
-- **Panel superior**: estado del proceso, métricas básicas y botones de control.
+- **Panel superior**: estado del proceso, métricas básicas y botones de control. Ocupa todo el ancho.
+- **Panel izquierdo** (25%): estructura de carpetas en árbol estilo Windows.
+- **Panel central** (60%): grid de miniaturas con expandir inline para detalle. Subpanel informativo en zona inferior (número de archivos de la carpeta seleccionada).
+- **Panel derecho** (15%): chat conversacional para ejecutar acciones vía MCP.
 - **Ventana modal de configuración**, abierta desde un botón del panel superior.
-- **Subpanel informativo**: zona inferior del panel derecho, muestra solo número de archivos de la carpeta seleccionada en MVP.
 
 ## 4) Requisitos funcionales de UI
 
@@ -57,6 +57,15 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 
 ### 4.8) Filtros (Fase 2)
 - Los filtros por score, carpeta, rango de fechas, estado de revisión se implementan en Fase 2.
+
+### 4.9) Chat conversacional (panel derecho)
+- Panel de chat en el lado derecho, ancho 15% de la pantalla.
+- Campo de texto para escribir comandos en lenguaje natural.
+- Historial de mensajes visible en el panel (usuario y respuestas del sistema).
+- Los mensajes se envían al backend, que usa un LLM local (Ollama) para interpretar el mensaje y ejecutar las MCP tools correspondientes.
+- El LLM tiene acceso a las MCP tools como herramientas (tool calling) y responde en lenguaje natural con el resultado.
+- Indicador visual de "escribiendo..." mientras el LLM procesa.
+- Los resultados del chat pueden reflejarse en los otros paneles (ej: al escanear una carpeta, el grid se actualiza).
 
 ## 5) Requisitos del árbol de carpetas
 - Árbol de carpetas con checkboxes en cascada (seleccionar/deseleccionar).

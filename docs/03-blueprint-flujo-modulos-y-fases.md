@@ -1,9 +1,10 @@
 # SnapTime - Blueprint (flujo, módulos y fases)
 
 ## 1) Arquitectura lógica de módulos
-- UI web (Blazor WASM en localhost): panel operativo para explorar resultados y aprobar/rechazar cambios.
+- UI web (Blazor WASM en localhost): tres paneles (árbol carpetas 25%, grid miniaturas 60%, chat MCP 15%) para explorar resultados, ejecutar acciones y chatear.
 - API Backend (C#/.NET): interfaz principal para la UI y control de jobs.
-- MCP Server (C#/.NET): interfaz para agentes, compartiendo core de negocio.
+- MCP Server (C#/.NET): interfaz para agentes y para el chat conversacional, compartiendo core de negocio.
+- Chat Backend (C#/.NET): endpoint que recibe mensajes del chat, los envía a un LLM local (Ollama) con tool calling sobre las MCP tools, y devuelve la respuesta.
 - Core de Dominio: heurísticas, scoring, sugerencias y reglas.
 - Infraestructura: adaptadores de EXIF, filesystem, DbContext de EF Core y SQLite.
 - Worker de procesamiento: escaneo/análisis asíncrono con cancelación y checkpoints.

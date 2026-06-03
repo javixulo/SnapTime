@@ -23,7 +23,13 @@
 - Durante el desarrollo se permite modificar las POCOs libremente y regenerar migrations.
 - El esquema se considerará estable con la versión final del producto.
 
-## 4) Logging
+## 4) Chat conversacional
+- Motor de LLM local: Ollama.
+- El chat del panel derecho envía mensajes al backend, que consulta Ollama con tool calling sobre las MCP tools.
+- El LLM interpreta el mensaje en lenguaje natural, ejecuta la tool correspondiente y devuelve la respuesta formateada.
+- No se envía información a internet (alineado con principio local-first).
+
+## 5) Logging
 - Librería seleccionada: Serilog.
 - Integración recomendada: `Microsoft.Extensions.Logging` + Serilog.
 - Debe mantenerse logging estructurado como estándar del proyecto.
