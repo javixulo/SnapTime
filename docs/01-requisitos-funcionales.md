@@ -1,0 +1,190 @@
+# SnapTime - Requisitos funcionales (FR)
+
+## FR-01 Selección de biblioteca
+
+El sistema debe permitir seleccionar una ruta raíz local para escanear imágenes.
+
+### Criterios de aceptación
+
+- El usuario puede elegir carpeta raíz desde UI.
+- El sistema valida acceso/lectura antes de iniciar.
+- El sistema permite incluir subcarpetas.
+
+## FR-02 Descubrimiento de archivos
+
+El sistema debe descubrir archivos JPG/JPEG y registrar inventario inicial.
+
+### Criterios de aceptación
+
+- Se contabilizan archivos candidatos y archivos descartados.
+- Se informa motivo de descarte (extensión no soportada, archivo corrupto, etc.).
+
+## FR-03 Extracción de metadatos de fecha
+
+El sistema debe extraer metadatos de fecha relevantes por archivo.
+
+### Criterios de aceptación
+
+- Soporta al menos: `EXIF:DateTimeOriginal`, `EXIF:CreateDate`, `EXIF:ModifyDate`.
+- Registra fechas de sistema de archivos (`mtime`/`ctime`) como evidencia secundaria.
+- Guarda origen de cada valor (tag exacto/fuente).
+
+## FR-04 Análisis de coherencia y scoring
+
+El sistema debe calcular una confianza (0-100) sobre la fecha actual de cada foto.
+
+### Criterios de aceptación
+
+- La confianza se calcula por reglas/señales configurables.
+- Cada score incluye explicación legible y desglose por señal.
+- El score es reproducible con la misma versión de reglas y datos.
+
+## FR-05 Sugerencia de fecha alternativa
+
+El sistema debe sugerir una fecha alternativa cuando la confianza esté por debajo del umbral.
+
+### Criterios de aceptación
+
+- El umbral es configurable por usuario.
+- Cada sugerencia incluye confianza propia y evidencia.
+- Si no hay evidencia suficiente, el sistema marca "sin sugerencia fiable".
+
+## FR-06 Análisis contextual por carpeta
+
+El sistema debe usar información contextual de carpeta para apoyar inferencias.
+
+### Criterios de aceptación
+
+- Calcula tendencia temporal dominante por carpeta/lote.
+- Detecta outliers temporales respecto al grupo.
+- Permite desactivar esta señal en configuración.
+
+## FR-07 Parseo semántico de nombres de carpeta/archivo
+
+El sistema debe detectar pistas temporales en nombres (por ejemplo, "cumpleaños_mayo_2021").
+
+### Criterios de aceptación
+
+- Extrae fechas/rangos de texto común en ES/EN básico.
+- Marca nivel de confianza bajo/medio para esta evidencia.
+- Nunca usa esta señal como única base para aplicar cambios automáticamente.
+
+## FR-08 Panel de revisión en UI
+
+La UI debe mostrar listado navegable de fotos y resultados de análisis.
+
+### Criterios de aceptación
+
+- Columnas mínimas: ruta, fecha actual, score, sugerencia, estado.
+- Vista de detalle con "por qué" (evidencias y pesos).
+- Filtros por score, carpeta, rango de fechas, estado de revisión.
+
+## FR-09 Control de ejecución
+
+La UI debe permitir iniciar, pausar, reanudar y cancelar procesos de escaneo/análisis.
+
+### Criterios de aceptación
+
+- Cambios de estado visibles en tiempo real.
+- Cancelación cooperativa con cierre consistente del job.
+- Reanudación desde último checkpoint disponible.
+
+## FR-10 Flujo de aprobación de cambios
+
+El sistema debe permitir aceptar/rechazar sugerencias por ítem o por lote.
+
+### Criterios de aceptación
+
+- Soporta selección múltiple por filtros.
+- Muestra resumen previo (dry-run) antes de escribir metadatos.
+- Requiere confirmación explícita para aplicar.
+
+## FR-11 Aplicación de cambios de metadatos
+
+El sistema debe escribir la fecha aceptada en metadatos de forma controlada.
+
+### Criterios de aceptación
+
+- Permite modo simulación (sin escritura real).
+- Registra resultado por archivo (ok/error/motivo).
+- Nunca modifica sin consentimiento del usuario.
+
+## FR-12 Auditoría y trazabilidad
+
+El sistema debe registrar eventos relevantes de análisis y cambios.
+
+### Criterios de aceptación
+
+- Guarda quién/cuándo/qué regla/versión produjo score/sugerencia.
+- Conserva historial de cambios aplicados.
+- Permite exportar reporte de auditoría.
+
+## FR-13 Integración MCP
+
+El sistema debe exponer capacidades clave vía MCP para uso por agentes.
+
+### Criterios de aceptación
+
+- Tools mínimas: escanear, listar baja confianza, obtener evidencia, proponer, aplicar con confirmación.
+- MCP reutiliza el mismo core de negocio que la API/UI.
+
+## FR-14 API de aplicación
+
+El sistema debe ofrecer API para consumo de UI y procesos internos.
+
+### Criterios de aceptación
+
+- Endpoints para jobs, consulta de resultados, revisión y aplicación.
+- Contratos estables versionados.
+
+## FR-15 Configuración de heurísticas
+
+El sistema debe permitir ajustar pesos, umbrales y activación/desactivación de heurísticas sin recompilar.
+
+### Criterios de aceptación
+
+- Config editable desde archivo o UI de administración básica.
+- Cada heurística puede activarse o desactivarse de forma independiente.
+- Permite ajustar pesos de heurísticas habilitadas.
+- Los cambios de configuración deben aplicarse en runtime sin reiniciar la aplicación.
+- Los cambios de configuración quedan versionados en auditoría.
+
+## FR-16 Pantalla de configuración de usuario
+
+El sistema debe ofrecer una pantalla de configuración para gestionar parámetros de análisis.
+
+### Criterios de aceptación
+
+- Permite modificar umbral global de confianza.
+- Permite activar/desactivar heurísticas individualmente.
+- Permite ajustar pesos de heurísticas habilitadas.
+- Muestra validaciones y errores de configuración de forma clara.
+- Aplica los cambios en runtime.
+
+## FR-17 Navegación de carpetas en árbol
+
+La UI debe incluir un panel de carpetas con estructura en árbol estilo explorador de Windows.
+
+### Criterios de aceptación
+
+- Muestra la jerarquía completa de carpetas de la ruta seleccionada.
+- Permite seleccionar y deseleccionar carpetas con checkboxes en cascada.
+- La selección de una carpeta actualiza consistentemente nodos descendientes y estado del nodo padre.
+- El nodo padre soporta estado indeterminado (parcial) cuando hay selección mixta en descendientes.
+- En el árbol se muestra icono de carpeta y nombre de carpeta.
+- Al hacer clic en una carpeta, el panel derecho muestra las imágenes asociadas de esa carpeta y sus subcarpetas.
+
+## FR-18 Paginación configurable de imágenes
+
+La UI debe paginar el contenido de imágenes mostrado en el panel derecho.
+
+### Criterios de aceptación
+
+- El número de imágenes por página es configurable por usuario.
+- Valores permitidos en MVP: 20, 50, 100 y Todas.
+- El sistema conserva el filtro/orden actual al cambiar de página.
+- La UI solicita al backend únicamente la página activa.
+- Debe soportar bibliotecas grandes sin cargar todas las imágenes en memoria.
+- Orden por defecto en MVP: nombre.
+- El usuario puede cambiar el criterio de ordenación.
+
