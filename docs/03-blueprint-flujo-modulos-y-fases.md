@@ -2,48 +2,32 @@
 
 ## 1) Arquitectura lógica de módulos
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Blazor WASM (UI)                         │
-│  ┌──────────┐  ┌──────────────┐  ┌──────────────────────┐   │
-│  │ Árbol     │  │ Grid         │  │ Chat MCP             │   │
-│  │ Carpetas  │  │ Miniaturas   │  │ (Ollama + tools)     │   │
-│  │ (25%)     │  │ (60%)        │  │ (15%)                │   │
-│  └──────────┘  └──────────────┘  └──────────────────────┘   │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ HTTP REST
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    API Backend (C#/.NET)                     │
-│  ┌──────────┐  ┌───────────┐  ┌──────────────────────────┐  │
-│  │ MCP      │  │ Chat      │  │ Control de jobs          │  │
-│  │ Server   │  │ Backend   │  │ (crear, pausar, cancelar)│  │
-│  └────┬─────┘  └─────┬─────┘  └──────────────┬───────────┘  │
-│       └──────────────┼───────────────────────┘              │
-│                      ▼                                      │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │              Core de Dominio                          │   │
-│  │  • Heurísticas (H-001 a H-006)                       │   │
-│  │  • Motor de scoring y sugerencias                    │   │
-│  │  • Reglas de decisión                                │   │
-│  └──────────────────────────┬───────────────────────────┘   │
-│                             │                                │
-│  ┌──────────────────────────▼───────────────────────────┐   │
-│  │              Infraestructura                          │   │
-│  │  • Adaptador EXIF (lectura/escritura metadatos)      │   │
-│  │  • Filesystem (escaneo, thumbnails)                  │   │
-│  │  • EF Core DbContext + SQLite                        │   │
-│  │  • ConfigService (JSON)                              │   │
-│  │  • Serilog (logging estructurado)                    │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │         Worker de procesamiento                       │   │
-│  │  • Escaneo/análisis asíncrono                         │   │
-│  │  • Cancelación cooperativa + checkpoints              │   │
-│  │  • Pipeline batch por lotes                           │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph UI["Blazor WASM (UI)"]
+        direction LR
+        A1["Árbol (25%)"]
+        A2["Grid (60%)"]
+        A3["Chat (15%)"]
+    end
+
+    UI -->|HTTP REST| API
+
+    subgraph API["API Backend (C#/.NET)"]
+        MCP["MCP Server"]
+        CHAT["Chat Backend"]
+        JOBS["Control de jobs"]
+        CORE["Core de Dominio<br/>• Heurísticas (H-001 a H-006)<br/>• Motor de scoring<br/>• Reglas de decisión"]
+        INFRA["Infraestructura<br/>• Adaptador EXIF<br/>• Filesystem<br/>• EF Core + SQLite<br/>• ConfigService<br/>• Serilog"]
+        WORKER["Worker de procesamiento<br/>• Escaneo asíncrono<br/>• Checkpoints<br/>• Pipeline batch"]
+
+        MCP --> CORE
+        CHAT --> CORE
+        JOBS --> CORE
+        CORE --> INFRA
+    end
+
+    CHAT -->|tool calling| OLLAMA["Ollama (LLM local)"]
 ```
 
 ### 1.1) Descripción de módulos
