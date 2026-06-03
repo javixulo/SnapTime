@@ -71,13 +71,14 @@ El sistema debe detectar pistas temporales en nombres (por ejemplo, "cumpleaños
 
 ## FR-08 Panel de revisión en UI
 
-La UI debe mostrar listado navegable de fotos y resultados de análisis.
+La UI debe mostrar un grid navegable de miniaturas de fotos con resultados de análisis.
 
 ### Criterios de aceptación
 
-- Columnas mínimas: ruta, fecha actual, score, sugerencia, estado.
-- Vista de detalle con "por qué" (evidencias y pesos).
-- Filtros por score, carpeta, rango de fechas, estado de revisión.
+- Grid de miniaturas con indicadores visuales de score y estado.
+- Al hacer clic en una miniatura se expande inline mostrando detalle: ruta, fecha actual, score, sugerencia, evidencias y pesos.
+- Sin acciones de aprobación/rechazo en MVP (solo visualización y previsualización).
+- Filtros por score, carpeta, rango de fechas, estado de revisión (Fase 2).
 
 ## FR-09 Control de ejecución
 
@@ -96,8 +97,8 @@ El sistema debe permitir aceptar/rechazar sugerencias por ítem o por lote.
 ### Criterios de aceptación
 
 - Soporta selección múltiple por filtros.
-- Muestra resumen previo (dry-run) antes de escribir metadatos.
-- Requiere confirmación explícita para aplicar.
+- Muestra resumen previo (dry-run) en modal con lista de cambios: foto, fecha actual → fecha nueva.
+- Requiere confirmación explícita para aplicar (botón "Aplicar" / "Cancelar" en el modal).
 
 ## FR-11 Aplicación de cambios de metadatos
 
@@ -182,9 +183,10 @@ La UI debe paginar el contenido de imágenes mostrado en el panel derecho.
 
 - El número de imágenes por página es configurable por usuario.
 - Valores permitidos en MVP: 20, 50, 100 y Todas.
+- La opción "Todas" desactiva la paginación numérica; las miniaturas se cargan bajo demanda (lazy loading) conforme entran en viewport.
 - El sistema conserva el filtro/orden actual al cambiar de página.
-- La UI solicita al backend únicamente la página activa.
-- Debe soportar bibliotecas grandes sin cargar todas las imágenes en memoria.
+- La UI solicita al backend únicamente la página activa (o batch de lazy loading).
+- Debe soportar bibliotecas grandes sin cargar todas las imágenes en memoria de una sola vez.
 - Orden por defecto en MVP: nombre.
 - El usuario puede cambiar el criterio de ordenación.
 

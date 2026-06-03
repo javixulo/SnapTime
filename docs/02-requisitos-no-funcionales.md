@@ -53,7 +53,7 @@
 - Ejecución en entorno local de escritorio con dependencias mínimas.
 - Backend implementado en C#/.NET y compatible con la versión objetivo definida para el proyecto.
 - Preferencia de versión de runtime: última estable disponible (.NET 10 si procede; fallback .NET 8 LTS).
-- UI accesible en localhost (tecnología de UI pendiente de decisión final).
+- UI accesible en localhost (Blazor WebAssembly).
 - Compatibilidad objetivo inicial: macOS/Windows (Linux en fase posterior).
 
 ## NFR-09 Observabilidad
