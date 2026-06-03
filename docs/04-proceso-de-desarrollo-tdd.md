@@ -1,27 +1,54 @@
-# SnapTime - Proceso de desarrollo (TDD)
+# SnapTime — Proceso de desarrollo (TDD)
 
 ## 1) Política general
-El desarrollo se realizará con enfoque TDD y cobertura centrada en tests unitarios.
 
-## 2) Ciclo obligatorio por cada cambio funcional
-1. Escribir tests unitarios que describan el comportamiento esperado.
-2. Ejecutar tests nuevos para confirmar que fallan por el motivo correcto.
-3. Implementar el mínimo código necesario para hacerlos pasar.
-4. Ejecutar la suite completa de unit tests.
-5. Refactorizar manteniendo comportamiento.
-6. Ejecutar de nuevo la suite completa de unit tests.
+El desarrollo sigue **Test-Driven Development (TDD)** estricto, con el ciclo **🔴 Red → 🟢 Green → 🔵 Refactor** en cada cambio funcional. Todos los tests son unitarios (xUnit, NSubstitute). La suite completa debe estar siempre en verde al cerrar cualquier paso.
 
-## 3) Reglas de ejecución de tests
-- Regla general: ejecutar todos los unit tests con la mayor frecuencia posible.
-- Excepción permitida: durante la fase inicial de creación de nuevos tests, se puede ejecutar un subconjunto para iterar más rápido.
-- Al cerrar cualquier paso de programación, la suite completa debe estar en verde.
+## 2) Ciclo obligatorio (Red-Green-Refactor)
 
-## 4) Alcance de pruebas en esta etapa
-- Solo se contemplan tests unitarios.
-- Los escenarios de validación de heurísticas se codificarán como casos unitarios representativos.
-- Se pospone la definición de tests de integración y end-to-end para fases futuras, si fueran necesarios.
+### 🔴 Fase Red — Escribir test fallido
 
-## 5) Base de datos durante el desarrollo
-- La base de datos puede evolucionar libremente durante el desarrollo.
-- El estado estable de esquema coincide con la versión final del producto.
-- No se establece un hito de freeze de base de datos independiente.
+1. Entender el requisito de la especificación.
+2. Escribir **un** test unitario que describa el comportamiento esperado.
+3. El test debe fallar por el motivo correcto (funcionalidad no implementada, no error de sintaxis).
+4. **No escribir código de producción todavía.**
+
+### 🟢 Fase Green — Implementación mínima
+
+1. Escribir el **mínimo** código necesario para que el test pase.
+2. No optimizar, no refactorizar, no anticipar requisitos futuros.
+3. Ejecutar la suite completa para confirmar que nada se rompe.
+4. **No modificar el test.** El test es la especificación.
+
+### 🔵 Fase Refactor — Mejorar calidad
+
+1. Con todos los tests en verde, limpiar el código:
+   - Eliminar duplicación.
+   - Mejorar nombres y estructura.
+   - Aplicar SOLID si procede.
+   - Revisar seguridad (inputs, secrets, errores).
+2. Ejecutar la suite completa tras cada cambio.
+3. Si algo se rompe, revertir el refactor o corregirlo antes de seguir.
+
+## 3) Reglas de ejecución
+
+- Ejecutar la **suite completa** de tests con la mayor frecuencia posible.
+- Excepción: durante la creación de nuevos tests (Fase Red), se puede ejecutar un subconjunto para iterar más rápido.
+- Al cerrar cualquier paso de programación, la suite completa debe estar en **verde**.
+- Si un test falla inesperadamente, detenerse y diagnosticar antes de continuar.
+
+## 4) Agente responsable
+
+**Janus** es el agente TDD del equipo SnapTime. Sigue este ciclo para todo el código que genera o valida. Los tests se escriben en `tests/SnapTime.Domain.Tests/` usando xUnit + NSubstitute.
+
+## 5) Alcance de pruebas
+
+- Solo tests unitarios en esta fase.
+- Las heurísticas se validan con tests parametrizados (`[Theory]` + `[InlineData]`).
+- Tests de integración y E2E se posponen a fases futuras.
+
+## 6) Base de datos durante el desarrollo
+
+- La base de datos puede evolucionar libremente.
+- Las migraciones de EF Core se generan automáticamente desde las POCOs.
+- No hay freeze de esquema hasta el lanzamiento.

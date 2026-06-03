@@ -90,5 +90,9 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Sin atajos de teclado en MVP.
 - Estados visuales contemplados: carga (spinner), vacío (mensaje informativo con icono), error (mensaje en panel).
 
-## 8) Temas abiertos para discusión
-- Ubicación final del subpanel de metainformación de carpeta si cambia respecto a la zona inferior del panel derecho.
+## 8) Decisiones de diseño
+
+### Subpanel de metainformación de carpeta
+- Ubicación definitiva: **zona inferior del panel central (grid)**, debajo de las miniaturas.
+- Muestra: número de archivos de la carpeta seleccionada y resumen rápido de confianza (altas / revisar / sugerir corrección).
+- Ocupa el ancho completo del panel central.

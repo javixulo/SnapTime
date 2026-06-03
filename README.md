@@ -31,7 +31,7 @@ Todo el procesamiento es **100% local**. No se envía ninguna imagen, metadato n
 
 | Capa | Tecnología |
 |------|-----------|
-| Backend | C# / .NET 8 |
+| Backend | C# / .NET 10 (fallback .NET 8 LTS) |
 | ORM | EF Core code-first (POCO → esquema SQLite automático) |
 | BD | SQLite |
 | UI | Blazor WebAssembly |
@@ -55,6 +55,7 @@ Todo el procesamiento es **100% local**. No se envía ninguna imagen, metadato n
 | [04 - Proceso de desarrollo](docs/04-proceso-de-desarrollo-tdd.md) | Política TDD y reglas de ejecución de tests |
 | [05 - Heurísticas](docs/05-requisitos-heuristicas.md) | Especificación de heurísticas (H-001 a H-006) |
 | [06 - Requisitos de UI](docs/06-requisitos-ui.md) | Estructura visual, árbol de carpetas, paginación, chat |
+| [07 - Contratos API](docs/07-api-contracts.md) | DTOs, endpoints REST, request/response |
 | [08 - Configuración](docs/08-configuracion.md) | Esquema de configuración JSON del sistema |
 
 ## Licencia

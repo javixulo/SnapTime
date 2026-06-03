@@ -21,4 +21,4 @@ This includes `git commit`, `git push`, `git add + commit`, and any alias or scr
 
 ## Project
 
-SnapTime is a local-first application for analyzing photo libraries and validating/correcting capture dates. Backend in C#/.NET 10, UI in Blazor WASM, SQLite database with EF Core 10 code-first. See `docs/` for full documentation.
+SnapTime is a local-first application for analyzing photo libraries and validating/correcting capture dates. Backend in C#/.NET 10 (fallback .NET 8 LTS), UI in Blazor WASM, SQLite database with EF Core 10 code-first (fallback EF Core 8 LTS). See `docs/` for full documentation.
