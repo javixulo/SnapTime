@@ -50,3 +50,17 @@ Esto dificulta la ordenación cronológica, la búsqueda por eventos y el manten
 - Sugerencia: propuesta de fecha alternativa con su propia confianza y explicación.
 - Evidencia: conjunto de señales usadas para score/sugerencia, con peso e impacto.
 
+## 8) Campo canónico de fecha de captura
+
+El sistema utiliza un único campo canónico como fuente de verdad para la fecha de captura:
+
+| Propósito | Tag EXIF |
+|-----------|---------|
+| Lectura / comparación | `EXIF:DateTimeOriginal` (o `SubSecDateTimeOriginal` si existe) |
+| Escritura | `EXIF:DateTimeOriginal` |
+
+Reglas:
+- **Lectura:** siempre se lee `DateTimeOriginal`. Si el archivo tiene `SubSecDateTimeOriginal`, se prefiere este por ser más preciso (incluye subsegundos y timezone). Si ninguno existe, la fecha actual se considera ausente.
+- **Escritura:** siempre se escribe en `DateTimeOriginal`. Cuando el sistema proponga o aplique una corrección, escribirá en este campo. La hora se fijará a las 5:00 AM en todas las correcciones automáticas.
+- **Consistencia con Immich:** Immich utiliza esta misma prioridad (`SubSecDateTimeOriginal` → `DateTimeOriginal`) para ordenar fotos en su timeline, lo que garantiza que las correcciones aplicadas por SnapTime sean reconocidas correctamente por Immich.
+

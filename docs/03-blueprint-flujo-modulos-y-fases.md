@@ -49,7 +49,7 @@
 - apply_fix(photo_id, mode=dry_run|commit, confirm_token)
 
 ## 4) Reglas de decisión iniciales (baseline)
-- Priorizar `EXIF:DateTimeOriginal` para fecha de captura cuando exista.
+- `EXIF:DateTimeOriginal` (o `SubSecDateTimeOriginal`) es el campo canónico de fecha de captura. Es siempre la fuente de verdad para lecturas, comparaciones y escrituras. Ver doc 00 §8.
 - Penalizar inconsistencias severas entre fecha principal y fechas secundarias.
 - Comparar contra tendencia temporal de carpeta/lote.
 - Tratar pistas de nombre de carpeta/archivo como evidencia blanda.
