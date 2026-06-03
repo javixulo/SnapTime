@@ -7,4 +7,6 @@ public class AuditEntry
     public string EventType { get; set; } = string.Empty;
     public string Payload { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public Guid? ScanJobId { get; set; }
+    public ScanJob? ScanJob { get; set; }
 }

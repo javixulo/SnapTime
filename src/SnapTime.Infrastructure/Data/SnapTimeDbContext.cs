@@ -52,6 +52,11 @@ public class SnapTimeDbContext : DbContext
         {
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.EventType);
+            entity.HasIndex(e => e.ScanJobId);
+            entity.HasOne(e => e.ScanJob)
+                  .WithMany()
+                  .HasForeignKey(e => e.ScanJobId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
