@@ -15,6 +15,17 @@ This includes `git commit`, `git push`, `git add + commit`, and any alias or scr
 
 - Do not add NuGet, npm, or any external dependency without prior validation.
 
+## Agent pipeline
+
+Every User Story follows this strict workflow:
+
+1. 🔴 **Janus** writes failing tests first
+2. 🟢 **Kip** implements the minimum code to pass
+3. 🔵 **Kip** refactors his own code (tests must stay green)
+4. 👁 **Gavin** reviews everything
+5. If Gavin finds issues, Janus fixes test issues and Kip fixes code issues
+6. Repeat from step 3/4 until Gavin approves
+
 ## Stack and architecture
 
 - Any change to the technology stack, module architecture, or design decisions recorded in ADRs must be discussed before implementation.
