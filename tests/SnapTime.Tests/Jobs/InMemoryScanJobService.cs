@@ -14,7 +14,8 @@ public class InMemoryScanJobService(
     IFileSystemMetadataExtractor fileSystemExtractor,
     string[]? imageExtensions = null,
     string[]? videoExtensions = null,
-    int artificialDelayMs = 0) : IScanJobService
+    int artificialDelayMs = 0,
+    int batchSize = 50) : IScanJobService
 {
     public event Action<Guid, JobProgress>? ProgressChanged;
     public Task ProcessJobAsync(Guid jobId) => Task.CompletedTask;
@@ -31,6 +32,13 @@ public class InMemoryScanJobService(
     private readonly string[] _imageExtensions = imageExtensions ?? [".jpg", ".jpeg"];
     private readonly string[] _videoExtensions = videoExtensions ?? [".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"];
 
+    private readonly ConcurrentDictionary<string, MediaAsset> _persistedAssets = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<Guid, List<MediaAsset>> _pendingAssets = new();
+    private readonly Dictionary<string, MediaType> _mediaTypeOverrides = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _persistenceErrorPaths = new(StringComparer.OrdinalIgnoreCase);
+
+    public void SetMediaTypeOverride(string filePath, MediaType mediaType) => _mediaTypeOverrides[filePath] = mediaType;
+
     private readonly HashSet<string> _invalidRootPaths = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _errorFiles = new(StringComparer.OrdinalIgnoreCase);
     private readonly ManualResetEventSlim _startGate = new(initialState: true);
@@ -44,6 +52,18 @@ public class InMemoryScanJobService(
 
     public void AddInvalidRootPath(string path) => _invalidRootPaths.Add(path);
     public void AddErrorFile(string filePath) => _errorFiles.Add(filePath);
+
+    // [F1-US-007]
+    public void AddPersistenceErrorPath(string filePath) => _persistenceErrorPaths.Add(filePath);
+
+    public List<MediaAsset> GetPersistedAssets() => _persistedAssets.Values.ToList();
+
+    public MediaAsset? FindPersistedAssetByFilePath(string filePath)
+    {
+        var normalized = Path.GetFullPath(filePath);
+        _persistedAssets.TryGetValue(normalized, out var asset);
+        return asset;
+    }
 
     public List<AuditEntry> GetAuditEntries(Guid jobId) =>
         _auditEntries.GetValueOrDefault(jobId) ?? [];
@@ -70,7 +90,7 @@ public class InMemoryScanJobService(
         _cts[jobId] = new CancellationTokenSource();
         _pauseEvents[jobId] = new ManualResetEventSlim(initialState: true);
         _completionSources[jobId] = new TaskCompletionSource();
-        _auditEntries[jobId] = [CreateAuditEntry("Created", $"Job created for path: {rootPath}")];
+        _auditEntries[jobId] = [CreateAuditEntry("Created", $"Job created for path: {rootPath}, BatchSize: {batchSize}")];
 
         _ = Task.Run(() => RunPipelineAsync(jobId, rootPath));
 
@@ -156,6 +176,7 @@ public class InMemoryScanJobService(
             var totalFiles = files.Count;
             job.TotalFiles = totalFiles;
             Progress[jobId] = new JobProgress(totalFiles, 0, 0);
+            _pendingAssets[jobId] = new List<MediaAsset>();
 
             for (var i = 0; i < files.Count; i++)
             {
@@ -166,9 +187,10 @@ public class InMemoryScanJobService(
                 job.ProcessedFiles = i + 1;
                 UpdateProgress(jobId, totalFiles, job.ProcessedFiles, job.ErrorCount);
 
-                if ((i + 1) % 50 == 0 || i == files.Count - 1)
+                if ((i + 1) % batchSize == 0 || i == files.Count - 1)
                 {
                     ct.ThrowIfCancellationRequested();
+                    PersistPendingAssets(jobId);
                     AddAuditEntry(jobId, "Checkpoint", $"Processed {i + 1}/{totalFiles} files");
                 }
             }
@@ -205,6 +227,8 @@ public class InMemoryScanJobService(
 
             var ext = Path.GetExtension(file.FullName);
             var mediaType = GetMediaType(ext);
+            if (_mediaTypeOverrides.TryGetValue(file.FullName, out var overrideType))
+                mediaType = overrideType;
 
             var metadataEntries = await _metadataExtractor.ExtractAsync(file.FullName, mediaType, ct);
             var fsEntries = _fileSystemExtractor.ExtractFileSystemDates(file.FullName);
@@ -223,11 +247,43 @@ public class InMemoryScanJobService(
             asset.MetadataEntries.AddRange(fsEntries);
 
             job.MediaAssets.Add(asset);
+            _pendingAssets.GetValueOrDefault(jobId)?.Add(asset);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             job.ErrorCount++;
         }
+    }
+
+    // [F1-US-007]
+    private void PersistPendingAssets(Guid jobId)
+    {
+        if (!_pendingAssets.TryGetValue(jobId, out var pending) || pending.Count == 0)
+            return;
+
+        foreach (var asset in pending)
+        {
+            if (_persistenceErrorPaths.Contains(asset.FilePath))
+            {
+                if (_jobs.TryGetValue(jobId, out var errJob))
+                    errJob.ErrorCount++;
+                continue;
+            }
+
+            var normalizedPath = Path.GetFullPath(asset.FilePath);
+            if (_persistedAssets.TryGetValue(normalizedPath, out var existing))
+            {
+                existing.ScanJobId = asset.ScanJobId;
+                existing.MetadataEntries.Clear();
+                existing.MetadataEntries.AddRange(asset.MetadataEntries);
+            }
+            else
+            {
+                _persistedAssets[normalizedPath] = asset;
+            }
+        }
+
+        pending.Clear();
     }
 
     private void SetJobFinalState(ScanJob job, JobStatus status, string message)

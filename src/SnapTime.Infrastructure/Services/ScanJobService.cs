@@ -7,6 +7,7 @@ using SnapTime.Domain.Enums;
 using SnapTime.Domain.Interfaces;
 using SnapTime.Infrastructure.Data;
 
+// [F1-US-007]
 namespace SnapTime.Infrastructure.Services;
 
 public record JobProgress(int TotalFiles, int ProcessedFiles, int ErrorCount);
@@ -26,6 +27,7 @@ public class ScanJobService : IScanJobService
     private readonly ILogger<ScanJobService> _logger;
     private readonly string[] _imageExtensions;
     private readonly string[] _videoExtensions;
+    private readonly int _batchSize;
 
     public ConcurrentDictionary<Guid, JobProgress> Progress { get; } = new();
 
@@ -37,7 +39,8 @@ public class ScanJobService : IScanJobService
         IServiceScopeFactory scopeFactory,
         ILogger<ScanJobService> logger,
         string[]? imageExtensions = null,
-        string[]? videoExtensions = null)
+        string[]? videoExtensions = null,
+        int batchSize = 50)
     {
         _jobRunner = jobRunner;
         _walker = walker;
@@ -47,6 +50,7 @@ public class ScanJobService : IScanJobService
         _logger = logger;
         _imageExtensions = imageExtensions ?? [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"];
         _videoExtensions = videoExtensions ?? [".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"];
+        _batchSize = batchSize;
     }
 
     public async Task<ScanJob> CreateJobAsync(string rootPath)
@@ -65,13 +69,11 @@ public class ScanJobService : IScanJobService
         _pauseEvents[jobId] = new ManualResetEventSlim(initialState: true);
         _completionSources[jobId] = new TaskCompletionSource();
 
-        using (var scope = _scopeFactory.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
-            db.ScanJobs.Add(job);
-            db.AuditEntries.Add(CreateAuditEntry(jobId, "Created", $"Job created for path: {rootPath}"));
-            await db.SaveChangesAsync();
-        }
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+        db.ScanJobs.Add(job);
+        db.AuditEntries.Add(CreateAuditEntry(jobId, "Created", $"Job created for path: {rootPath}"));
+        await db.SaveChangesAsync();
 
         await _jobRunner.EnqueueJobAsync(job);
 
@@ -86,11 +88,9 @@ public class ScanJobService : IScanJobService
 
     public async Task<List<ScanJob>> GetAllJobsAsync()
     {
-        using (var scope = _scopeFactory.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
-            return await db.ScanJobs.ToListAsync();
-        }
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+        return await db.ScanJobs.ToListAsync();
     }
 
     public Task PauseJobAsync(Guid jobId)
@@ -143,8 +143,9 @@ public class ScanJobService : IScanJobService
     {
         try
         {
-            var ct = _cts.TryGetValue(jobId, out var cts) ? cts.Token : CancellationToken.None;
-            var rootPath = _jobs.TryGetValue(jobId, out var job) ? job.RootPath : string.Empty;
+            var ct = GetCancellationToken(jobId);
+            _jobs.TryGetValue(jobId, out var rootJob);
+            var rootPath = rootJob?.RootPath ?? string.Empty;
 
             if (!Directory.Exists(rootPath))
             {
@@ -164,10 +165,11 @@ public class ScanJobService : IScanJobService
 
                 await ProcessSingleFileAsync(jobId, files[i], pendingAssets, ct);
 
-                _jobs[jobId].ProcessedFiles = i + 1;
-                UpdateProgress(jobId, files.Count, _jobs[jobId].ProcessedFiles, _jobs[jobId].ErrorCount);
+                var scanJob = _jobs[jobId];
+                scanJob.ProcessedFiles = i + 1;
+                UpdateProgress(jobId, files.Count, scanJob.ProcessedFiles, scanJob.ErrorCount);
 
-                if ((i + 1) % 50 == 0 || i == files.Count - 1)
+                if ((i + 1) % _batchSize == 0 || i == files.Count - 1)
                 {
                     ct.ThrowIfCancellationRequested();
                     await PersistProgressCheckpointAsync(jobId, pendingAssets, i + 1, files.Count, ct);
@@ -194,6 +196,11 @@ public class ScanJobService : IScanJobService
         }
     }
 
+    private CancellationToken GetCancellationToken(Guid jobId)
+    {
+        return _cts.TryGetValue(jobId, out var cts) ? cts.Token : CancellationToken.None;
+    }
+
     private async Task<List<FileInfo>> CollectFilesAsync(Guid jobId, string rootPath, CancellationToken ct)
     {
         var files = new List<FileInfo>();
@@ -210,15 +217,13 @@ public class ScanJobService : IScanJobService
         _jobs[jobId].TotalFiles = totalFiles;
         UpdateProgress(jobId, totalFiles, 0, 0);
 
-        using (var scope = _scopeFactory.CreateScope())
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+        var dbJob = await db.ScanJobs.FindAsync([jobId], ct);
+        if (dbJob != null)
         {
-            var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
-            var dbJob = await db.ScanJobs.FindAsync([jobId], ct);
-            if (dbJob != null)
-            {
-                dbJob.TotalFiles = totalFiles;
-                await db.SaveChangesAsync(ct);
-            }
+            dbJob.TotalFiles = totalFiles;
+            await db.SaveChangesAsync(ct);
         }
     }
 
@@ -259,21 +264,46 @@ public class ScanJobService : IScanJobService
     {
         try
         {
-            using (var scope = _scopeFactory.CreateScope())
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+            var normalizedPaths = assets.Select(a => Path.GetFullPath(a.FilePath)).ToArray();
+            var existingAssets = await db.MediaAssets
+                .Include(a => a.MetadataEntries)
+                .Where(a => normalizedPaths.Contains(a.FilePath))
+                .ToListAsync(ct);
+
+            var existingByPath = existingAssets
+                .GroupBy(a => Path.GetFullPath(a.FilePath))
+                .ToDictionary(g => g.Key, g => g.First());
+
+            foreach (var asset in assets)
             {
-                var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
-
-                foreach (var asset in assets)
+                var normalizedPath = Path.GetFullPath(asset.FilePath);
+                if (existingByPath.TryGetValue(normalizedPath, out var existing))
+                {
+                    existing.ScanJobId = asset.ScanJobId;
+                    existing.MetadataEntries.Clear();
+                    existing.MetadataEntries.AddRange(asset.MetadataEntries);
+                }
+                else
+                {
                     db.MediaAssets.Add(asset);
-
-                db.AuditEntries.Add(CreateAuditEntry(jobId, "Checkpoint", $"Processed {processed}/{total} files"));
-
-                await db.SaveChangesAsync(ct);
+                }
             }
+
+            db.AuditEntries.Add(CreateAuditEntry(jobId, "Checkpoint", $"Processed {processed}/{total} files"));
+
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to persist checkpoint for job {JobId}", jobId);
+            if (_jobs.TryGetValue(jobId, out var job))
+                job.ErrorCount++;
         }
     }
 
@@ -293,24 +323,22 @@ public class ScanJobService : IScanJobService
     {
         try
         {
-            using (var scope = _scopeFactory.CreateScope())
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+
+            var dbJob = await db.ScanJobs.FindAsync([jobId], ct);
+            if (dbJob != null && _jobs.TryGetValue(jobId, out var j))
             {
-                var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
-
-                var dbJob = await db.ScanJobs.FindAsync([jobId], ct);
-                if (dbJob != null)
-                {
-                    dbJob.Status = status;
-                    dbJob.TotalFiles = _jobs.TryGetValue(jobId, out var j) ? j.TotalFiles : dbJob.TotalFiles;
-                    dbJob.ProcessedFiles = _jobs.TryGetValue(jobId, out j) ? j.ProcessedFiles : dbJob.ProcessedFiles;
-                    dbJob.ErrorCount = _jobs.TryGetValue(jobId, out j) ? j.ErrorCount : dbJob.ErrorCount;
-                    dbJob.CompletedAt = DateTime.UtcNow;
-                }
-
-                db.AuditEntries.Add(CreateAuditEntry(jobId, status.ToString(), message));
-
-                await db.SaveChangesAsync(ct);
+                dbJob.Status = status;
+                dbJob.TotalFiles = j.TotalFiles;
+                dbJob.ProcessedFiles = j.ProcessedFiles;
+                dbJob.ErrorCount = j.ErrorCount;
+                dbJob.CompletedAt = DateTime.UtcNow;
             }
+
+            db.AuditEntries.Add(CreateAuditEntry(jobId, status.ToString(), message));
+
+            await db.SaveChangesAsync(ct);
         }
         catch (Exception ex)
         {
@@ -322,12 +350,10 @@ public class ScanJobService : IScanJobService
     {
         try
         {
-            using (var scope = _scopeFactory.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
-                db.AuditEntries.Add(CreateAuditEntry(jobId, eventType, payload));
-                await db.SaveChangesAsync(ct);
-            }
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+            db.AuditEntries.Add(CreateAuditEntry(jobId, eventType, payload));
+            await db.SaveChangesAsync(ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
