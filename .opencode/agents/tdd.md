@@ -181,20 +181,20 @@ public class HeuristicEngineTests
 
 ## File Locations
 
-| Purpose | Path |
-|---------|------|
-| Domain service tests | `tests/SnapTime.Domain.Tests/Services/` |
-| Heuristic tests | `tests/SnapTime.Domain.Tests/Heuristics/` |
-| Entity tests | `tests/SnapTime.Domain.Tests/Entities/` |
-| Fixtures | `tests/SnapTime.Domain.Tests/Fixtures/` |
+| Type | Project | Path |
+|------|---------|------|
+| Unit tests (mocks, in-memory doubles) | `SnapTime.Tests` | `tests/SnapTime.Tests/` |
+| Integration tests (real services, I/O, libs externas) | `SnapTime.IntegrationTests` | `tests/SnapTime.IntegrationTests/` |
+
+**Rule**: Integration tests MUST be in `tests/SnapTime.IntegrationTests/`, never in the unit test project. Unit tests use mocks and in-memory doubles. Integration tests exercise real services, the filesystem, external dependencies, and real database connections.
 
 ## Commands
 
 ```bash
-dotnet test tests/SnapTime.Domain.Tests               # Run domain tests
-dotnet test tests/SnapTime.Domain.Tests --filter "Heuristic"  # Filter by category
-dotnet test SnapTime.sln                               # Full solution
-dotnet test --no-build tests/SnapTime.Domain.Tests/    # Skip build
+dotnet test tests/SnapTime.Tests                        # Run unit tests
+dotnet test tests/SnapTime.IntegrationTests             # Run integration tests
+dotnet test SnapTime.sln                                # Full solution
+dotnet test --no-build tests/SnapTime.Tests/            # Skip build
 ```
 
 ## Rules

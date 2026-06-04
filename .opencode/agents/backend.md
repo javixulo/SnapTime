@@ -43,10 +43,12 @@ SnapTime.sln
 │   ├── SnapTime.Server/         # Composition root — controllers, background jobs, MCP, Ollama proxy
 │   └── SnapTime.Client/         # Blazor WASM (frontend agent territory)
 └── tests/
-    └── SnapTime.Domain.Tests/   # xUnit tests
-```
+    ├── SnapTime.Tests/                # Unit tests (mocks, in-memory doubles, no I/O)
+    └── SnapTime.IntegrationTests/     # Integration tests (real services, filesystem, DB, libs externas)
 
 **Dependency rule**: Domain has zero dependencies. Infrastructure depends on Domain. Server depends on Domain and Infrastructure. Client depends on Domain (DTOs).
+
+**Test project rule**: Integration tests MUST live in `tests/SnapTime.IntegrationTests/`, never in the unit test project. Unit tests use mocks and in-memory doubles; integration tests exercise real services, the filesystem, external libraries, and real database connections.
 
 ## Design Patterns
 
