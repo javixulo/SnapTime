@@ -3,6 +3,7 @@ using SnapTime.Domain.Entities;
 using SnapTime.Domain.Enums;
 using SnapTime.Domain.Interfaces;
 
+// [F1-US-006]
 namespace SnapTime.Tests.Jobs;
 
 public record JobProgress(int TotalFiles, int ProcessedFiles, int ErrorCount);
@@ -12,8 +13,10 @@ public class InMemoryScanJobService(
     IMetadataExtractor metadataExtractor,
     IFileSystemMetadataExtractor fileSystemExtractor,
     string[]? imageExtensions = null,
-    string[]? videoExtensions = null) : IScanJobService
+    string[]? videoExtensions = null,
+    int artificialDelayMs = 0) : IScanJobService
 {
+    public event Action<Guid, JobProgress>? ProgressChanged;
     public Task ProcessJobAsync(Guid jobId) => Task.CompletedTask;
 
     private readonly ConcurrentDictionary<Guid, ScanJob> _jobs = new();
@@ -132,11 +135,14 @@ public class InMemoryScanJobService(
         {
             await Task.Yield();
             _startGate.Wait();
+
             var ct = _cts.TryGetValue(jobId, out var cts) ? cts.Token : CancellationToken.None;
+            var job = _jobs[jobId];
+            var pauseEvent = _pauseEvents.GetValueOrDefault(jobId);
 
             if (_invalidRootPaths.Contains(rootPath))
             {
-                SetJobFinalState(jobId, JobStatus.Error, $"Root path does not exist: {rootPath}");
+                SetJobFinalState(job, JobStatus.Error, $"Root path does not exist: {rootPath}");
                 return;
             }
 
@@ -148,18 +154,17 @@ public class InMemoryScanJobService(
             }
 
             var totalFiles = files.Count;
-            _jobs[jobId].TotalFiles = totalFiles;
-            UpdateProgress(jobId, totalFiles, 0, 0);
+            job.TotalFiles = totalFiles;
+            Progress[jobId] = new JobProgress(totalFiles, 0, 0);
 
             for (var i = 0; i < files.Count; i++)
             {
-                if (_pauseEvents.TryGetValue(jobId, out var pauseEvent))
-                    pauseEvent.Wait(ct);
+                pauseEvent?.Wait(ct);
 
-                await ProcessSingleFileAsync(jobId, files[i], ct);
+                await ProcessSingleFileAsync(jobId, files[i], job, ct);
 
-                _jobs[jobId].ProcessedFiles = i + 1;
-                UpdateProgress(jobId, totalFiles, _jobs[jobId].ProcessedFiles, _jobs[jobId].ErrorCount);
+                job.ProcessedFiles = i + 1;
+                UpdateProgress(jobId, totalFiles, job.ProcessedFiles, job.ErrorCount);
 
                 if ((i + 1) % 50 == 0 || i == files.Count - 1)
                 {
@@ -168,15 +173,15 @@ public class InMemoryScanJobService(
                 }
             }
 
-            SetJobFinalState(jobId, JobStatus.Completed, "Job completed successfully");
+            SetJobFinalState(job, JobStatus.Completed, "Job completed successfully");
         }
         catch (OperationCanceledException)
         {
-            SetJobFinalState(jobId, JobStatus.Cancelled, "Job was cancelled");
+            SetJobFinalState(_jobs[jobId], JobStatus.Cancelled, "Job was cancelled");
         }
         catch (Exception ex)
         {
-            SetJobFinalState(jobId, JobStatus.Error, ex.Message);
+            SetJobFinalState(_jobs[jobId], JobStatus.Error, ex.Message);
         }
         finally
         {
@@ -187,12 +192,12 @@ public class InMemoryScanJobService(
         }
     }
 
-    private int _processingDelayMs = 0;
+    private int _processingDelayMs = artificialDelayMs;
     public void SetProcessingDelay(int ms) => _processingDelayMs = ms;
 
-    private async Task ProcessSingleFileAsync(Guid jobId, FileEntry file, CancellationToken ct)
+    private async Task ProcessSingleFileAsync(Guid jobId, FileEntry file, ScanJob job, CancellationToken ct)
     {
-        await Task.Delay(1, ct);
+        await Task.Delay(_processingDelayMs, ct);
         try
         {
             if (_errorFiles.Contains(file.FullName))
@@ -217,23 +222,20 @@ public class InMemoryScanJobService(
             asset.MetadataEntries.AddRange(metadataEntries);
             asset.MetadataEntries.AddRange(fsEntries);
 
-            _jobs[jobId].MediaAssets.Add(asset);
+            job.MediaAssets.Add(asset);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _jobs[jobId].ErrorCount++;
+            job.ErrorCount++;
         }
     }
 
-    private void SetJobFinalState(Guid jobId, JobStatus status, string message)
+    private void SetJobFinalState(ScanJob job, JobStatus status, string message)
     {
-        if (_jobs.TryGetValue(jobId, out var job))
-        {
-            job.Status = status;
-            job.CompletedAt = DateTime.UtcNow;
-            UpdateProgress(jobId, job.TotalFiles, job.ProcessedFiles, job.ErrorCount);
-        }
-        AddAuditEntry(jobId, status.ToString(), message);
+        job.Status = status;
+        job.CompletedAt = DateTime.UtcNow;
+        UpdateProgress(job.Id, job.TotalFiles, job.ProcessedFiles, job.ErrorCount);
+        AddAuditEntry(job.Id, status.ToString(), message);
     }
 
     private void AddAuditEntry(Guid jobId, string eventType, string payload)
@@ -253,6 +255,7 @@ public class InMemoryScanJobService(
     private void UpdateProgress(Guid jobId, int total, int processed, int errors)
     {
         Progress[jobId] = new JobProgress(total, processed, errors);
+        ProgressChanged?.Invoke(jobId, Progress[jobId]);
     }
 
     private void Cleanup(Guid jobId)
