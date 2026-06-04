@@ -1,26 +1,25 @@
-using System.Globalization;
 using MetadataExtractor;
 using Microsoft.Extensions.Logging;
 using SnapTime.Domain.Entities;
 using SnapTime.Domain.Enums;
 using SnapTime.Domain.Interfaces;
 
+// [F1-US-009]
 namespace SnapTime.Infrastructure.Services;
 
 public class MetadataExtractorService(ILogger<MetadataExtractorService> logger) : IMetadataExtractor
 {
     private static readonly Dictionary<string, HashSet<string>> ImageTargetDirectories = new()
     {
-        ["Exif SubIFD"] = new HashSet<string>(["DateTime Original", "Sub Sec Time Original"], StringComparer.OrdinalIgnoreCase),
+        ["Exif SubIFD"] = new HashSet<string>(["Date/Time Original", "Sub-Sec Time Original"], StringComparer.OrdinalIgnoreCase),
         ["Exif IFD0"] = new HashSet<string>(["Date/Time Digitized", "Date/Time"], StringComparer.OrdinalIgnoreCase)
     };
 
     private static readonly Dictionary<string, HashSet<string>> VideoTargetDirectories = new()
     {
-        ["QuickTime Movie Header"] = new HashSet<string>(["Create Date", "Modify Date"], StringComparer.OrdinalIgnoreCase),
+        ["QuickTime Movie Header"] = new HashSet<string>(["Created", "Modified"], StringComparer.OrdinalIgnoreCase),
         ["QuickTime Metadata"] = new HashSet<string>(["Creation Date"], StringComparer.OrdinalIgnoreCase),
-        ["QuickTime Media Header"] = new HashSet<string>(["Media Create Date"], StringComparer.OrdinalIgnoreCase),
-        ["QuickTime Track Header"] = new HashSet<string>(["Track Create Date"], StringComparer.OrdinalIgnoreCase)
+        ["QuickTime Track Header"] = new HashSet<string>(["Created"], StringComparer.OrdinalIgnoreCase)
     };
 
     private const string ExifSource = "exif";
@@ -42,7 +41,7 @@ public class MetadataExtractorService(ILogger<MetadataExtractorService> logger) 
             var directories = await Task.Run(() => ImageMetadataReader.ReadMetadata(filePath), ct);
             var targetDirectories = mediaType == MediaType.Image ? ImageTargetDirectories : VideoTargetDirectories;
             var source = mediaType == MediaType.Image ? ExifSource : QuickTimeSource;
-            var entries = new List<MetadataEntry>();
+            List<MetadataEntry> entries = [];
 
             foreach (var directory in directories)
             {
@@ -54,9 +53,6 @@ public class MetadataExtractorService(ILogger<MetadataExtractorService> logger) 
                 foreach (var tag in directory.Tags)
                 {
                     if (!targetTags.Contains(tag.Name))
-                        continue;
-
-                    if (!DateTime.TryParseExact(tag.Description, "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
                         continue;
 
                     entries.Add(new MetadataEntry
