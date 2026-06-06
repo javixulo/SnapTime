@@ -134,10 +134,7 @@ public class ScanJobService : IScanJobService
         return Task.CompletedTask;
     }
 
-    public Task ProcessJobAsync(Guid jobId)
-    {
-        return RunPipelineAsync(jobId);
-    }
+    public Task ProcessJobAsync(Guid jobId) => RunPipelineAsync(jobId);
 
     private async Task RunPipelineAsync(Guid jobId)
     {
@@ -192,8 +189,6 @@ public class ScanJobService : IScanJobService
         }
         finally
         {
-            if (_completionSources.TryRemove(jobId, out var tcs))
-                tcs.SetResult();
             Cleanup(jobId);
         }
     }
@@ -269,10 +264,7 @@ public class ScanJobService : IScanJobService
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
 
-            var useTransaction = db.Database.IsRelational();
-
-            if (useTransaction)
-                await db.Database.BeginTransactionAsync(ct);
+            await db.Database.BeginTransactionAsync(ct);
 
             var normalizedPaths = assets.Select(a => Path.GetFullPath(a.FilePath)).ToArray();
             var existingAssets = await db.MediaAssets
@@ -303,8 +295,7 @@ public class ScanJobService : IScanJobService
 
             await db.SaveChangesAsync(ct);
 
-            if (useTransaction)
-                await db.Database.CurrentTransaction!.CommitAsync(ct);
+            await db.Database.CurrentTransaction!.CommitAsync(ct);
         }
         catch (Exception ex)
         {
@@ -384,6 +375,8 @@ public class ScanJobService : IScanJobService
 
     private void Cleanup(Guid jobId)
     {
+        if (_completionSources.TryRemove(jobId, out var tcs))
+            tcs.TrySetResult();
         _cts.TryRemove(jobId, out _);
         _pauseEvents.TryRemove(jobId, out var pauseEvent);
         pauseEvent?.Dispose();

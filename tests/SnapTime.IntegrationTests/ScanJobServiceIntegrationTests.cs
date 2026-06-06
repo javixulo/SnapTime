@@ -9,12 +9,18 @@ using SnapTime.Domain.Interfaces;
 using SnapTime.Infrastructure.Data;
 using SnapTime.Infrastructure.Services;
 
-// [F1-US-010]
+// [F1-US-010] [F2-US-002]
 namespace SnapTime.IntegrationTests;
 
+[Collection("SqliteIntegration")]
 public class ScanJobServiceIntegrationTests
 {
-    private static void AddFileEntry(FileInfo fi) { _ = fi; }
+    private readonly SqliteDbFixture _fixture;
+
+    public ScanJobServiceIntegrationTests(SqliteDbFixture fixture)
+    {
+        _fixture = fixture;
+    }
 
     [Fact]
     public async Task ProcessJobAsync_ThreeFiles_CompletesWithThreeAssetsInDb()
@@ -26,39 +32,13 @@ public class ScanJobServiceIntegrationTests
             var file2 = CreateRealFile(tempDir, "photo2.jpg");
             var file3 = CreateRealFile(tempDir, "photo3.jpg");
 
-            var walker = Substitute.For<IDirectoryWalker>();
             var metadataExtractor = Substitute.For<IMetadataExtractor>();
-            var fileSystemExtractor = Substitute.For<IFileSystemMetadataExtractor>();
-            var jobRunner = Substitute.For<IBackgroundJobRunner>();
-            var logger = Substitute.For<ILogger<ScanJobService>>();
-
-            var files = new[] { file1, file2, file3 };
-            walker.WalkAsync(Arg.Any<string>(), Arg.Any<string[]>(), Arg.Any<string[]>(), Arg.Any<CancellationToken>())
-                .Returns(ToAsyncEnumerable(files));
-
             metadataExtractor.ExtractAsync(Arg.Any<string>(), Arg.Any<MediaType>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(new List<MetadataEntry>()));
 
-            fileSystemExtractor.ExtractFileSystemDates(Arg.Any<string>())
-                .Returns(new List<MetadataEntry>());
-
-            var options = new DbContextOptionsBuilder<SnapTimeDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
-
-            var services = new ServiceCollection();
-            services.AddScoped<SnapTimeDbContext>(_ => new SnapTimeDbContext(options));
-            var serviceProvider = services.BuildServiceProvider();
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-
-            var scanJobService = new ScanJobService(
-                jobRunner, walker, metadataExtractor, fileSystemExtractor,
-                scopeFactory, logger);
-
-            var job = await scanJobService.CreateJobAsync(tempDir);
+            var (scanJobService, job) = await CreateSutAsync(tempDir, [file1, file2, file3], metadataExtractor);
 
             await scanJobService.ProcessJobAsync(job.Id);
-
             await Task.Delay(200);
 
             var completedJob = await scanJobService.GetJobAsync(job.Id);
@@ -66,7 +46,7 @@ public class ScanJobServiceIntegrationTests
             completedJob!.Status.Should().Be(JobStatus.Completed);
             completedJob.ProcessedFiles.Should().Be(3);
 
-            using var db = new SnapTimeDbContext(options);
+            using var db = _fixture.CreateContext();
             var assets = await db.MediaAssets.ToListAsync();
             assets.Should().HaveCount(3);
         }
@@ -86,42 +66,15 @@ public class ScanJobServiceIntegrationTests
             var file2 = CreateRealFile(tempDir, "bad.jpg");
             var file3 = CreateRealFile(tempDir, "good2.jpg");
 
-            var walker = Substitute.For<IDirectoryWalker>();
             var metadataExtractor = Substitute.For<IMetadataExtractor>();
-            var fileSystemExtractor = Substitute.For<IFileSystemMetadataExtractor>();
-            var jobRunner = Substitute.For<IBackgroundJobRunner>();
-            var logger = Substitute.For<ILogger<ScanJobService>>();
-
-            var files = new[] { file1, file2, file3 };
-            walker.WalkAsync(Arg.Any<string>(), Arg.Any<string[]>(), Arg.Any<string[]>(), Arg.Any<CancellationToken>())
-                .Returns(ToAsyncEnumerable(files));
-
             metadataExtractor.ExtractAsync(Arg.Any<string>(), Arg.Any<MediaType>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(new List<MetadataEntry>()));
-
             metadataExtractor.ExtractAsync(file2.FullName, Arg.Any<MediaType>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromException<List<MetadataEntry>>(new InvalidOperationException("Simulated error")));
 
-            fileSystemExtractor.ExtractFileSystemDates(Arg.Any<string>())
-                .Returns(new List<MetadataEntry>());
-
-            var options = new DbContextOptionsBuilder<SnapTimeDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
-
-            var services = new ServiceCollection();
-            services.AddScoped<SnapTimeDbContext>(_ => new SnapTimeDbContext(options));
-            var serviceProvider = services.BuildServiceProvider();
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-
-            var scanJobService = new ScanJobService(
-                jobRunner, walker, metadataExtractor, fileSystemExtractor,
-                scopeFactory, logger);
-
-            var job = await scanJobService.CreateJobAsync(tempDir);
+            var (scanJobService, job) = await CreateSutAsync(tempDir, [file1, file2, file3], metadataExtractor);
 
             await scanJobService.ProcessJobAsync(job.Id);
-
             await Task.Delay(200);
 
             var completedJob = await scanJobService.GetJobAsync(job.Id);
@@ -146,15 +99,7 @@ public class ScanJobServiceIntegrationTests
             for (var i = 0; i < files.Length; i++)
                 files[i] = CreateRealFile(tempDir, $"photo{i + 1}.jpg");
 
-            var walker = Substitute.For<IDirectoryWalker>();
             var metadataExtractor = Substitute.For<IMetadataExtractor>();
-            var fileSystemExtractor = Substitute.For<IFileSystemMetadataExtractor>();
-            var jobRunner = Substitute.For<IBackgroundJobRunner>();
-            var logger = Substitute.For<ILogger<ScanJobService>>();
-
-            walker.WalkAsync(Arg.Any<string>(), Arg.Any<string[]>(), Arg.Any<string[]>(), Arg.Any<CancellationToken>())
-                .Returns(ToAsyncEnumerable(files));
-
             metadataExtractor.ExtractAsync(Arg.Any<string>(), Arg.Any<MediaType>(), Arg.Any<CancellationToken>())
                 .Returns(_ => Task.Run(async () =>
                 {
@@ -162,31 +107,12 @@ public class ScanJobServiceIntegrationTests
                     return new List<MetadataEntry>();
                 }));
 
-            fileSystemExtractor.ExtractFileSystemDates(Arg.Any<string>())
-                .Returns(new List<MetadataEntry>());
-
-            var options = new DbContextOptionsBuilder<SnapTimeDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options;
-
-            var services = new ServiceCollection();
-            services.AddScoped<SnapTimeDbContext>(_ => new SnapTimeDbContext(options));
-            var serviceProvider = services.BuildServiceProvider();
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-
-            var scanJobService = new ScanJobService(
-                jobRunner, walker, metadataExtractor, fileSystemExtractor,
-                scopeFactory, logger);
-
-            var job = await scanJobService.CreateJobAsync(tempDir);
+            var (scanJobService, job) = await CreateSutAsync(tempDir, files, metadataExtractor);
 
             var processTask = scanJobService.ProcessJobAsync(job.Id);
-
             await Task.Delay(100);
             await scanJobService.CancelJobAsync(job.Id);
-
             await processTask;
-
             await Task.Delay(100);
 
             var cancelledJob = await scanJobService.GetJobAsync(job.Id);
@@ -206,6 +132,34 @@ public class ScanJobServiceIntegrationTests
         var path = Path.Combine(dir, name);
         File.WriteAllBytes(path, [0xFF, 0xD8, 0xFF, 0xD9]);
         return new FileInfo(path);
+    }
+
+    private async Task<(ScanJobService Service, ScanJob Job)> CreateSutAsync(
+        string tempDir, FileInfo[] files, IMetadataExtractor metadataExtractor)
+    {
+        var walker = Substitute.For<IDirectoryWalker>();
+        walker.WalkAsync(Arg.Any<string>(), Arg.Any<string[]>(), Arg.Any<string[]>(), Arg.Any<CancellationToken>())
+            .Returns(ToAsyncEnumerable(files));
+
+        var fileSystemExtractor = Substitute.For<IFileSystemMetadataExtractor>();
+        fileSystemExtractor.ExtractFileSystemDates(Arg.Any<string>())
+            .Returns(new List<MetadataEntry>());
+
+        var jobRunner = Substitute.For<IBackgroundJobRunner>();
+        var logger = Substitute.For<ILogger<ScanJobService>>();
+
+        var services = new ServiceCollection();
+        services.AddScoped<SnapTimeDbContext>(_ => _fixture.CreateContext());
+        var serviceProvider = services.BuildServiceProvider();
+        var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
+
+        var scanJobService = new ScanJobService(
+            jobRunner, walker, metadataExtractor, fileSystemExtractor,
+            scopeFactory, logger);
+
+        var job = await scanJobService.CreateJobAsync(tempDir);
+
+        return (scanJobService, job);
     }
 
     private static async IAsyncEnumerable<FileInfo> ToAsyncEnumerable(FileInfo[] files)

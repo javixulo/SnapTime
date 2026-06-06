@@ -7,9 +7,10 @@ using SnapTime.Domain.Entities;
 using SnapTime.Domain.Interfaces;
 using SnapTime.Infrastructure.Services;
 
-// [F1-US-010]
+// [F1-US-010] [F2-US-003]
 namespace SnapTime.IntegrationTests;
 
+[Collection("SqliteIntegration")]
 public class BackgroundJobRunnerIntegrationTests
 {
     [Fact]
