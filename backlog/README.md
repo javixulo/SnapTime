@@ -10,11 +10,11 @@
 
 | ID | Nombre | Estado | Docs relacionadas |
 |----|--------|--------|-------------------|
-| F0 | Scaffolding del proyecto | ✅ Completado | |
+| F0 | Scaffolding del proyecto + UI testing infra | ✅ Completado (F0-US-010 pendiente) | |
 | F1 | Escaneo y extracción de metadatos (EXIF + QuickTime) | ✅ Completado | FR-01, FR-02, FR-03, FR-09 |
-| F2 | SQLite real en tests de integración | 📋 Backlog definido | |
-| F3 | Heurística H-006 (fecha desde filename) | ⏳ Pendiente | docs/05-heuristicas.md |
-| F4 | Árbol de carpetas (panel izquierdo) | ⏳ Pendiente | FR-17 |
+| F2 | SQLite real en tests de integración | ✅ Completado | |
+| F3 | Motor de heurísticas (H-001 a H-006) | 🟡 En curso (H-006 implementado, H-001..005 pendientes) | docs/05-heuristicas.md |
+| F4 | Árbol de carpetas (panel izquierdo) | ⏳ Pendiente (bloqueado por F0-US-010) | FR-17 |
 | F5 | Grid de fotos (panel central) | ⏳ Pendiente | FR-08, FR-18 |
 | F6 | Subpanel de evidencia (detalle + scoring) | ⏳ Pendiente | FR-08 |
 | F7 | Revisión en lote | ⏳ Pendiente | FR-10 |

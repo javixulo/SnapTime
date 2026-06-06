@@ -43,9 +43,11 @@ El desarrollo sigue **Test-Driven Development (TDD)** estricto, con el ciclo **�
 
 ## 5) Alcance de pruebas
 
-- Solo tests unitarios en esta fase.
-- Las heurísticas se validan con tests parametrizados (`[Theory]` + `[InlineData]`).
-- Tests de integración y E2E se posponen a fases futuras.
+- **Backend:** tests unitarios (xUnit + NSubstitute) + tests de integración con SQLite real.
+- **Heurísticas:** tests unitarios parametrizados (`[Theory]` + `[InlineData]`).
+- **UI (componentes Blazor):** bUnit para tests unitarios de componentes (render, eventos, lógica visual).
+- **UI (end-to-end):** Playwright para tests E2E con navegador real (flujos completos, interacción con API real).
+- Los tests E2E dependen de que el servidor API y el cliente WASM estén en ejecución.
 
 ## 6) Base de datos durante el desarrollo
 

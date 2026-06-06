@@ -254,3 +254,47 @@ Scripts y configuraciones para el día a día.
 **Criterios de aceptación:**
 - `dotnet build` sin warnings.
 - Watch mode recarga correctamente.
+
+---
+
+## F0-US-010 — Infraestructura de tests para la UI (bUnit + Playwright)
+
+> Preparar los proyectos y dependencias necesarias para testear la UI Blazor, tanto a nivel de componentes como end-to-end.
+
+**Motivación:**  
+Hasta ahora todos los tests son de backend (dominio, infraestructura, API). Las features de UI (F4 en adelante) necesitan dos niveles de test:
+- **bUnit** — tests unitarios de componentes Blazor (rápidos, sin navegador, ideales para lógica de render y eventos).
+- **Playwright** — tests E2E con navegador real (validan flujos completos, interacción con la API real).
+
+Ambos deben estar configurados y validados con un test simple (smoke test) antes de empezar F4.
+
+**Subtareas:**
+
+1. **Proyecto bUnit** — `tests/SnapTime.Client.Tests/`:
+   - `dotnet new xunit -n SnapTime.Client.Tests -o tests/SnapTime.Client.Tests`
+   - SDK: `Microsoft.NET.Sdk.Razor` (necesario para compilar componentes Blazor en tests)
+   - Paquete: `bunit` (versionada en `Directory.Packages.props`)
+   - Referencia al proyecto `SnapTime.Client`
+   - Smoke test: renderizar `Home.razor` y verificar que muestra "Hello, world!"
+
+2. **Proyecto Playwright** — `tests/SnapTime.E2ETests/`:
+   - `dotnet new nunit -n SnapTime.E2ETests -o tests/SnapTime.E2ETests`
+   - Paquete: `Microsoft.Playwright.NUnit` (versionada en `Directory.Packages.props`)
+   - Playwright CLI: `playwright install` para descargar browsers (Chromium por defecto)
+   - Smoke test: navegar a `http://localhost:5027` y verificar que el `<title>` contiene "SnapTime"
+
+3. **Ambos proyectos añadidos a la solución:** `dotnet sln add tests/SnapTime.Client.Tests/ tests/SnapTime.E2ETests/`
+
+4. **Scripts de CI** (si aplica):
+   - Los tests E2E necesitan que el Server y el Client estén corriendo antes de ejecutarse.
+   - Documentar en `docs/` cómo lanzar los tests localmente.
+
+**Criterios de aceptación:**
+- `dotnet test tests/SnapTime.Client.Tests` pasa (smoke test de bUnit).
+- `dotnet test tests/SnapTime.E2ETests` pasa (smoke test de Playwright, requiere browsers instalados).
+- Ambos tests se ejecutan en CI (si existe).
+- Sin warnings de paquetes NuGet.
+
+**Nota:**  
+La implementación de esta US debe ejecutarse mediante el pipeline de agentes:  
+🔴 Janus escribe los smoke tests → 🟢 Kip monta los proyectos → 🔵 Kip refactoriza → 👁 Gavin revisa.

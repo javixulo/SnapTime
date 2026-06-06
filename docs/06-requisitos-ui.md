@@ -90,7 +90,19 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Sin atajos de teclado en MVP.
 - Estados visuales contemplados: carga (spinner), vacío (mensaje informativo con icono), error (mensaje en panel).
 
-## 8) Decisiones de diseño
+## 8) Estrategia de tests de UI
+
+La UI Blazor WASM se valida con dos niveles de test:
+
+- **bUnit** (`tests/SnapTime.Client.Tests/`): tests unitarios de componentes. Verifican renderizado, eventos, estado visual y lógica de cada componente de forma aislada. Rápidos, sin navegador.
+- **Playwright** (`tests/SnapTime.E2ETests/`): tests E2E con navegador real (Chromium). Validan flujos completos (selección de carpeta → grid → detalle → corrección) contra el servidor API real.
+
+**Reglas:**
+- Todo componente nuevo debe tener un test bUnit que cubra su renderizado básico y sus estados (carga, vacío, error, datos).
+- Los flujos críticos (escaneo, revisión, aplicación de cambios) deben tener un test Playwright.
+- Los tests E2E se ejecutan contra un servidor real y una base de datos SQLite efímera (ver `SqliteDbFixture`).
+
+## 9) Decisiones de diseño
 
 ### Subpanel de metainformación de carpeta
 - Ubicación definitiva: **zona inferior del panel central (grid)**, debajo de las miniaturas/iconos.

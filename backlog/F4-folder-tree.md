@@ -4,7 +4,7 @@
 
 **Referencias:** FR-17, docs/06-ui.md
 
-**Dependencias:** F0 (API base), F1 (datos de scan en SQLite)
+**Dependencias:** F0 (API base + F0-US-010 UI testing infra), F1 (datos de scan en SQLite)
 
 **Reglas base:**
 - Treeview con expand/colapsar por carpeta
