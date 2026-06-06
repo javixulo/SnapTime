@@ -1,4 +1,4 @@
-# F2 — Heurística H-006 (fecha desde filename)
+# F3 — Heurística H-006 (fecha desde filename)
 
 > Implementar la heurística que parsea el nombre del archivo como `yyyyMMdd`, lo compara con `DateTimeOriginal`, y genera una sugerencia si hay mismatch o EXIF ausente.
 

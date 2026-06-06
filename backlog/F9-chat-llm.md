@@ -1,10 +1,10 @@
-# F8 — Chat contextual con LLM (Ollama)
+# F9 — Chat contextual con LLM (Ollama)
 
 > Panel derecho (15% ancho) con chat conversacional hacia un LLM local (Ollama). El LLM tiene tool calling sobre las MCP tools para consultar fotos, evidencia y sugerencias del contexto actual.
 
 **Referencias:** FR-19, docs/03-blueprint.md §3, docs/06-ui.md
 
-**Dependencias:** F1 (datos en SQLite), F4 (contexto actual del grid)
+**Dependencias:** F1 (datos en SQLite), F5 (contexto actual del grid)
 
 **Reglas base:**
 - Panel de chat en el lado derecho (15% ancho)

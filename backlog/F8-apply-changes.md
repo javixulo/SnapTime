@@ -1,10 +1,10 @@
-# F7 — Aplicación de cambios (dry-run + escritura)
+# F8 — Aplicación de cambios (dry-run + escritura)
 
 > Escribir la fecha aceptada en los metadatos EXIF del archivo real. Incluye modo simulación (dry-run) y aplicación real con confirmación.
 
 **Referencias:** FR-11, docs/07-api-contracts.md, docs/00-vision-y-alcance.md §8
 
-**Dependencias:** F6 (fotos aprobadas)
+**Dependencias:** F7 (fotos aprobadas)
 
 **Reglas base:**
 - Solo se aplican cambios a fotos con estado `Approved`

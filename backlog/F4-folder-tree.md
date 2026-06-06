@@ -1,4 +1,4 @@
-# F3 — Árbol de carpetas (panel izquierdo)
+# F4 — Árbol de carpetas (panel izquierdo)
 
 > Panel izquierdo (25% ancho) con treeview de carpetas, checkboxes con selección en cascada, y recuento de fotos por nodo.
 
@@ -13,7 +13,7 @@
 - Deseleccionar padre → deselecciona todos los hijos
 - Seleccionar un hijo → padre pasa a partial (si no todos seleccionados)
 - Muestra recuento de fotos junto al nombre: `Fotos (42)`
-- Al hacer clic en una carpeta → filtra el grid (F4) a esa carpeta + subcarpetas
+- Al hacer clic en una carpeta → filtra el grid (F5) a esa carpeta + subcarpetas
 - Endpoint `GET /folders/tree` y `POST /folders/selection`
 
 **Contrato (pendiente de desglosar en US):**

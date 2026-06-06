@@ -108,8 +108,8 @@ SnapTime is a **local-first** application for analyzing photo libraries and vali
 | File | Purpose |
 |------|---------|
 | `AGENTS.md` | Mandatory AI rules (commits, docs, deps) |
-| `backlog/README.md` | Feature overview (F0-F8) with statuses |
-| `backlog/F0-*.md` to `backlog/F8-*.md` | Feature breakdowns and User Stories |
+| `backlog/README.md` | Feature overview (F0-F9) with statuses |
+| `backlog/F0-*.md` to `backlog/F9-*.md` | Feature breakdowns and User Stories |
 | `docs/00-vision.md` | Product vision |
 | `docs/01-FR.md` | Functional requirements |
 | `docs/02-NFR.md` | Non-functional requirements |
