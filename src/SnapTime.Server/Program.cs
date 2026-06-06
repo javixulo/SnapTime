@@ -4,6 +4,7 @@ using Serilog;
 using SnapTime.Domain.Entities;
 using SnapTime.Domain.Enums;
 using SnapTime.Domain.Interfaces;
+using SnapTime.Domain.Services;
 using SnapTime.Infrastructure.Config;
 using SnapTime.Infrastructure.Data;
 using SnapTime.Infrastructure.Logging;
@@ -43,6 +44,7 @@ builder.Services.AddScoped<IFileSystemMetadataExtractor, FileSystemMetadataExtra
 builder.Services.AddSingleton<BackgroundJobRunner>();
 builder.Services.AddSingleton<IBackgroundJobRunner>(sp => sp.GetRequiredService<BackgroundJobRunner>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BackgroundJobRunner>());
+builder.Services.AddScoped<IHeuristic, H006FilenameHeuristic>();
 builder.Services.AddScoped<IScanJobService, ScanJobService>();
 
 var app = builder.Build();

@@ -6,10 +6,11 @@ using NSubstitute;
 using SnapTime.Domain.Entities;
 using SnapTime.Domain.Enums;
 using SnapTime.Domain.Interfaces;
+using SnapTime.Domain.Services;
 using SnapTime.Infrastructure.Data;
 using SnapTime.Infrastructure.Services;
 
-// [F1-US-010] [F2-US-002]
+// [F1-US-010] [F2-US-002] [F3-US-002]
 namespace SnapTime.IntegrationTests;
 
 [Collection("SqliteIntegration")]
@@ -20,6 +21,7 @@ public class ScanJobServiceIntegrationTests
     public ScanJobServiceIntegrationTests(SqliteDbFixture fixture)
     {
         _fixture = fixture;
+        _fixture.ResetDatabase();
     }
 
     [Fact]
@@ -127,6 +129,68 @@ public class ScanJobServiceIntegrationTests
         }
     }
 
+    [Fact]
+    public async Task ProcessJobAsync_FilenameWithH006Heuristic_PersistsEvidenceEntry()
+    {
+        var tempDir = Directory.CreateTempSubdirectory("snaptime-test-").FullName;
+        try
+        {
+            var mismatchFile = CreateRealFile(tempDir, "20250315_123456.jpg");
+            var noDateFile = CreateRealFile(tempDir, "vacation.jpg");
+
+            var mismatchMetadata = new List<MetadataEntry>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Tag = "EXIF:DateTimeOriginal",
+                    Value = "2024:07:10 12:34:56",
+                    Source = "exif"
+                }
+            };
+
+            var metadataExtractor = Substitute.For<IMetadataExtractor>();
+            metadataExtractor.ExtractAsync(mismatchFile.FullName, Arg.Any<MediaType>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(mismatchMetadata));
+            metadataExtractor.ExtractAsync(noDateFile.FullName, Arg.Any<MediaType>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(new List<MetadataEntry>()));
+
+            var heuristics = new List<IHeuristic> { new H006FilenameHeuristic() };
+
+            var (scanJobService, job) = await CreateSutAsync(tempDir, [mismatchFile, noDateFile], metadataExtractor, heuristics);
+
+            await scanJobService.ProcessJobAsync(job.Id);
+            await Task.Delay(200);
+
+            var completedJob = await scanJobService.GetJobAsync(job.Id);
+            completedJob.Should().NotBeNull();
+            completedJob!.Status.Should().Be(JobStatus.Completed);
+
+            using var db = _fixture.CreateContext();
+            var assets = await db.MediaAssets
+                .Include(a => a.EvidenceEntries)
+                .Include(a => a.MetadataEntries)
+                .ToListAsync();
+
+            assets.Should().HaveCount(2);
+
+            var mismatchAsset = assets.First(a => a.FileName == "20250315_123456.jpg");
+            mismatchAsset.EvidenceEntries.Should().HaveCount(1);
+            var evidence = mismatchAsset.EvidenceEntries.Single();
+            evidence.HeuristicId.Should().Be("H-006");
+            evidence.Direction.Should().Be(EvidenceDirection.Correction);
+            evidence.SuggestedDate.Should().Be(new DateTime(2025, 3, 15, 5, 0, 0));
+            evidence.Weight.Should().Be(0.7);
+
+            var noDateAsset = assets.First(a => a.FileName == "vacation.jpg");
+            noDateAsset.EvidenceEntries.Should().BeEmpty();
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
     private static FileInfo CreateRealFile(string dir, string name)
     {
         var path = Path.Combine(dir, name);
@@ -135,7 +199,8 @@ public class ScanJobServiceIntegrationTests
     }
 
     private async Task<(ScanJobService Service, ScanJob Job)> CreateSutAsync(
-        string tempDir, FileInfo[] files, IMetadataExtractor metadataExtractor)
+        string tempDir, FileInfo[] files, IMetadataExtractor metadataExtractor,
+        IEnumerable<IHeuristic>? heuristics = null)
     {
         var walker = Substitute.For<IDirectoryWalker>();
         walker.WalkAsync(Arg.Any<string>(), Arg.Any<string[]>(), Arg.Any<string[]>(), Arg.Any<CancellationToken>())
@@ -155,6 +220,7 @@ public class ScanJobServiceIntegrationTests
 
         var scanJobService = new ScanJobService(
             jobRunner, walker, metadataExtractor, fileSystemExtractor,
+            heuristics ?? Enumerable.Empty<IHeuristic>(),
             scopeFactory, logger);
 
         var job = await scanJobService.CreateJobAsync(tempDir);

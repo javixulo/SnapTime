@@ -26,6 +26,13 @@ public class SqliteDbFixture : IDisposable
 
     public SnapTimeDbContext CreateContext() => new(Options);
 
+    public void ResetDatabase()
+    {
+        using var context = CreateContext();
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+    }
+
     public void Dispose()
     {
         try { File.Delete(DbPath); } catch { }

@@ -23,6 +23,7 @@ public class ScanJobService : IScanJobService
     private readonly IDirectoryWalker _walker;
     private readonly IMetadataExtractor _metadataExtractor;
     private readonly IFileSystemMetadataExtractor _fileSystemExtractor;
+    private readonly IEnumerable<IHeuristic> _heuristics;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ScanJobService> _logger;
     private readonly string[] _imageExtensions;
@@ -36,6 +37,7 @@ public class ScanJobService : IScanJobService
         IDirectoryWalker walker,
         IMetadataExtractor metadataExtractor,
         IFileSystemMetadataExtractor fileSystemExtractor,
+        IEnumerable<IHeuristic> heuristics,
         IServiceScopeFactory scopeFactory,
         ILogger<ScanJobService> logger,
         string[]? imageExtensions = null,
@@ -46,6 +48,7 @@ public class ScanJobService : IScanJobService
         _walker = walker;
         _metadataExtractor = metadataExtractor;
         _fileSystemExtractor = fileSystemExtractor;
+        _heuristics = heuristics;
         _scopeFactory = scopeFactory;
         _logger = logger;
         _imageExtensions = imageExtensions ?? [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"];
@@ -247,6 +250,15 @@ public class ScanJobService : IScanJobService
             asset.MetadataEntries.AddRange(metadataEntries);
             asset.MetadataEntries.AddRange(fsEntries);
 
+            foreach (var heuristic in _heuristics)
+            {
+                if (!heuristic.IsEnabled) continue;
+
+                var evidence = await heuristic.EvaluateAsync(asset, asset.MetadataEntries, ct);
+                if (evidence != null)
+                    asset.EvidenceEntries.Add(evidence);
+            }
+
             pendingAssets.Add(asset);
             _jobs[jobId].MediaAssets.Add(asset);
         }
@@ -269,6 +281,7 @@ public class ScanJobService : IScanJobService
             var normalizedPaths = assets.Select(a => Path.GetFullPath(a.FilePath)).ToArray();
             var existingAssets = await db.MediaAssets
                 .Include(a => a.MetadataEntries)
+                .Include(a => a.EvidenceEntries)
                 .Where(a => normalizedPaths.Contains(a.FilePath))
                 .ToListAsync(ct);
 
@@ -284,6 +297,8 @@ public class ScanJobService : IScanJobService
                     existing.ScanJobId = asset.ScanJobId;
                     existing.MetadataEntries.Clear();
                     existing.MetadataEntries.AddRange(asset.MetadataEntries);
+                    existing.EvidenceEntries.Clear();
+                    existing.EvidenceEntries.AddRange(asset.EvidenceEntries);
                 }
                 else
                 {
