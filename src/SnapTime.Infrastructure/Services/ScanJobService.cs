@@ -7,7 +7,7 @@ using SnapTime.Domain.Enums;
 using SnapTime.Domain.Interfaces;
 using SnapTime.Infrastructure.Data;
 
-// [F1-US-007]
+// [F1-US-007] [F1-US-010]
 namespace SnapTime.Infrastructure.Services;
 
 public record JobProgress(int TotalFiles, int ProcessedFiles, int ErrorCount);
@@ -160,6 +160,8 @@ public class ScanJobService : IScanJobService
 
             for (var i = 0; i < files.Count; i++)
             {
+                ct.ThrowIfCancellationRequested();
+
                 if (_pauseEvents.TryGetValue(jobId, out var pauseEvent))
                     pauseEvent.Wait(ct);
 
@@ -267,7 +269,10 @@ public class ScanJobService : IScanJobService
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
 
-            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            var useTransaction = db.Database.IsRelational();
+
+            if (useTransaction)
+                await db.Database.BeginTransactionAsync(ct);
 
             var normalizedPaths = assets.Select(a => Path.GetFullPath(a.FilePath)).ToArray();
             var existingAssets = await db.MediaAssets
@@ -297,7 +302,9 @@ public class ScanJobService : IScanJobService
             db.AuditEntries.Add(CreateAuditEntry(jobId, "Checkpoint", $"Processed {processed}/{total} files"));
 
             await db.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
+
+            if (useTransaction)
+                await db.Database.CurrentTransaction!.CommitAsync(ct);
         }
         catch (Exception ex)
         {
@@ -380,7 +387,6 @@ public class ScanJobService : IScanJobService
         _cts.TryRemove(jobId, out _);
         _pauseEvents.TryRemove(jobId, out var pauseEvent);
         pauseEvent?.Dispose();
-        _jobs.TryRemove(jobId, out _);
     }
 
     private MediaType GetMediaType(string extension)

@@ -1,4 +1,4 @@
-# F1 — Escaneo y extracción EXIF
+# F1 — Escaneo y extracción EXIF ✅ COMPLETED
 
 > Escanear directorios seleccionados, extraer metadatos EXIF + filesystem y persistir en SQLite. Job engine con progreso, pause/resume/cancel.
 
