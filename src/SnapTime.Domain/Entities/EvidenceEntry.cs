@@ -10,6 +10,7 @@ public class EvidenceEntry
     public string HeuristicName { get; set; } = string.Empty;
     public double Weight { get; set; }
     public EvidenceDirection Direction { get; set; }
+    public DateTime? SuggestedDate { get; set; }
     public string Description { get; set; } = string.Empty;
     public Guid MediaAssetId { get; set; }
     public MediaAsset MediaAsset { get; set; } = null!;
