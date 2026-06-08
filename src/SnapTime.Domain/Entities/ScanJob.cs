@@ -8,6 +8,7 @@ public class ScanJob
     public Guid Id { get; set; }
     public JobStatus Status { get; set; }
     public string RootPath { get; set; } = string.Empty;
+    public bool IncludeSubfolders { get; set; } = true;
     public int TotalFiles { get; set; }
     public int ProcessedFiles { get; set; }
     public int ErrorCount { get; set; }

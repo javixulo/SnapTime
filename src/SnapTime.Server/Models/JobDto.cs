@@ -6,7 +6,8 @@ namespace SnapTime.Server.Models;
 /// Request to create a new scan job.
 /// </summary>
 /// <param name="RootPath">Directory path to scan.</param>
-public record CreateJobRequest(string RootPath);
+/// <param name="IncludeSubfolders">Whether to scan subfolders recursively (default true).</param>
+public record CreateJobRequest(string RootPath, bool IncludeSubfolders = true);
 
 /// <summary>
 /// Data transfer object representing a scan job.
@@ -14,6 +15,7 @@ public record CreateJobRequest(string RootPath);
 /// <param name="Id">Unique job identifier.</param>
 /// <param name="Status">Current job status.</param>
 /// <param name="RootPath">Directory being scanned.</param>
+/// <param name="IncludeSubfolders">Whether subfolders are included in the scan.</param>
 /// <param name="TotalFiles">Total files discovered.</param>
 /// <param name="ProcessedFiles">Files processed so far.</param>
 /// <param name="ErrorCount">Files with errors.</param>
@@ -23,6 +25,7 @@ public record JobDto(
     Guid Id,
     JobStatus Status,
     string RootPath,
+    bool IncludeSubfolders,
     int TotalFiles,
     int ProcessedFiles,
     int ErrorCount,

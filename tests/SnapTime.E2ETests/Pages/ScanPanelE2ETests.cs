@@ -1,4 +1,4 @@
-// [F4-US-000] -- E2E: escanea sample/ y verifica que el scan arranca
+// [F4-US-001] -- E2E: seleccionar carpeta del árbol + escanear
 using Microsoft.Playwright.NUnit;
 
 namespace SnapTime.E2ETests.Pages;
@@ -7,19 +7,28 @@ namespace SnapTime.E2ETests.Pages;
 public class ScanPanelE2ETests : PageTest
 {
     [Test]
-    public async Task ScanPanel_WithSamplePath_StartsScanAndShowsProgress()
+    public async Task ScanPanel_SelectFolderAndScan_ShowsProgress()
     {
         await Page.GotoAsync("http://localhost:5027");
 
-        await Page.Locator("input").FillAsync("/Users/javiermontoro/Projects/SnapTime/sample");
+        await Expect(Page.Locator("text=Sistema de archivos")).ToBeVisibleAsync();
+        await Page.Locator(".folder-tree-name").First.WaitForAsync(new() { Timeout = 5000 });
 
-        await Page.Locator("button", new() { HasText = "Escanear" }).ClickAsync();
+        var firstFolder = Page.Locator(".folder-tree-name").First;
+        var folderName = await firstFolder.TextContentAsync();
+        await TestContext.Out.WriteLineAsync($"=== SELECTED FOLDER === {folderName}");
 
-        await Task.Delay(3000);
+        await firstFolder.ClickAsync();
+
+        var scanButton = Page.Locator("button", new() { HasText = "Escanear" });
+        await Expect(scanButton).ToBeVisibleAsync();
+        await scanButton.ClickAsync();
+
+        await Expect(Page.Locator("text=Job:")).ToBeVisibleAsync(new() { Timeout = 10000 });
 
         var body = await Page.TextContentAsync("body");
         await TestContext.Out.WriteLineAsync($"=== BODY ===\n{body}\n=== END ===");
 
-        StringAssert.Contains("Running", body);
+        StringAssert.Contains("Ruta:", body);
     }
 }

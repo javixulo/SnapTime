@@ -56,13 +56,14 @@ public class ScanJobService : IScanJobService
         _batchSize = batchSize;
     }
 
-    public async Task<ScanJob> CreateJobAsync(string rootPath)
+    public async Task<ScanJob> CreateJobAsync(string rootPath, bool includeSubfolders = true)
     {
         var jobId = Guid.NewGuid();
         var job = new ScanJob
         {
             Id = jobId,
             RootPath = rootPath,
+            IncludeSubfolders = includeSubfolders,
             Status = JobStatus.Running,
             CreatedAt = DateTime.UtcNow
         };
@@ -157,7 +158,8 @@ public class ScanJobService : IScanJobService
                 return;
             }
 
-            var files = await CollectFilesAsync(jobId, rootPath, ct);
+            var includeSubfolders = rootJob?.IncludeSubfolders ?? true;
+            var files = await CollectFilesAsync(jobId, rootPath, includeSubfolders, ct);
             await SaveFileCountAsync(jobId, files.Count, ct);
 
             var pendingAssets = new List<MediaAsset>();
@@ -205,10 +207,10 @@ public class ScanJobService : IScanJobService
         return _cts.TryGetValue(jobId, out var cts) ? cts.Token : CancellationToken.None;
     }
 
-    private async Task<List<FileInfo>> CollectFilesAsync(Guid jobId, string rootPath, CancellationToken ct)
+    private async Task<List<FileInfo>> CollectFilesAsync(Guid jobId, string rootPath, bool includeSubfolders, CancellationToken ct)
     {
         var files = new List<FileInfo>();
-        await foreach (var file in _walker.WalkAsync(rootPath, _imageExtensions, _videoExtensions, ct))
+        await foreach (var file in _walker.WalkAsync(rootPath, _imageExtensions, _videoExtensions, ct, includeSubfolders))
         {
             ct.ThrowIfCancellationRequested();
             files.Add(file);

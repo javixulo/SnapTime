@@ -13,13 +13,14 @@ public class DirectoryWalker : IDirectoryWalker
         _logger = logger;
     }
 
-    #pragma warning disable CS1998 // async method lacks await operators; required for yield return in async iterator
     public async IAsyncEnumerable<FileInfo> WalkAsync(
         string rootPath,
         string[] imageExtensions,
         string[] videoExtensions,
-        [EnumeratorCancellation] CancellationToken ct)
+        [EnumeratorCancellation] CancellationToken ct,
+        bool includeSubfolders = true)
     {
+        _logger.LogInformation("Walking directory {RootPath} with includeSubfolders={IncludeSubfolders}", rootPath, includeSubfolders);
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentNullException.ThrowIfNull(imageExtensions);
         ArgumentNullException.ThrowIfNull(videoExtensions);
@@ -44,10 +45,13 @@ public class DirectoryWalker : IDirectoryWalker
 
             try
             {
-                foreach (var subDir in currentDir.EnumerateDirectories())
+                if (includeSubfolders)
                 {
-                    ct.ThrowIfCancellationRequested();
-                    directories.Enqueue(subDir);
+                    foreach (var subDir in currentDir.EnumerateDirectories())
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        directories.Enqueue(subDir);
+                    }
                 }
             }
             catch (UnauthorizedAccessException ex)

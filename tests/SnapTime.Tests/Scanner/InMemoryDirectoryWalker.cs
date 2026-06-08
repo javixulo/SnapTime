@@ -25,7 +25,8 @@ public class InMemoryDirectoryWalker : IDirectoryWalker
         string rootPath,
         string[] imageExtensions,
         string[] videoExtensions,
-        [EnumeratorCancellation] CancellationToken ct)
+        [EnumeratorCancellation] CancellationToken ct,
+        bool includeSubfolders = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentNullException.ThrowIfNull(imageExtensions);

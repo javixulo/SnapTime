@@ -24,7 +24,9 @@
             var rootPath = $"/{root.TrimStart('/')}";
             <FolderTreeItem Path="@rootPath"
                             Name="@root"
-                            Indent="0" />
+                            Indent="0"
+                            OnSelect="@HandleFolderSelected"
+                            SelectedPath="@SelectedPath" />
         }
     }
 </div>
@@ -61,6 +63,11 @@
 @implements IDisposable
 
 @code {
+    public string SelectedPath { get; private set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> OnFolderSelected { get; set; }
+
     private string[]? _roots;
     private bool _isLoading;
     private string? _error;
@@ -92,6 +99,12 @@
         {
             _isLoading = false;
         }
+    }
+
+    private async Task HandleFolderSelected(string path)
+    {
+        SelectedPath = path;
+        await OnFolderSelected.InvokeAsync(path);
     }
 
     public void Dispose()

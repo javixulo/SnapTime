@@ -5,7 +5,7 @@ namespace SnapTime.Client.Services;
 
 public interface IScanClient
 {
-    Task<ScanJobDto?> StartScanAsync(string rootPath, CancellationToken ct = default);
+    Task<ScanJobDto?> StartScanAsync(string rootPath, bool includeSubfolders = true, CancellationToken ct = default);
 
     Task<ScanJobDto?> GetJobAsync(Guid jobId, CancellationToken ct = default);
 }

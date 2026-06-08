@@ -2,24 +2,46 @@
 
 <PageTitle>SnapTime</PageTitle>
 
-<div class="snaptime-layout">
-    <aside class="snaptime-left-panel">
-        <FolderTreePanel />
-    </aside>
+<div class="snaptime-page">
+    <div class="snaptime-top-bar">
+        <ScanPanel SelectedFolderPath="@_selectedPath" />
+    </div>
 
-    <section class="snaptime-center-panel">
-        <p class="snaptime-placeholder">Panel central — grid de fotos (próximamente)</p>
-    </section>
+    <div class="snaptime-layout">
+        <aside class="snaptime-left-panel">
+            <FolderTreePanel OnFolderSelected="@((path) => _selectedPath = path)" />
+        </aside>
 
-    <aside class="snaptime-right-panel">
-        <p class="snaptime-placeholder">Chat (próximamente)</p>
-    </aside>
+        <section class="snaptime-center-panel">
+            <p class="snaptime-placeholder">Panel central — grid de fotos (próximamente)</p>
+        </section>
+
+        <aside class="snaptime-right-panel">
+            <p class="snaptime-placeholder">Chat (próximamente)</p>
+        </aside>
+    </div>
 </div>
 
+@code {
+    private string? _selectedPath;
+}
+
 <style>
+    .snaptime-page {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+    .snaptime-top-bar {
+        padding: 8px 16px;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f5f5f5;
+        flex-shrink: 0;
+    }
     .snaptime-layout {
         display: flex;
-        height: calc(100vh - 3.5rem);
+        flex: 1;
+        min-height: 0;
         gap: 0;
     }
     .snaptime-left-panel {

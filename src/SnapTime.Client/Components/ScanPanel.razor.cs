@@ -7,13 +7,15 @@ namespace SnapTime.Client.Components;
 
 public partial class ScanPanel : IAsyncDisposable
 {
-    private const string DefaultScanPath = "sample/";
     private readonly CancellationTokenSource _cts = new();
 
     [Inject]
     private IScanClient ScanClient { get; set; } = null!;
 
-    private string _rootPath = string.Empty;
+    [Parameter]
+    public string? SelectedFolderPath { get; set; } = null;
+
+    private bool _includeSubfolders = true;
     private bool _isScanning;
     private ScanJobDto? _currentJob;
     private string? _error;
@@ -33,8 +35,8 @@ public partial class ScanPanel : IAsyncDisposable
 
         try
         {
-            var path = ResolveScanPath();
-            _currentJob = await ScanClient.StartScanAsync(path);
+            var path = SelectedFolderPath ?? "sample/";
+            _currentJob = await ScanClient.StartScanAsync(path, _includeSubfolders);
             if (_currentJob?.Status is "Completed" or "Error" or "Cancelled")
                 return;
             await PollJobProgressAsync();
@@ -47,13 +49,6 @@ public partial class ScanPanel : IAsyncDisposable
         {
             _isScanning = false;
         }
-    }
-
-    private string ResolveScanPath()
-    {
-        return string.IsNullOrWhiteSpace(_rootPath)
-            ? DefaultScanPath
-            : _rootPath;
     }
 
     private async Task PollJobProgressAsync()

@@ -113,7 +113,7 @@ app.MapPost("/api/jobs", async (CreateJobRequest request, IScanJobService jobSer
 
     try
     {
-        var job = await jobService.CreateJobAsync(rootPath);
+        var job = await jobService.CreateJobAsync(rootPath, request.IncludeSubfolders);
         return Results.Created($"/api/jobs/{job.Id}", ToDto(job));
     }
     catch (InvalidOperationException)
@@ -164,8 +164,24 @@ static IResult? ValidateCreateJobRequest(CreateJobRequest request)
 {
     if (string.IsNullOrWhiteSpace(request.RootPath))
         return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "rootPath is required" } });
-    if (!Directory.Exists(request.RootPath))
+
+    string resolved;
+    try
+    {
+        resolved = Path.GetFullPath(request.RootPath);
+    }
+    catch
+    {
+        return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "rootPath contains invalid characters" } });
+    }
+
+    if (!Directory.Exists(resolved))
         return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "rootPath does not exist" } });
+
+    var dirInfo = new DirectoryInfo(resolved);
+    if (HasSystemPathPrefix(resolved) || IsSystemDirectoryName(dirInfo.Name))
+        return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "rootPath is a system directory and cannot be scanned" } });
+
     return null;
 }
 
@@ -182,6 +198,7 @@ static JobDto ToDto(ScanJob job) => new(
     job.Id,
     job.Status,
     job.RootPath,
+    job.IncludeSubfolders,
     job.TotalFiles,
     job.ProcessedFiles,
     job.ErrorCount,

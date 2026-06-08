@@ -19,19 +19,21 @@ public class ScanPanelTests : TestContext
     }
 
     [Fact]
-    public void ScanPanel_RendersInputAndButton()
+    public void ScanPanel_RendersCheckboxAndButton()
     {
         var cut = RenderComponent<ScanPanel>();
 
-        cut.Find("input").Should().NotBeNull();
+        var checkbox = cut.Find("input[type=checkbox]");
+        checkbox.Should().NotBeNull();
+        cut.Markup.Should().Contain("Incluir subcarpetas");
+
         var button = cut.Find("button");
         button.TextContent.Should().Contain("Escanear");
     }
 
     [Fact]
-    public void ScanPanel_EmptyInput_UsesDefaultPath()
+    public void ScanPanel_NoFolderSelected_UsesSamplePath()
     {
-        var cut = RenderComponent<ScanPanel>();
         var expectedJob = new ScanJobDto
         {
             Id = Guid.NewGuid(),
@@ -39,18 +41,19 @@ public class ScanPanelTests : TestContext
             RootPath = "sample/",
             CreatedAt = DateTime.UtcNow
         };
-        _scanClient.StartScanAsync(Arg.Any<string>()).Returns(expectedJob);
+        _scanClient.StartScanAsync(Arg.Any<string>(), Arg.Any<bool>()).Returns(expectedJob);
 
-        cut.FindAll("button")[0].Click();
+        var cut = RenderComponent<ScanPanel>();
+
+        cut.Find("button").Click();
 
         _scanClient.Received(1).StartScanAsync(Arg.Is<string>(path =>
-            path.Contains("sample", StringComparison.OrdinalIgnoreCase)));
+            path.Contains("sample", StringComparison.OrdinalIgnoreCase)), Arg.Any<bool>());
     }
 
     [Fact]
-    public void ScanPanel_WithCustomPath_SendsThatPath()
+    public void ScanPanel_WithFolderSelected_SendsThatPath()
     {
-        var cut = RenderComponent<ScanPanel>();
         var customPath = "/Users/test/photos";
         var expectedJob = new ScanJobDto
         {
@@ -59,13 +62,50 @@ public class ScanPanelTests : TestContext
             RootPath = customPath,
             CreatedAt = DateTime.UtcNow
         };
-        _scanClient.StartScanAsync(Arg.Any<string>()).Returns(expectedJob);
+        _scanClient.StartScanAsync(Arg.Any<string>(), Arg.Any<bool>()).Returns(expectedJob);
 
-        cut.Find("input").Change(customPath);
-        cut.FindAll("button")[0].Click();
+        var cut = RenderComponent<ScanPanel>(p =>
+            p.Add(m => m.SelectedFolderPath, customPath));
+
+        cut.Find("button").Click();
 
         _scanClient.Received(1).StartScanAsync(Arg.Is<string>(path =>
-            path == customPath));
+            path == customPath), Arg.Any<bool>());
+    }
+
+    [Fact]
+    public void ScanPanel_IncludeSubfoldersDefault_IsTrue()
+    {
+        var cut = RenderComponent<ScanPanel>();
+
+        var checkboxes = cut.FindAll("input[type=checkbox]");
+        checkboxes.Should().HaveCount(1);
+
+        checkboxes[0].HasAttribute("checked").Should().BeTrue();
+    }
+
+    [Fact]
+    public void ScanPanel_IncludeSubfoldersFalse_SendsFalse()
+    {
+        var customPath = "/Users/test/photos";
+        var expectedJob = new ScanJobDto
+        {
+            Id = Guid.NewGuid(),
+            Status = "Completed",
+            RootPath = customPath,
+            CreatedAt = DateTime.UtcNow
+        };
+        _scanClient.StartScanAsync(Arg.Any<string>(), Arg.Any<bool>()).Returns(expectedJob);
+
+        var cut = RenderComponent<ScanPanel>(p =>
+            p.Add(m => m.SelectedFolderPath, customPath));
+
+        var checkboxes = cut.FindAll("input[type=checkbox]");
+        checkboxes[0].Change(false);
+
+        cut.Find("button").Click();
+
+        _scanClient.Received(1).StartScanAsync(Arg.Any<string>(), false);
     }
 
     [Fact]
@@ -82,34 +122,13 @@ public class ScanPanelTests : TestContext
             ErrorCount = 0,
             CreatedAt = DateTime.UtcNow
         };
-        _scanClient.StartScanAsync(Arg.Any<string>()).Returns(completedJob);
+        _scanClient.StartScanAsync(Arg.Any<string>(), Arg.Any<bool>()).Returns(completedJob);
 
         var cut = RenderComponent<ScanPanel>();
 
-        cut.FindAll("button")[0].Click();
+        cut.Find("button").Click();
 
         cut.Markup.Should().Contain(jobId.ToString());
         cut.Markup.Should().Contain("10");
     }
-
-    [Fact]
-    public void ScanPanel_WhitespaceInput_UsesDefaultPath()
-    {
-        var cut = RenderComponent<ScanPanel>();
-        var expectedJob = new ScanJobDto
-        {
-            Id = Guid.NewGuid(),
-            Status = "Completed",
-            RootPath = "sample/",
-            CreatedAt = DateTime.UtcNow
-        };
-        _scanClient.StartScanAsync(Arg.Any<string>()).Returns(expectedJob);
-
-        cut.Find("input").Change("   ");
-        cut.FindAll("button")[0].Click();
-
-        _scanClient.Received(1).StartScanAsync(Arg.Is<string>(path =>
-            path.Contains("sample", StringComparison.OrdinalIgnoreCase)));
-    }
-
 }

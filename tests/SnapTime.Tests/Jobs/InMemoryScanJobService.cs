@@ -75,13 +75,14 @@ public class InMemoryScanJobService(
         return Task.CompletedTask;
     }
 
-    public Task<ScanJob> CreateJobAsync(string rootPath)
+    public Task<ScanJob> CreateJobAsync(string rootPath, bool includeSubfolders = true)
     {
         var jobId = Guid.NewGuid();
         var job = new ScanJob
         {
             Id = jobId,
             RootPath = rootPath,
+            IncludeSubfolders = includeSubfolders,
             Status = JobStatus.Running,
             CreatedAt = DateTime.UtcNow
         };
@@ -167,7 +168,7 @@ public class InMemoryScanJobService(
             }
 
             var files = new List<FileEntry>();
-            await foreach (var fi in _walker.WalkAsync(rootPath, _imageExtensions, _videoExtensions, ct))
+            await foreach (var fi in _walker.WalkAsync(rootPath, _imageExtensions, _videoExtensions, ct, job.IncludeSubfolders))
             {
                 ct.ThrowIfCancellationRequested();
                 files.Add(new FileEntry(fi.FullName, fi.Name, 0L));

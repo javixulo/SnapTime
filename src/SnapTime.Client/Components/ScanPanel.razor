@@ -3,10 +3,10 @@
 
 <div class="scan-panel">
     <div class="scan-controls">
-        <input type="text"
-               @bind="_rootPath"
-               placeholder="Ruta a escanear (vacío = sample/)"
-               disabled="@_isScanning" />
+        <label class="scan-checkbox-label">
+            <input type="checkbox" @bind="_includeSubfolders" />
+            Incluir subcarpetas
+        </label>
         <button @onclick="StartScanAsync" disabled="@_isScanning">
             Escanear
         </button>
@@ -29,3 +29,37 @@
         </div>
     }
 </div>
+
+<style>
+    .scan-panel {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .scan-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .scan-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        user-select: none;
+    }
+    .scan-checkbox-label input[type="checkbox"] {
+        cursor: pointer;
+    }
+    .scan-progress {
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+        color: #555;
+    }
+    .scan-error {
+        font-size: 12px;
+    }
+</style>

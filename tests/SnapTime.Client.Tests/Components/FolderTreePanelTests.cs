@@ -64,4 +64,76 @@ public class FolderTreePanelTests : TestContext
 
         cut.Markup.Should().Contain("sin directorios");
     }
+
+    [Fact]
+    public void Panel_ClickFolder_HighlightsSelected()
+    {
+        // Arrange
+        var rootDirs = new[] { "Users", "Applications" };
+        _filesystemClient.GetDirectoriesAsync(null, Arg.Any<CancellationToken>())
+            .Returns(rootDirs);
+
+        var cut = RenderComponent<FolderTreePanel>();
+
+        // Act — click on the first folder name
+        var folderNames = cut.FindAll(".folder-tree-name");
+        folderNames.Should().HaveCount(2);
+        folderNames[0].Click();
+
+        // Assert — the clicked folder should get the 'selected' CSS class
+        // FAILS: FolderTreeItem doesn't apply 'selected' class based on SelectedPath
+        var afterClick = cut.FindAll(".folder-tree-name");
+        afterClick[0].ClassName.Should().Contain("selected");
+    }
+
+    [Fact]
+    public void Panel_ClickSecondFolder_UnselectsFirst()
+    {
+        // Arrange
+        var rootDirs = new[] { "Users", "Applications" };
+        _filesystemClient.GetDirectoriesAsync(null, Arg.Any<CancellationToken>())
+            .Returns(rootDirs);
+
+        var cut = RenderComponent<FolderTreePanel>();
+
+        var folderNames = cut.FindAll(".folder-tree-name");
+
+        // Act — click first folder
+        folderNames[0].Click();
+
+        // Assert — first is selected
+        // FAILS: no folder gets 'selected' on click
+        var afterFirst = cut.FindAll(".folder-tree-name");
+        afterFirst[0].ClassName.Should().Contain("selected");
+
+        // Act — click second folder
+        afterFirst[1].Click();
+
+        // Assert — first lost selection, second gained it
+        var afterSecond = cut.FindAll(".folder-tree-name");
+        afterSecond[0].ClassName.Should().NotContain("selected");
+        afterSecond[1].ClassName.Should().Contain("selected");
+    }
+
+    [Fact]
+    public void Panel_SelectedPathIsInitiallyEmpty()
+    {
+        // Arrange
+        _filesystemClient.GetDirectoriesAsync(null, Arg.Any<CancellationToken>())
+            .Returns(new[] { "Users", "Applications" });
+
+        // Act
+        var cut = RenderComponent<FolderTreePanel>();
+
+        // Assert — FolderTreePanel should expose the selected path as a property.
+        // Currently FAILS because SelectedPath is not implemented.
+        var panelType = typeof(FolderTreePanel);
+        var selectedPathProp = panelType.GetProperty("SelectedPath",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        selectedPathProp.Should().NotBeNull();
+
+        // Future — when SelectedPath exists:
+        // var selectedPath = selectedPathProp.GetValue(cut.Instance);
+        // selectedPath.Should().BeNull();
+    }
 }

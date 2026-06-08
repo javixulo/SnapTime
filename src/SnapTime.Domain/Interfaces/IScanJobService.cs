@@ -11,8 +11,9 @@ public interface IScanJobService
     /// Creates a new scan job for the specified root path and starts processing.
     /// </summary>
     /// <param name="rootPath">The root directory path to scan for media files.</param>
+    /// <param name="includeSubfolders">Whether to scan subfolders recursively (default true).</param>
     /// <returns>The created <see cref="ScanJob"/> with a Running status.</returns>
-    Task<ScanJob> CreateJobAsync(string rootPath);
+    Task<ScanJob> CreateJobAsync(string rootPath, bool includeSubfolders = true);
 
     /// <summary>
     /// Gets a scan job by its unique identifier.

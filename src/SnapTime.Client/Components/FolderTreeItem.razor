@@ -16,7 +16,7 @@
                   role="button"
                   aria-label="Expandir o colapsar carpeta">▶</span>
         }
-        <span class="folder-tree-name"
+        <span class="folder-tree-name @(Path == SelectedPath ? "selected" : "")"
               @onclick="SelectFolder"
               role="button"
               aria-label="Seleccionar carpeta @Name">
@@ -32,7 +32,7 @@
         }
         else if (_children is not null && _children.Length == 0)
         {
-            <div class="folder-tree-empty" style="padding-left: 24px;">(vacía)</div>
+            <div class="folder-tree-empty" style="padding-left: 6px;">(vacía)</div>
         }
         else if (_children is not null)
         {
@@ -41,7 +41,8 @@
                 <FolderTreeItem Path="@Combine(Path, child)"
                                 Name="@child"
                                 OnSelect="@OnSelect"
-                                Indent="@(Indent + 24)" />
+                                Indent="@(Indent + 6)"
+                                SelectedPath="@SelectedPath" />
             }
         }
     }
@@ -91,6 +92,11 @@
         background: #e8f0fe;
         color: #000;
     }
+    .folder-tree-name.selected {
+        background: #cce5ff;
+        color: #004080;
+        font-weight: 600;
+    }
     .folder-tree-empty {
         padding: 3px 0;
         font-style: italic;
@@ -109,6 +115,7 @@
     [Parameter] public string Name { get; set; } = string.Empty;
     [Parameter] public EventCallback<string> OnSelect { get; set; }
     [Parameter] public int Indent { get; set; } = 0;
+    [Parameter] public string SelectedPath { get; set; } = string.Empty;
 
     private bool _isExpanded;
     private bool _isLoading;

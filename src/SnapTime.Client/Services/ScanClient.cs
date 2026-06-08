@@ -13,9 +13,9 @@ public class ScanClient : IScanClient
         _http = http;
     }
 
-    public async Task<ScanJobDto?> StartScanAsync(string rootPath, CancellationToken ct = default)
+    public async Task<ScanJobDto?> StartScanAsync(string rootPath, bool includeSubfolders = true, CancellationToken ct = default)
     {
-        var response = await _http.PostAsJsonAsync("/api/jobs", new { rootPath }, ct);
+        var response = await _http.PostAsJsonAsync("/api/jobs", new { rootPath, includeSubfolders }, ct);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<ScanJobDto>(cancellationToken: ct);
     }
