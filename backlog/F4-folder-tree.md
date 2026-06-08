@@ -8,6 +8,7 @@
 
 **Reglas base:**
 - Treeview con expand/colapsar por carpeta
+- Indentado por nivel: 6px
 - Muestra el sistema de archivos completo desde las raíces (endpoint `GET /api/filesystem/directories`)
 - Al hacer clic en el nombre de una carpeta → se resalta como seleccionada (solo una a la vez)
 - Toggle "Incluir subcarpetas" que indica si el escaneo debe recorrer también las subcarpetas
