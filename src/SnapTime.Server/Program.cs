@@ -29,7 +29,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("https://localhost:7099", "http://localhost:5213")
+        policy.WithOrigins("https://localhost:7099", "http://localhost:5213", "http://localhost:5027")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -37,6 +37,10 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+});
 
 builder.Services.AddScoped<IDirectoryWalker, DirectoryWalker>();
 builder.Services.AddScoped<IMetadataExtractor, MetadataExtractorService>();
@@ -49,7 +53,56 @@ builder.Services.AddScoped<IScanJobService, ScanJobService>();
 
 var app = builder.Build();
 
+// Apply pending migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+    db.Database.Migrate();
+}
+
 app.MapGet("/api/health", () => Results.Ok(new HealthResponse("ok", DateTime.UtcNow)));
+
+// [F4-US-005] Browse filesystem directories
+app.MapGet("/api/filesystem/directories", (string? path) =>
+{
+    try
+    {
+        string[] entries;
+
+        if (string.IsNullOrEmpty(path))
+        {
+            // No path: return root directories
+            entries = GetRootDirectories();
+        }
+        else
+        {
+            var resolved = Path.GetFullPath(path);
+
+            if (!Directory.Exists(resolved))
+                return Results.NotFound(new { error = new { code = "NOT_FOUND", message = "Directory does not exist." } });
+
+            entries = GetFilteredDirectoryNames(resolved);
+        }
+
+        return Results.Ok(entries);
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.StatusCode(403);
+    }
+    catch (PathTooLongException)
+    {
+        return Results.BadRequest(new { error = new { code = "PATH_TOO_LONG", message = "Path exceeds the system maximum length." } });
+    }
+    catch (DirectoryNotFoundException)
+    {
+        return Results.NotFound(new { error = new { code = "NOT_FOUND", message = "Directory does not exist." } });
+    }
+    catch (ArgumentException)
+    {
+        return Results.BadRequest(new { error = new { code = "INVALID_PATH", message = "Path contains invalid characters." } });
+    }
+});
 
 app.MapPost("/api/jobs", async (CreateJobRequest request, IScanJobService jobService) =>
 {
@@ -135,6 +188,88 @@ static JobDto ToDto(ScanJob job) => new(
     job.CreatedAt,
     job.CompletedAt
 );
+
+static string[] GetRootDirectories()
+{
+    if (OperatingSystem.IsWindows())
+    {
+        return DriveInfo.GetDrives()
+            .Select(d => d.Name.TrimEnd('\\'))
+            .ToArray();
+    }
+
+    // macOS / Linux: enumerate root "/" and return directory names only
+    return GetFilteredDirectoryNames("/");
+}
+
+static string[] GetFilteredDirectoryNames(string path)
+{
+    var results = new List<string>();
+
+    foreach (var entry in Directory.EnumerateDirectories(path))
+    {
+        try
+        {
+            var dirInfo = new DirectoryInfo(entry);
+
+            // Skip hidden and system directories
+            if (dirInfo.Attributes.HasFlag(FileAttributes.Hidden) ||
+                dirInfo.Attributes.HasFlag(FileAttributes.System))
+                continue;
+
+            var name = dirInfo.Name;
+
+            // Skip known system/reserved directory names
+            if (IsSystemDirectoryName(name))
+                continue;
+
+            // Skip known system path prefixes (macOS / Linux)
+            if (!OperatingSystem.IsWindows() && HasSystemPathPrefix(entry))
+                continue;
+
+            results.Add(name);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Skip directories we cannot access
+        }
+    }
+
+    return results.ToArray();
+}
+
+static bool IsSystemDirectoryName(string name)
+{
+    if (OperatingSystem.IsWindows())
+    {
+        return name switch
+        {
+            "WINDOWS" or "Program Files" or "Program Files (x86)" or "ProgramData"
+                or "System Volume Information" or "$Recycle.Bin" or "Recovery"
+                or "WindowsApps" or "Windows10Upgrade" or "WinSxS" => true,
+            _ => false
+        };
+    }
+
+    return name switch
+    {
+        "System" or "proc" or "sys" or "dev" or "cores" or "Volumes" => true,
+        _ => false
+    };
+}
+
+static bool HasSystemPathPrefix(string fullPath)
+{
+    return fullPath == "/System" || fullPath.StartsWith("/System/")
+        || fullPath == "/proc" || fullPath.StartsWith("/proc/")
+        || fullPath == "/sys" || fullPath.StartsWith("/sys/")
+        || fullPath == "/dev" || fullPath.StartsWith("/dev/")
+        || fullPath == "/private/var" || fullPath.StartsWith("/private/var/")
+        || fullPath == "/cores" || fullPath.StartsWith("/cores/")
+        || fullPath == "/Volumes" || fullPath.StartsWith("/Volumes/")
+        || fullPath == "/private/etc" || fullPath.StartsWith("/private/etc/")
+        || fullPath == "/private/tmp" || fullPath.StartsWith("/private/tmp/");
+}
 
 public partial class Program { }
 

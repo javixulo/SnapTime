@@ -83,10 +83,14 @@ public class ScanJobService : IScanJobService
         return job;
     }
 
-    public Task<ScanJob?> GetJobAsync(Guid jobId)
+    public async Task<ScanJob?> GetJobAsync(Guid jobId)
     {
-        _jobs.TryGetValue(jobId, out var job);
-        return Task.FromResult(job);
+        if (_jobs.TryGetValue(jobId, out var job))
+            return job;
+
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+        return await db.ScanJobs.FindAsync([jobId]);
     }
 
     public async Task<List<ScanJob>> GetAllJobsAsync()

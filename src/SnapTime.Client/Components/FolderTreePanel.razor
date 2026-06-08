@@ -1,0 +1,102 @@
+@* [F4-US-005] FolderTreePanel — Left panel showing full filesystem tree *@
+@using SnapTime.Client.Services
+@inject IFilesystemClient FilesystemClient
+
+<div class="folder-tree-panel">
+    <div class="folder-tree-panel-header">Sistema de archivos</div>
+
+    @if (_isLoading)
+    {
+        <div class="folder-tree-panel-status">Cargando...</div>
+    }
+    else if (_error is not null)
+    {
+        <div class="folder-tree-panel-status folder-tree-panel-error">@_error</div>
+    }
+    else if (_roots is not null && _roots.Length == 0)
+    {
+        <div class="folder-tree-panel-status folder-tree-panel-empty">(sin directorios)</div>
+    }
+    else if (_roots is not null)
+    {
+        @foreach (var root in _roots)
+        {
+            var rootPath = $"/{root.TrimStart('/')}";
+            <FolderTreeItem Path="@rootPath"
+                            Name="@root"
+                            Indent="0" />
+        }
+    }
+</div>
+
+<style>
+    .folder-tree-panel {
+        padding: 8px 0;
+        font-size: 13px;
+        overflow-y: auto;
+        height: 100%;
+    }
+    .folder-tree-panel-header {
+        padding: 6px 12px 8px;
+        font-weight: 600;
+        font-size: 14px;
+        color: #333;
+        border-bottom: 1px solid #e0e0e0;
+        margin-bottom: 4px;
+    }
+    .folder-tree-panel-status {
+        padding: 12px;
+        color: #666;
+        font-size: 13px;
+    }
+    .folder-tree-panel-error {
+        color: #d32f2f;
+    }
+    .folder-tree-panel-empty {
+        color: #999;
+        font-style: italic;
+    }
+</style>
+
+@implements IDisposable
+
+@code {
+    private string[]? _roots;
+    private bool _isLoading;
+    private string? _error;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRootsAsync();
+    }
+
+    private async Task LoadRootsAsync()
+    {
+        _isLoading = true;
+        _error = null;
+        _roots = null;
+
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+
+        try
+        {
+            _roots = await FilesystemClient.GetDirectoriesAsync(null, _cts.Token);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error al cargar raíces: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

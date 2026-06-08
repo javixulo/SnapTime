@@ -18,8 +18,11 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 ## 4) Requisitos funcionales de UI
 
 ### 4.1) Selección de ruta raíz
-- Input de texto para escribir o pegar la ruta.
-- Botón "Examinar" junto al input (usando input file del SO).
+- No hay input de texto. La ruta se selecciona exclusivamente desde el árbol del panel izquierdo.
+- Al hacer clic en el nombre de una carpeta del árbol, se resalta como seleccionada (solo una a la vez).
+- Un toggle "Incluir subcarpetas" (checkbox) controla si el escaneo es recursivo (por defecto: sí).
+- El botón "Escanear" usa `{ rootPath: carpetaSeleccionada, includeSubfolders: bool }`.
+- Si no hay carpeta seleccionada, se usa `sample/` como ruta por defecto.
 
 ### 4.2) Panel central: grid de archivos multimedia
 - Cuadrícula de archivos con miniatura (fotos) o icono de vídeo (vídeos, con indicador de duración).
@@ -68,12 +71,13 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Los resultados del chat pueden reflejarse en los otros paneles (ej: al escanear una carpeta, el grid se actualiza).
 
 ## 5) Requisitos del árbol de carpetas
-- Árbol de carpetas con checkboxes en cascada (seleccionar/deseleccionar).
-- Selección en cascada descendente y actualización consistente de estado en nodos padre.
-- Los nodos padre usarán estado visual de tres valores: seleccionado, no seleccionado e indeterminado (parcial).
-- En el árbol se muestra, para cada carpeta, icono de carpeta y nombre.
-- Al hacer clic en una carpeta, el panel derecho muestra los archivos multimedia contenidos en esa carpeta y sus subcarpetas.
-- La carga de miniaturas debe ser bajo demanda (lazy loading).
+- Árbol de carpetas del sistema de archivos con expand/colapsar por nodo.
+- Al hacer clic en el nombre de una carpeta, se resalta visualmente como seleccionada (solo una a la vez).
+- No hay checkboxes ni selección múltiple.
+- Toggle "Incluir subcarpetas" para controlar recursividad del escaneo.
+- En el árbol se muestra, para cada carpeta, ▶ + nombre.
+- Al hacer clic en una carpeta proporciona la ruta al panel superior para escanear.
+- La carga de hijos es bajo demanda vía API.
 
 ## 6) Requisitos de rendimiento en listados grandes
 - El cliente nunca debe cargar toda la biblioteca en memoria de una sola vez.
@@ -102,7 +106,130 @@ La UI Blazor WASM se valida con dos niveles de test:
 - Los flujos críticos (escaneo, revisión, aplicación de cambios) deben tener un test Playwright.
 - Los tests E2E se ejecutan contra un servidor real y una base de datos SQLite efímera (ver `SqliteDbFixture`).
 
-## 9) Decisiones de diseño
+## 9) Panel izquierdo: árbol del sistema de archivos
+
+El panel izquierdo muestra un árbol completo y navegable del sistema de archivos, visible permanentemente (sin modal). Es la herramienta principal de navegación.
+
+### 9.1) Funcionamiento general
+- Al cargar la página, el panel izquierdo carga los directorios raíz del sistema y los muestra como un árbol expandible.
+- Cada nodo tiene un ▶ que expande/colapsa los subdirectorios (carga bajo demanda vía API).
+- Al hacer clic en el nombre de una carpeta:
+  - La carpeta se resalta como seleccionada (solo una a la vez).
+  - La ruta se usa como `rootPath` para el escaneo.
+  - En el futuro, también filtra el grid central a esa carpeta.
+- Un toggle "Incluir subcarpetas" (checkbox) controla si el escaneo recorre subdirectorios.
+- El árbol es **siempre visible** mientras se interactúa con los otros paneles.
+
+### 9.2) Comportamiento del árbol
+- **Árbol recursivo** sin límite de profundidad: cada nodo puede expandirse y mostrar sus hijos como nuevos nodos.
+- La expansión es **lazy**: solo se carga un nivel cuando el usuario hace clic en ▶.
+- Los resultados se **cachean** por nodo (no se vuelve a consultar la API al colapsar/re-expandir).
+- Cada nodo puede estar en uno de estos estados:
+  - **Colapsado** (por defecto): solo se ve el nombre y ▶.
+  - **Cargando**: ▶ se reemplaza por `⋯` (spinner textual).
+  - **Expandido**: ▶ rotado 90°, hijos visibles debajo.
+  - **Error**: mensaje en rojo debajo del nodo.
+  - **Vacío**: texto "(vacía)" si el directorio no tiene subdirectorios.
+- **Indentación progresiva**: cada nivel suma 24px de padding-left (n1=0, n2=24, n3=48, ...).
+
+### 9.3) Componentes Blazor
+- **`FolderTreePanel.razor`**: panel que carga las raíces del sistema al montarse y las renderiza como `FolderTreeItem`.
+  - Inyecta `IFilesystemClient`.
+  - Al montarse: llama a `GET /api/filesystem/directories` (sin path) para obtener las raíces.
+  - Muestra cada raíz como un `FolderTreeItem` con indentación 0.
+  - Estados: carga inicial ("Cargando..."), error, listado de raíces.
+  - Mantiene `SelectedPath` (la ruta de la carpeta seleccionada) y un callback `OnFolderSelected`.
+  - Incluye un toggle "Incluir subcarpetas" (checkbox) con valor por defecto `true`.
+
+- **`FolderTreeItem.razor`**: componente recursivo que representa un nodo del árbol.
+  - Parámetros: `Path` (ruta absoluta del nodo), `Name` (nombre a mostrar), `OnSelect(EventCallback<string>)`, `Indent` (padding-left en px), `SelectedPath` (ruta seleccionada actual).
+  - Inyecta `IFilesystemClient` para cargar hijos bajo demanda con `CancellationToken`.
+  - Render: ▶ + nombre. Al hacer clic en ▶, llama a `GET /api/filesystem/directories?path={Path}` y muestra hijos como más `FolderTreeItem`.
+  - Al hacer clic en nombre, invoca `OnSelect` con la ruta absoluta del nodo.
+  - Si `Path == SelectedPath`, se aplica la clase CSS `selected` para resaltar visualmente el nodo.
+  - Estados internos: colapsado, cargando (`⋯`), expandido, error, vacío.
+  - Sin límite de profundidad: se renderiza a sí mismo recursivamente.
+  - Implementa `IDisposable` para cancelar peticiones HTTP en curso.
+
+- **`IFilesystemClient` / `FilesystemClient`**: servicio HTTP.
+  - Método: `Task<string[]> GetDirectoriesAsync(string? path = null, CancellationToken ct = default)`.
+  - Path `null` → `GET /api/filesystem/directories` (raíces del sistema).
+  - Path con valor → `GET /api/filesystem/directories?path={Uri.EscapeDataString(path)}`.
+
+### 9.4) Endpoint API: GET /api/filesystem/directories
+
+**Ruta:** `GET /api/filesystem/directories?path={path}`
+
+**Comportamiento:**
+- Sin `path`: devuelve los directorios raíz del sistema operativo.
+  - macOS/Linux: lista los directorios directamente en `/` (ej: `["Users", "Applications", "Library", ...]`), **no** devuelve `["/"]`.
+  - Windows: devuelve las unidades con `DriveInfo.GetDrives()` (ej: `["C:", "D:", ...]`).
+- Con `path`: devuelve los nombres de subdirectorios (solo nombre, no ruta completa) de esa ruta.
+
+**Formato respuesta:** `string[]` — array plano de nombres de directorio.
+
+**Filtros de seguridad:**
+- Omite directorios sin permisos de lectura (try/catch por directorio).
+- Omite directorios del sistema por nombre y/o prefijo de ruta:
+  - macOS/Linux: `System`, `proc`, `sys`, `dev`, `cores`, `Volumes` (por nombre); `/System`, `/proc`, `/sys`, `/dev`, `/private/var`, `/cores`, `/Volumes`, `/private/etc`, `/private/tmp` (por prefijo).
+  - Windows: `WINDOWS`, `Program Files`, `Program Files (x86)`, `ProgramData`, `System Volume Information`, `$Recycle.Bin`, `Recovery`, `WindowsApps`, `Windows10Upgrade`, `WinSxS`.
+- Omite directorios con atributos `Hidden` o `System`.
+- No expone archivos (solo directorios).
+
+**Errores:**
+- 404 si el path no existe o no se encuentra.
+- 403 si no hay permisos de lectura.
+- 400 si el path es demasiado largo o contiene caracteres inválidos.
+
+**Multiplataforma:**
+- Usa `OperatingSystem.IsWindows()` para diferenciar comportamiento.
+- En macOS/Linux: rutas con `/`.
+- En Windows: rutas con `\` (usar `Path.Combine` y `Directory.EnumerateDirectories`).
+
+### 9.5) Reglas de construcción de rutas
+
+Todas las rutas deben ser **absolutas** y construirse sin doble slash:
+- Raíz → directorios: `"/Users"` (desde `"/"` + `"Users"`)
+- Segundo nivel: `"/Users/javiermontoro"` (desde `"/Users"` + `"javiermontoro"`)
+- Implementación: `$"{basePath.TrimEnd('/')}/{child.TrimStart('/')}"`
+
+El componente `FolderTreeItem` usa su propio método `Combine` para construir rutas de hijos, con soporte para `/` y `\`.
+
+### 9.6) Tests requeridos
+
+**Tests de integración (SnapTime.IntegrationTests):**
+- `GET /api/filesystem/directories` sin path → 200, array con directorios raíz.
+- `GET /api/filesystem/directories?path=/` → 200, subdirectorios de raíz.
+- `GET /api/filesystem/directories?path=/ruta/inexistente` → 404.
+- `GET /api/filesystem/directories?path=//Users` (doble slash) → mismo resultado que `/Users`.
+- Directorios del sistema filtrados correctamente.
+- `POST /api/jobs` con `{ rootPath, includeSubfolders }` → flag persistido correctamente.
+
+**Tests bUnit (SnapTime.Client.Tests):**
+- `FolderTreePanel`:
+  - Se monta y carga directorios raíz automáticamente.
+  - Muestra "Cargando..." inicial, luego lista de raíces (mock HTTP).
+  - Muestra error si la API falla.
+  - Al hacer clic en una carpeta → se resalta (clase CSS `selected`).
+  - Al hacer clic en otra carpeta → la anterior se desresalta.
+- `FolderTreeItem`:
+  - Renderiza nombre + ▶.
+  - Al hacer clic en ▶ → expande y muestra hijos (mock HTTP).
+  - Al hacer clic en nombre → llama a `OnSelect` con la ruta.
+  - Si `SelectedPath` coincide con `Path` → tiene clase `selected`.
+  - Estados: colapsado, cargando (`⋯`), error, vacío ("(vacía)").
+  - Al hacer clic en ▶ estando expandido → colapsa.
+  - Al hacer clic en ▶ de un hijo → expande recursivamente.
+
+**Tests E2E (SnapTime.E2ETests):**
+- Cargar página → verificar que el árbol de raíces se muestra.
+
+### 9.7) Consideraciones de rendimiento
+- Cada expansión de nodo hace una llamada HTTP independiente.
+- Los resultados se cachean por nodo en memoria durante la vida del panel.
+- Para árboles muy profundos (>10 niveles), el renderizado recursivo puede ser lento; en MVP esto no es un problema porque los directorios rara vez superan 5-6 niveles.
+
+## 10) Decisiones de diseño
 
 ### Subpanel de metainformación de carpeta
 - Ubicación definitiva: **zona inferior del panel central (grid)**, debajo de las miniaturas/iconos.

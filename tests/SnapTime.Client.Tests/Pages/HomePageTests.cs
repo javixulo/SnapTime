@@ -1,18 +1,35 @@
-// [F0-US-010] — Smoketest bUnit: renderiza Home.razor y verifica el título
+// [F4-US-005] — Smoketest bUnit: renderiza Home.razor y verifica el layout
 using Bunit;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using SnapTime.Client.Pages;
+using SnapTime.Client.Services;
 
 namespace SnapTime.Client.Tests.Pages;
 
 public class HomePageTests : TestContext
 {
-    [Fact]
-    public void Home_RendersWithHelloWorldHeading_ContainsExpectedText()
+    private readonly IFilesystemClient _filesystemClient = Substitute.For<IFilesystemClient>();
+
+    public HomePageTests()
     {
-        // Arrange & Act
+        Services.AddSingleton(_filesystemClient);
+    }
+
+    [Fact]
+    public void Home_RendersSnapTimeLayout()
+    {
+        _filesystemClient.GetDirectoriesAsync(null, Arg.Any<CancellationToken>())
+            .Returns(new[] { "Users" });
+
         var cut = RenderComponent<Home>();
 
-        // Assert
-        cut.Find("h1").MarkupMatches("<h1>Hello, world!</h1>");
+        cut.Markup.Should().Contain("snaptime-layout");
+        cut.Markup.Should().Contain("snaptime-left-panel");
+        cut.Markup.Should().Contain("snaptime-center-panel");
+        cut.Markup.Should().Contain("snaptime-right-panel");
+        cut.Markup.Should().Contain("Sistema de archivos");
+        cut.Markup.Should().Contain("Users");
     }
 }

@@ -1,0 +1,31 @@
+@* [F4-US-000] ScanPanel — Input de ruta, botón "Escanear", indicador de progreso *@
+@using SnapTime.Client.Services
+
+<div class="scan-panel">
+    <div class="scan-controls">
+        <input type="text"
+               @bind="_rootPath"
+               placeholder="Ruta a escanear (vacío = sample/)"
+               disabled="@_isScanning" />
+        <button @onclick="StartScanAsync" disabled="@_isScanning">
+            Escanear
+        </button>
+    </div>
+
+    @if (_currentJob is not null)
+    {
+        <div class="scan-progress">
+            <span><strong>Job:</strong> @_currentJob.Id</span>
+            <span><strong>Ruta:</strong> @_currentJob.RootPath</span>
+            <span><strong>Estado:</strong> @_currentJob.Status</span>
+            <span><strong>Progreso:</strong> @_currentJob.ProcessedFiles / @_currentJob.TotalFiles</span>
+        </div>
+    }
+
+    @if (_error is not null)
+    {
+        <div class="scan-error" style="color: red;">
+            @_error
+        </div>
+    }
+</div>

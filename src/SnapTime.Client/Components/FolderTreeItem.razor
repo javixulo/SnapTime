@@ -1,0 +1,172 @@
+@* [F4-US-005] FolderTreeItem — Recursive tree node for folder browser *@
+@using SnapTime.Client.Services
+@implements IDisposable
+@inject IFilesystemClient FilesystemClient
+
+<div class="folder-tree-item" style="padding-left: @(Indent)px;">
+    <div class="folder-tree-item-row">
+        @if (_isLoading)
+        {
+            <span class="folder-tree-spinner">⋯</span>
+        }
+        else
+        {
+            <span class="folder-tree-toggle @(_isExpanded ? "expanded" : "")"
+                  @onclick="ToggleExpand"
+                  role="button"
+                  aria-label="Expandir o colapsar carpeta">▶</span>
+        }
+        <span class="folder-tree-name"
+              @onclick="SelectFolder"
+              role="button"
+              aria-label="Seleccionar carpeta @Name">
+            @Name
+        </span>
+    </div>
+
+    @if (_isExpanded && _hasLoaded)
+    {
+        @if (_error is not null)
+        {
+            <div class="folder-tree-error">@_error</div>
+        }
+        else if (_children is not null && _children.Length == 0)
+        {
+            <div class="folder-tree-empty" style="padding-left: 24px;">(vacía)</div>
+        }
+        else if (_children is not null)
+        {
+            @foreach (var child in _children)
+            {
+                <FolderTreeItem Path="@Combine(Path, child)"
+                                Name="@child"
+                                OnSelect="@OnSelect"
+                                Indent="@(Indent + 24)" />
+            }
+        }
+    }
+</div>
+
+<style>
+    .folder-tree-item {
+        user-select: none;
+    }
+    .folder-tree-item-row {
+        display: flex;
+        align-items: center;
+        padding: 3px 0;
+        cursor: default;
+    }
+    .folder-tree-toggle {
+        display: inline-block;
+        cursor: pointer;
+        font-size: 11px;
+        width: 20px;
+        text-align: center;
+        flex-shrink: 0;
+        transition: transform 0.15s ease;
+        user-select: none;
+        color: #555;
+    }
+    .folder-tree-toggle:hover {
+        color: #000;
+    }
+    .folder-tree-toggle.expanded {
+        transform: rotate(90deg);
+    }
+    .folder-tree-spinner {
+        display: inline-block;
+        width: 20px;
+        text-align: center;
+        flex-shrink: 0;
+        color: #888;
+    }
+    .folder-tree-name {
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 3px;
+        color: #333;
+    }
+    .folder-tree-name:hover {
+        background: #e8f0fe;
+        color: #000;
+    }
+    .folder-tree-empty {
+        padding: 3px 0;
+        font-style: italic;
+        font-size: 13px;
+        color: #999;
+    }
+    .folder-tree-error {
+        padding: 3px 0;
+        font-size: 12px;
+        color: #d32f2f;
+    }
+</style>
+
+@code {
+    [Parameter] public string Path { get; set; } = string.Empty;
+    [Parameter] public string Name { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> OnSelect { get; set; }
+    [Parameter] public int Indent { get; set; } = 0;
+
+    private bool _isExpanded;
+    private bool _isLoading;
+    private bool _hasLoaded;
+    private string[]? _children;
+    private string? _error;
+
+    private static string Combine(string basePath, string child)
+    {
+        basePath = basePath.TrimEnd('/', '\\');
+        child = child.TrimStart('/', '\\');
+        return $"{basePath}/{child}";
+    }
+
+    private CancellationTokenSource? _cts;
+
+    private async Task ToggleExpand()
+    {
+        if (_isExpanded)
+        {
+            _isExpanded = false;
+            return;
+        }
+
+        _isExpanded = true;
+
+        if (_hasLoaded)
+            return;
+
+        _isLoading = true;
+        _error = null;
+
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+
+        try
+        {
+            _children = await FilesystemClient.GetDirectoriesAsync(Path, _cts.Token);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _error = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+            _hasLoaded = true;
+        }
+    }
+
+    private async Task SelectFolder()
+    {
+        await OnSelect.InvokeAsync(Path);
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

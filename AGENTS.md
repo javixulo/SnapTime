@@ -20,12 +20,16 @@ This includes `git commit`, `git push`, `git add + commit`, and any alias or scr
 Every User Story follows this strict workflow:
 
 1. 🔴 **Janus** writes failing tests first
-2. 🟢 **Kip** implements the minimum code to pass
-3. 🔵 **Kip** refactors his own code (tests must stay green)
+2. 🟢 **Kip** implements backend code (API, services, domain, EF); **Karris** implements frontend code (Blazor components, services HTTP del cliente) in parallel
+3. 🔵 **Kip** refactors backend; **Karris** refactors frontend (tests must stay green)
 4. 🗄️ **Kip** generates EF migration if entities/DbContext changed (`dotnet ef migrations add`, `database update`, smoke test insert/read)
 5. 👁 **Gavin** reviews everything
-6. If Gavin finds issues, Janus fixes test issues and Kip fixes code issues
+6. If Gavin finds issues, Janus fixes test issues; Kip fixes backend issues; Karris fixes frontend issues
 7. Repeat from step 3/4 until Gavin approves
+
+**Asignación por área:**
+- **Karris**: todo componente Blazor (`.razor`), servicios HTTP del cliente (`IClient` / `Client`), estilos, layouts, modales, carpetas `Client/`
+- **Kip**: todo backend (API endpoints, servicios de dominio/infraestructura, DTOs, EF, entidades), carpetas `Server/`, `Domain/`, `Infrastructure/`
 
 ## Stack and architecture
 

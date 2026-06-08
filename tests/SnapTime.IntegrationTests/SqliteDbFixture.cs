@@ -1,7 +1,8 @@
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using SnapTime.Infrastructure.Data;
 
-// [F2-US-001]
+// [F2-US-001] [F4-US-005]
 namespace SnapTime.IntegrationTests;
 
 [CollectionDefinition("SqliteIntegration")]
@@ -11,6 +12,8 @@ public class SqliteDbFixture : IDisposable
 {
     private static readonly string DbPath = Path.Combine(
         Path.GetTempPath(), $"snaptime-test-{Guid.NewGuid()}.db");
+
+    private WebApplicationFactory<Program>? _factory;
 
     public SqliteDbFixture()
     {
@@ -26,6 +29,12 @@ public class SqliteDbFixture : IDisposable
 
     public SnapTimeDbContext CreateContext() => new(Options);
 
+    public HttpClient CreateClient()
+    {
+        _factory = new WebApplicationFactory<Program>();
+        return _factory.CreateClient();
+    }
+
     public void ResetDatabase()
     {
         using var context = CreateContext();
@@ -35,6 +44,7 @@ public class SqliteDbFixture : IDisposable
 
     public void Dispose()
     {
+        _factory?.Dispose();
         try { File.Delete(DbPath); } catch { }
     }
 }
