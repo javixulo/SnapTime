@@ -16,7 +16,7 @@
 | F3 | Motor de heurísticas (H-001 a H-006) | 🟡 En curso (H-006 implementado, H-001..005 pendientes) | docs/05-heuristicas.md |
 | F4 | Árbol de carpetas (panel izquierdo) | ⏳ Pendiente (bloqueado por F0-US-010) | FR-17 |
 | F5 | Grid de fotos (panel central) | ⏳ Pendiente | FR-08, FR-18 |
-| F6 | Subpanel de evidencia (detalle + scoring) | ⏳ Pendiente | FR-08 |
+| F6 | Panel detalle (foto seleccionada) | ⏳ Pendiente | FR-08 |
 | F7 | Revisión en lote | ⏳ Pendiente | FR-10 |
 | F8 | Aplicación de cambios (dry-run + escritura) | ⏳ Pendiente | FR-11 |
 | F9 | Chat contextual con LLM (Ollama) | ⏳ Pendiente | FR-19 |

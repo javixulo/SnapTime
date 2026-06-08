@@ -11,8 +11,8 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - **Pantalla única** con paneles (sin navegación entre páginas).
 - **Panel superior**: estado del proceso, métricas básicas y botones de control. Ocupa todo el ancho.
 - **Panel izquierdo** (20%): estructura de carpetas en árbol estilo Windows.
-- **Panel central** (60%): grid de miniaturas con expandir inline para detalle. Subpanel informativo en zona inferior (número de archivos de la carpeta seleccionada).
-- **Panel derecho** (20%): chat conversacional para ejecutar acciones vía MCP.
+- **Panel central** (60%): grid de miniaturas. Barra de breadcrumb con contador de archivos.
+- **Panel derecho** (20%): dos subpaneles apilados verticalmente. Arriba, detalle de la foto seleccionada (metadatos, evidencias, barra de confianza, botones Aceptar/Rechazar). Abajo, chat conversacional Ollama.
 - **Ventana modal de configuración**, abierta desde un botón del panel superior.
 
 ## 4) Requisitos funcionales de UI
