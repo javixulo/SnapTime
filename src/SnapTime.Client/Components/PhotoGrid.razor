@@ -1,0 +1,431 @@
+@* [F5] PhotoGrid — Panel central con grid de fotos *@
+@using System.Linq
+@using SnapTime.Client.Models
+@using SnapTime.Client.Services
+@inject IPhotoClient PhotoClient
+@inject ApiConfig ApiConfig
+
+@if (_currentBrowsingPath is null)
+{
+    <div class="photo-grid-empty">Selecciona una carpeta</div>
+}
+else
+{
+    <div class="photo-grid">
+            <div class="photo-grid-breadcrumb">
+            <span class="photo-grid-back-link" @onclick="NavigateToParent" title="Subir un nivel">⬆</span>
+            @for (int i = 0; i < _breadcrumbSegments.Count; i++)
+            {
+                var seg = _breadcrumbSegments[i];
+                var capturedIndex = i;
+                <span class="photo-grid-breadcrumb-separator">/</span>
+                <span class="photo-grid-breadcrumb-link"
+                      @onclick="() => NavigateToSegment(capturedIndex)"
+                      title="@seg.FullPath">@seg.Name</span>
+            }
+            @if (_hasLoadedOnce)
+            {
+                <span class="photo-grid-file-count">@_imageCount imágenes, @_videoCount vídeos</span>
+            }
+        </div>
+
+        <div class="photo-grid-items">
+            @if (_isLoading && !_hasLoadedOnce)
+            {
+                <div class="photo-grid-loading">Cargando...</div>
+            }
+
+            @if (_error is not null && !_isLoading)
+            {
+                <div class="photo-grid-error">@_error</div>
+            }
+
+            @if (_hasLoadedOnce && _totalCount == 0)
+            {
+                <div class="photo-grid-empty">Esta carpeta no contiene fotos</div>
+            }
+
+            @if ((_error is null || _hasLoadedOnce) && _items is not null)
+            {
+                @foreach (var item in _items)
+                {
+                    <div class="photo-grid-item"
+                         title="@item.Name"
+                         @ondblclick="@(() => HandleDoubleClick(item))"
+                         @onclick="@(() => SelectItem(item))"
+                         @key="@item.Path">
+                        <div class="photo-grid-thumbnail">
+                            <div class="photo-grid-status-circle @GetStatusClass(item)"></div>
+                            @if (item.IsDirectory)
+                            {
+                                <div class="photo-grid-folder-icon">📁</div>
+                            }
+                            else if (item.MediaType == "Video")
+                            {
+                                <video src="@ApiConfig.BaseUrl/api/video/stream?path=@Uri.EscapeDataString(item.Path)"
+                                       title="@item.Name"
+                                       preload="metadata"
+                                       muted
+                                       playsinline
+                                       style="max-width:100%;max-height:100%;object-fit:contain;">
+                                </video>
+                                <div class="photo-grid-play-badge">▶</div>
+                            }
+                            else
+                            {
+                                <img src="@GetThumbnailUrl(item)"
+                                     alt="@item.Name"
+                                     title="@item.Name" />
+                            }
+                        </div>
+                        <div class="photo-grid-item-name">@TruncateName(item.Name)</div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
+<style>
+    .photo-grid {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .photo-grid-empty {
+        color: #999;
+        font-style: italic;
+        padding: 24px;
+        text-align: center;
+    }
+
+    .photo-grid-breadcrumb {
+        padding: 8px 0;
+        font-size: 13px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .photo-grid-file-count {
+        margin-left: auto;
+        color: #888;
+        font-size: 12px;
+    }
+
+    .photo-grid-breadcrumb-link {
+        cursor: pointer;
+        color: #1976d2;
+        margin-right: 4px;
+        user-select: none;
+    }
+
+    .photo-grid-breadcrumb-link:hover {
+        text-decoration: underline;
+    }
+
+    .photo-grid-breadcrumb-separator {
+        margin-right: 4px;
+        color: #999;
+    }
+
+    .photo-grid-loading {
+        padding: 24px;
+        text-align: center;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .photo-grid-error {
+        padding: 24px;
+        text-align: center;
+        color: #d32f2f;
+        font-size: 14px;
+    }
+
+    /* Grid layout — items render directly in the grid */
+    .photo-grid-items {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 300px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 12px;
+        align-content: start;
+    }
+
+    .photo-grid-item {
+        width: 100%;
+        min-width: 0;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .photo-grid-thumbnail {
+        position: relative;
+        width: 180px;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .photo-grid-thumbnail img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .photo-grid-folder-icon {
+        font-size: 48px;
+        opacity: 0.6;
+    }
+
+    .photo-grid-status-circle {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 1px solid white;
+        box-sizing: border-box;
+        z-index: 1;
+    }
+
+    .status-pending {
+        background: #aaa;
+    }
+
+    .status-correct {
+        background: #4caf50;
+    }
+
+    .status-error {
+        background: #f44336;
+    }
+
+    .status-no-suggestion {
+        background: #ffc107;
+    }
+
+    .status-suggestion {
+        background: #2196f3;
+    }
+
+    .photo-grid-play-badge {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .photo-grid-item-name {
+        text-align: center;
+        font-size: 12px;
+        padding: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 180px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string? SelectedFolderPath { get; set; }
+
+    [Parameter]
+    public EventCallback<PhotoGridItem> OnPhotoSelected { get; set; }
+
+    private string? _currentBrowsingPath;
+    private bool _isLoading;
+    private string? _error;
+    private bool _hasLoadedOnce;
+    private int _totalCount;
+    private int _imageCount;
+    private int _videoCount;
+    private List<PhotoGridItem>? _items;
+    private CancellationTokenSource? _loadCts;
+    private readonly List<BreadcrumbSegment> _breadcrumbSegments = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SelectedFolderPath != _currentBrowsingPath)
+        {
+            _currentBrowsingPath = SelectedFolderPath;
+            _isLoading = true;
+            _hasLoadedOnce = false;
+            _error = null;
+            _items = null;
+            UpdateBreadcrumb(_currentBrowsingPath);
+
+            if (_currentBrowsingPath is not null)
+            {
+                await LoadCurrentFolderAsync();
+            }
+        }
+    }
+
+    private async Task LoadCurrentFolderAsync()
+    {
+        _loadCts?.Cancel();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
+        try
+        {
+            var response = await PhotoClient.GetPhotosAsync(
+                _currentBrowsingPath, 1, int.MaxValue, ct);
+
+            ct.ThrowIfCancellationRequested();
+
+            var ordered = response.Items
+                .OrderByDescending(i => i.IsDirectory)
+                .ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            _items = ordered;
+            _imageCount = ordered.Count(i => !i.IsDirectory && i.MediaType == "Image");
+            _videoCount = ordered.Count(i => !i.IsDirectory && i.MediaType == "Video");
+            _totalCount = response.TotalCount;
+            _isLoading = false;
+            _error = null;
+            _hasLoadedOnce = true;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            _isLoading = false;
+            _error = $"Error al cargar fotos: {ex.Message}";
+        }
+    }
+
+    private async Task HandleDoubleClick(PhotoGridItem item)
+    {
+        if (item.IsDirectory)
+        {
+            await NavigateInto(item);
+        }
+    }
+
+    private async Task NavigateInto(PhotoGridItem item)
+    {
+        _currentBrowsingPath = item.Path;
+        _isLoading = true;
+        _hasLoadedOnce = false;
+        _error = null;
+        _items = null;
+        UpdateBreadcrumb(_currentBrowsingPath);
+        await LoadCurrentFolderAsync();
+    }
+
+    private async Task NavigateToParent()
+    {
+        if (string.IsNullOrEmpty(_currentBrowsingPath)) return;
+
+        var parent = System.IO.Path.GetDirectoryName(_currentBrowsingPath);
+        if (string.IsNullOrEmpty(parent))
+        {
+            // At root, stay at current
+            return;
+        }
+
+        // Normalize: Path.GetDirectoryName strips trailing slash but we need forward slash
+        parent = parent.Replace('\\', '/');
+
+        _currentBrowsingPath = parent;
+        _isLoading = true;
+        _hasLoadedOnce = false;
+        _error = null;
+        _items = null;
+        UpdateBreadcrumb(_currentBrowsingPath);
+        await LoadCurrentFolderAsync();
+    }
+
+    private async Task NavigateToSegment(int index)
+    {
+        if (index < 0 || index >= _breadcrumbSegments.Count) return;
+
+        var target = _breadcrumbSegments[index].FullPath;
+        if (target == _currentBrowsingPath) return;
+
+        _currentBrowsingPath = target;
+        _isLoading = true;
+        _hasLoadedOnce = false;
+        _error = null;
+        _items = null;
+        UpdateBreadcrumb(_currentBrowsingPath);
+        await LoadCurrentFolderAsync();
+    }
+
+    private void UpdateBreadcrumb(string? path)
+    {
+        _breadcrumbSegments.Clear();
+        if (string.IsNullOrEmpty(path)) return;
+
+        var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var current = "";
+        foreach (var part in parts)
+        {
+            current += "/" + part;
+            _breadcrumbSegments.Add(new BreadcrumbSegment(part, current));
+        }
+    }
+
+    private async Task SelectItem(PhotoGridItem item)
+    {
+        if (!item.IsDirectory)
+        {
+            await OnPhotoSelected.InvokeAsync(item);
+        }
+    }
+
+    private static string GetStatusClass(PhotoGridItem item)
+    {
+        return item.MediaStatus switch
+        {
+            "Pending" => "status-pending",
+            "Correct" => "status-correct",
+            "Error" => "status-error",
+            "NoSuggestion" => "status-no-suggestion",
+            "HasSuggestion" => "status-suggestion",
+            _ => "status-pending"
+        };
+    }
+
+    private string GetThumbnailUrl(PhotoGridItem item)
+    {
+        var url = item.ThumbnailUrl ?? "/api/thumbnails/placeholder";
+        if (url.StartsWith('/'))
+        {
+            url = ApiConfig.BaseUrl + url;
+        }
+        return url;
+    }
+
+    private static string TruncateName(string name)
+    {
+        const int maxLength = 20;
+        if (name.Length <= maxLength) return name;
+        return name[..(maxLength - 3)] + "...";
+    }
+
+    private record BreadcrumbSegment(string Name, string FullPath);
+}

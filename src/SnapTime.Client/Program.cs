@@ -9,8 +9,10 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5000";
+builder.Services.AddSingleton(new ApiConfig { BaseUrl = apiBaseUrl.TrimEnd('/') });
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 builder.Services.AddScoped<IScanClient, ScanClient>();
 builder.Services.AddScoped<IFilesystemClient, FilesystemClient>();
+builder.Services.AddScoped<IPhotoClient, PhotoClient>();
 
 await builder.Build().RunAsync();

@@ -149,7 +149,23 @@ public class ScanJobService : IScanJobService
         try
         {
             var ct = GetCancellationToken(jobId);
-            _jobs.TryGetValue(jobId, out var rootJob);
+
+            // Load job from DB when not in memory (background runner creates new scope)
+            if (!_jobs.TryGetValue(jobId, out var rootJob))
+            {
+                using var loadScope = _scopeFactory.CreateScope();
+                var db = loadScope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+                var dbJob = await db.ScanJobs.FindAsync([jobId]);
+                if (dbJob != null)
+                {
+                    _jobs[jobId] = dbJob;
+                    _cts[jobId] = new CancellationTokenSource();
+                    _pauseEvents[jobId] = new ManualResetEventSlim(initialState: true);
+                    _completionSources[jobId] = new TaskCompletionSource();
+                    rootJob = dbJob;
+                }
+            }
+
             var rootPath = rootJob?.RootPath ?? string.Empty;
 
             if (!Directory.Exists(rootPath))

@@ -13,11 +13,14 @@ public class HomePageTests : TestContext
 {
     private readonly IFilesystemClient _filesystemClient = Substitute.For<IFilesystemClient>();
     private readonly IScanClient _scanClient = Substitute.For<IScanClient>();
+    private readonly IPhotoClient _photoClient = Substitute.For<IPhotoClient>();
 
     public HomePageTests()
     {
         Services.AddSingleton(_filesystemClient);
         Services.AddSingleton(_scanClient);
+        Services.AddSingleton(_photoClient);
+        Services.AddSingleton(new ApiConfig { BaseUrl = "http://localhost:5000" });
     }
 
     [Fact]

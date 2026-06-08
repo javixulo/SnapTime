@@ -19,7 +19,7 @@ public enum MediaType { Image, Video }
 
 public enum SelectionState { Selected, None, Partial }
 
-public enum MediaStatus { Pending, Review, Approved, Rejected }
+public enum MediaStatus { Pending, Correct, Error, NoSuggestion, HasSuggestion }
 
 public enum JobStatus { Running, Paused, Completed, Cancelled, Error }
 
@@ -155,7 +155,10 @@ public record HeuristicConfigDto(
 |--------|------|---------------|----------|-------------|
 | GET | `/media-assets` | `folderPath?`, `mediaType?`, `minConfidence?`, `maxConfidence?`, `status?`, `sortBy?`, `sortDir?`, `page`, `pageSize` | `PaginatedResponse<MediaAssetDto>` | Listado paginado con filtros |
 | GET | `/media-assets/{id}` | — | `MediaAssetDetailDto` | Detalle con evidencia |
-| GET | `/thumbnails/{mediaAssetId}` | `maxDimension?` (default 300) | `FileStream` (image/jpeg) | Miniatura o icono de vídeo bajo demanda |
+| GET | `/thumbnails/{assetId}` | — | `FileStream` | Miniatura desde un asset escaneado. Busca el asset en BD y sirve el archivo del disco. |
+| GET | `/thumbnails/from-file` | `path` (string, required) | `FileStream` | Miniatura de cualquier archivo. Sin dependencia de BD. Lee el archivo directamente del sistema de archivos. |
+| GET | `/thumbnails/placeholder` | — | `image/png` | Placeholder gris para directorios o archivos no soportados. |
+| GET | `/video/stream` | `path` (string, required) | `FileStream` | Stream de vídeo con `Content-Type` correcto (`video/mp4`, `video/quicktime`, etc.). Usado por `<video>` del frontend para mostrar primer frame como thumbnail. Sin BD. |
 
 ### Revisión y aplicación
 
@@ -180,6 +183,6 @@ public record HeuristicConfigDto(
 ## 4) Notas técnicas
 
 - **Progreso de jobs**: el frontend puede hacer polling a `GET /jobs/{id}`. Para Fase 2 considerar SSE si el polling es insuficiente.
-- **Miniaturas**: el servidor las genera bajo demanda y las cachea en disco (`thumbnails/`). Para vídeos se genera un icono/marco representativo o un frame del vídeo.
+- **Miniaturas**: el servidor sirve el archivo original directamente del sistema de archivos. No hay dependencia de base de datos ni generación de thumbnails redimensionados por ahora. Para vídeos no hay thumbnail (solo el placeholder gris). En una fase futura se podrá añadir generación y caché en disco.
 - **Lazy loading**: cuando `pageSize=0`, el backend devuelve todos los archivos en una sola respuesta. El frontend usa `Virtualize` para el render.
 - **MCP tools** tienen contratos separados definidos en `docs/03-blueprint.md §3`.

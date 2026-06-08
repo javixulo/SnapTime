@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SnapTime.Infrastructure.Data;
 
 // [F2-US-001] [F4-US-005]
@@ -18,7 +19,7 @@ public class SqliteDbFixture : IDisposable
     public SqliteDbFixture()
     {
         using var context = CreateContext();
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
     }
 
     public string ConnectionString => $"Data Source={DbPath}";
@@ -31,7 +32,24 @@ public class SqliteDbFixture : IDisposable
 
     public HttpClient CreateClient()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureServices(services =>
+                {
+                    // Remove the existing DbContext options registration
+                    // so the app uses the fixture's test database
+                    var descriptor = services.SingleOrDefault(
+                        d => d.ServiceType == typeof(DbContextOptions<SnapTimeDbContext>));
+                    if (descriptor is not null)
+                        services.Remove(descriptor);
+
+                    // Register DbContext to use the fixture's test database
+                    services.AddDbContext<SnapTimeDbContext>(options =>
+                        options.UseSqlite(ConnectionString));
+                });
+            });
+
         return _factory.CreateClient();
     }
 
@@ -39,7 +57,7 @@ public class SqliteDbFixture : IDisposable
     {
         using var context = CreateContext();
         context.Database.EnsureDeleted();
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
     }
 
     public void Dispose()

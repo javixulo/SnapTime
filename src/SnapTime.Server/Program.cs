@@ -149,6 +149,284 @@ app.MapPost("/api/jobs/{id:guid}/cancel", async (Guid id, IScanJobService jobSer
     return Results.Ok(ToDto(updatedJob));
 });
 
+// [F5] Photo grid — list files and directories with optional DB cross-reference
+app.MapGet("/api/photos", async (
+    SnapTimeDbContext db,
+    string? path = null,
+    int page = 1,
+    int pageSize = 50) =>
+{
+    page = Math.Max(1, page);
+    if (pageSize <= 0) pageSize = 50;
+    pageSize = Math.Min(pageSize, 100);
+
+    if (string.IsNullOrEmpty(path))
+    {
+        return Results.Ok(new PhotoGridResponse([], 0, page));
+    }
+
+    try
+    {
+        var resolved = Path.GetFullPath(path);
+
+        // Reject system directories (consistency with POST /api/jobs)
+        var resolvedDirInfo = new DirectoryInfo(resolved);
+        if (HasSystemPathPrefix(resolved) || IsSystemDirectoryName(resolvedDirInfo.Name))
+            return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "Path is a system directory" } });
+
+        var items = new List<PhotoGridItem>();
+
+        if (Directory.Exists(resolved))
+        {
+            // List subdirectories (non-hidden, non-system)
+            foreach (var dirPath in Directory.EnumerateDirectories(resolved))
+            {
+                try
+                {
+                    var dirInfo = new DirectoryInfo(dirPath);
+                    if (!dirInfo.Attributes.HasFlag(FileAttributes.Hidden) &&
+                        !dirInfo.Attributes.HasFlag(FileAttributes.System) &&
+                        !IsSystemDirectoryName(dirInfo.Name) &&
+                        !HasSystemPathPrefix(dirPath))
+                    {
+                        items.Add(new PhotoGridItem(
+                            dirInfo.Name,
+                            dirPath,
+                            IsDirectory: true,
+                            ThumbnailUrl: null,
+                            MediaStatus.Pending,
+                            HasSuggestion: false,
+                            SuggestedDate: null,
+                            MediaType.Image));
+                    }
+                }
+                catch (UnauthorizedAccessException) { }
+            }
+
+            // List supported media files
+            var supportedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp",
+                ".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"
+            };
+
+            var filePaths = Directory.EnumerateFiles(resolved)
+                .Where(f => supportedExtensions.Contains(Path.GetExtension(f)))
+                .ToList();
+
+            // Batch lookup: find all matching assets in DB
+            var prefix = resolved.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var assets = await db.MediaAssets
+                .Where(a => a.FilePath.StartsWith(prefix))
+                .ToListAsync();
+
+            var assetMap = assets.ToDictionary(a => a.FilePath, a => a);
+
+            foreach (var filePath in filePaths)
+            {
+                var fileName = Path.GetFileName(filePath);
+                var ext = Path.GetExtension(fileName).ToLowerInvariant();
+                var mediaType = ext is ".mp4" or ".mov" or ".avi" or ".mkv" or ".webm" or ".m4v"
+                    ? MediaType.Video
+                    : MediaType.Image;
+
+                if (assetMap.TryGetValue(filePath, out var asset))
+                {
+                    var computedStatus = asset.SuggestedDate.HasValue
+                        ? MediaStatus.HasSuggestion
+                        : MediaStatus.NoSuggestion;
+                    items.Add(new PhotoGridItem(
+                        fileName,
+                        filePath,
+                        IsDirectory: false,
+                        $"/api/thumbnails/{asset.Id}",
+                        computedStatus,
+                        asset.SuggestedDate.HasValue,
+                        asset.SuggestedDate,
+                        asset.MediaType));
+                }
+                else
+                {
+                    items.Add(new PhotoGridItem(
+                        fileName,
+                        filePath,
+                        IsDirectory: false,
+                        $"/api/thumbnails/from-file?path={Uri.EscapeDataString(filePath)}",
+                        MediaStatus.Pending,
+                        HasSuggestion: false,
+                        SuggestedDate: null,
+                        mediaType));
+                }
+            }
+        }
+        else
+        {
+            // Directory does not exist on filesystem — fallback to DB query
+            var prefix = resolved.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var assets = await db.MediaAssets
+                .Where(a => a.FilePath.StartsWith(prefix))
+                .OrderBy(a => a.FileName)
+                .ToListAsync();
+
+            foreach (var asset in assets)
+            {
+                var computedStatus = asset.SuggestedDate.HasValue
+                    ? MediaStatus.HasSuggestion
+                    : MediaStatus.NoSuggestion;
+                items.Add(new PhotoGridItem(
+                    asset.FileName,
+                    asset.FilePath,
+                    IsDirectory: false,
+                    $"/api/thumbnails/{asset.Id}",
+                    computedStatus,
+                    asset.SuggestedDate.HasValue,
+                    asset.SuggestedDate,
+                    asset.MediaType));
+            }
+        }
+
+        // Order: directories first (alphabetical), then files (alphabetical)
+        items = items
+            .OrderByDescending(i => i.IsDirectory)
+            .ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var totalCount = items.Count;
+        var pagedItems = items
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return Results.Ok(new PhotoGridResponse(pagedItems, totalCount, page));
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.StatusCode(403);
+    }
+    catch (PathTooLongException)
+    {
+        return Results.BadRequest(new { error = new { code = "PATH_TOO_LONG", message = "Path exceeds the system maximum length." } });
+    }
+    catch (DirectoryNotFoundException)
+    {
+        return Results.NotFound(new { error = new { code = "NOT_FOUND", message = "Directory does not exist." } });
+    }
+    catch (ArgumentException)
+    {
+        return Results.BadRequest(new { error = new { code = "INVALID_PATH", message = "Path contains invalid characters." } });
+    }
+})
+.WithName("GetPhotos");
+
+// [F5] Thumbnail — serve actual file as image (full-size, no resize yet)
+app.MapGet("/api/thumbnails/{assetId:guid}", async (Guid assetId, SnapTimeDbContext db) =>
+{
+    var asset = await db.MediaAssets.FindAsync(assetId);
+    if (asset is null || !System.IO.File.Exists(asset.FilePath))
+        return Results.NotFound();
+
+    var ext = Path.GetExtension(asset.FilePath).ToLowerInvariant();
+    var contentType = ext switch
+    {
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".png" => "image/png",
+        ".gif" => "image/gif",
+        ".bmp" => "image/bmp",
+        ".webp" => "image/webp",
+        _ => "application/octet-stream"
+    };
+
+    var bytes = await System.IO.File.ReadAllBytesAsync(asset.FilePath);
+    return Results.File(bytes, contentType);
+})
+.WithName("GetThumbnail");
+
+app.MapGet("/api/thumbnails/placeholder", () =>
+{
+    var png = Convert.FromBase64String(PlaceholderBase64);
+    return Results.File(png, "image/png");
+});
+
+// [F5] Serve thumbnail from any file path (no DB lookup needed)
+app.MapGet("/api/thumbnails/from-file", (string path) =>
+{
+    if (string.IsNullOrWhiteSpace(path))
+        return Results.Redirect("/api/thumbnails/placeholder");
+
+    try
+    {
+        var resolved = Path.GetFullPath(path);
+        if (!System.IO.File.Exists(resolved))
+            return Results.Redirect("/api/thumbnails/placeholder");
+
+        var ext = Path.GetExtension(resolved).ToLowerInvariant();
+
+        // Video files cannot be rendered by <img> — redirect to placeholder
+        var videoExtensions = new HashSet<string>
+        {
+            ".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".3gp"
+        };
+
+        if (videoExtensions.Contains(ext))
+            return Results.Redirect("/api/thumbnails/placeholder");
+
+        var contentType = ext switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".bmp" => "image/bmp",
+            ".webp" => "image/webp",
+            _ => null // unknown/unrecognized → placeholder
+        };
+
+        if (contentType is null)
+            return Results.Redirect("/api/thumbnails/placeholder");
+
+        var bytes = System.IO.File.ReadAllBytes(resolved);
+        return Results.File(bytes, contentType);
+    }
+    catch
+    {
+        return Results.Redirect("/api/thumbnails/placeholder");
+    }
+});
+
+// [F5] Stream video files with correct content type for <video> element
+app.MapGet("/api/video/stream", (string path) =>
+{
+    if (string.IsNullOrWhiteSpace(path))
+        return Results.NotFound();
+
+    try
+    {
+        var resolved = Path.GetFullPath(path);
+        if (!System.IO.File.Exists(resolved))
+            return Results.NotFound();
+
+        var ext = Path.GetExtension(resolved).ToLowerInvariant();
+        var contentType = ext switch
+        {
+            ".mp4" => "video/mp4",
+            ".mov" => "video/quicktime",
+            ".avi" => "video/x-msvideo",
+            ".mkv" => "video/x-matroska",
+            ".webm" => "video/webm",
+            ".m4v" => "video/mp4",
+            ".3gp" => "video/3gpp",
+            _ => "application/octet-stream"
+        };
+
+        var bytes = System.IO.File.ReadAllBytes(resolved);
+        return Results.File(bytes, contentType);
+    }
+    catch
+    {
+        return Results.NotFound();
+    }
+})
+.WithName("StreamVideo");
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -288,7 +566,12 @@ static bool HasSystemPathPrefix(string fullPath)
         || fullPath == "/private/tmp" || fullPath.StartsWith("/private/tmp/");
 }
 
-public partial class Program { }
+
+
+public partial class Program
+{
+    private const string PlaceholderBase64 = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAJ0lEQVR4nO3NMQ0AAAwDoPpXVllVsWMJGCA9FoFAIBAIBAKBQPAlGGDXYIj+Um+RAAAAAElFTkSuQmCC";
+}
 
 /// <summary>
 /// Response from the health check endpoint.

@@ -66,3 +66,12 @@
 - Por defecto operar en modo "analizar y sugerir"; aplicación de cambios en paso separado.
 - Requerir confirmación explícita en operaciones destructivas o masivas.
 
+## NFR-11 Gestión de miniaturas
+
+- Las miniaturas se sirven directamente desde el sistema de archivos, sin depender de la base de datos.
+- El endpoint `GET /api/thumbnails/from-file?path={ruta}` lee el archivo del disco y lo sirve con su content-type.
+- No se almacenan blobs ni metadatos de thumbnail en la base de datos.
+- El thumbnail de un archivo no escaneado se muestra igual que el de uno escaneado; el escaneo solo añade metadatos y estado.
+- Para archivos escaneados, el endpoint `GET /api/thumbnails/{assetId}` busca el asset en BD para obtener la ruta y sirve el archivo.
+- En una fase futura se podrá añadir generación de thumbnails redimensionados con caché en disco.
+
