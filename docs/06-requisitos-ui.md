@@ -10,9 +10,9 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 ## 3) Estructura visual del MVP
 - **Pantalla única** con paneles (sin navegación entre páginas).
 - **Panel superior**: estado del proceso, métricas básicas y botones de control. Ocupa todo el ancho.
-- **Panel izquierdo** (25%): estructura de carpetas en árbol estilo Windows.
+- **Panel izquierdo** (20%): estructura de carpetas en árbol estilo Windows.
 - **Panel central** (60%): grid de miniaturas con expandir inline para detalle. Subpanel informativo en zona inferior (número de archivos de la carpeta seleccionada).
-- **Panel derecho** (15%): chat conversacional para ejecutar acciones vía MCP.
+- **Panel derecho** (20%): chat conversacional para ejecutar acciones vía MCP.
 - **Ventana modal de configuración**, abierta desde un botón del panel superior.
 
 ## 4) Requisitos funcionales de UI
