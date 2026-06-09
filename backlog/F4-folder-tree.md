@@ -59,7 +59,19 @@ El servidor lo usará para decidir si recorrer solo el directorio raíz o tambi�
   - bUnit ScanPanel: con carpeta seleccionada + includeSubfolders=true → POST con rootPath + true.
   - bUnit ScanPanel: con carpeta seleccionada + includeSubfolders=false → POST con rootPath + false.
   - Integration: `POST /api/jobs` con `{ rootPath, includeSubfolders }` → flag persistido correctamente.
-  - E2E: seleccionar carpeta en el árbol → Escanear → job se crea con esa ruta.
+  - E2E (6 casos en `FolderTreeE2ETests.cs`):
+    1. **Cargar página → árbol visible con directorios raíz.**
+       - Assert: `.folder-tree-name` visible, al menos una carpeta listada.
+    2. **Click en carpeta → se resalta visualmente.**
+       - Click en primer `.folder-tree-name` → tiene clase CSS `selected`.
+    3. **Click en otra carpeta → la anterior pierde selección.**
+       - Click carpeta A → tiene clase `selected`. Click carpeta B → A pierde `selected`, B tiene `selected`.
+    4. **Expandir carpeta → carga hijos bajo demanda.**
+       - Click ▶ en primer nodo → hijos aparecen como nuevos `.folder-tree-item`.
+    5. **Toggle "Incluir subcarpetas" → estado visible.**
+       - Assert: toggle existe (checkbox). Click toggle → se desmarca. Click otra vez → se marca.
+    6. **Escanear con carpeta seleccionada → job se crea.**
+       - Seleccionar carpeta, click "Escanear". Assert: scan comienza (barra de progreso visible).
 
 - **🟢 T-002** — Backend (Kip):
   - Modificar `CreateJobRequest` para incluir `IncludeSubfolders`.

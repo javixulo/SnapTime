@@ -55,7 +55,19 @@
 - Las miniaturas NO dependen de la base de datos. Todos los archivos (escaneados o no) reciben un `thumbnailUrl`. Los vídeos usan `<video>` en vez de `<img>`.
 
 ### Tareas propuestas
-- **🔴 T-001** — Tests (Janus): bUnit PhotoGrid (subcarpetas primero, doble clic navega, breadcrumb, círculo estado, click miniatura). E2E Playwright (seleccionar carpeta → grid poblado, doble clic subcarpeta, breadcrumb).
+- **🔴 T-001** — Tests (Janus): bUnit PhotoGrid (subcarpetas primero, doble clic navega, breadcrumb, círculo estado, click miniatura). E2E Playwright — los 3 tests existentes en `PhotoGridE2ETests.cs` más los siguientes casos adicionales:
+
+  1. (✅ existente) Seleccionar carpeta → grid carga items (`PhotoGrid_SelectFolderInTree_LoadsGridWithItems`).
+  2. (✅ existente) Doble click subcarpeta → navega dentro (`PhotoGrid_DoubleClickSubfolder_NavigatesInside`).
+  3. (✅ existente) Click breadcrumb → navega arriba (`PhotoGrid_Breadcrumb_ClickNavigatesUp`).
+  4. **Carpeta vacía → mensaje "Esta carpeta no contiene fotos".**
+      - Assert: `.photo-grid-empty` visible con texto informativo.
+  5. **Círculo de estado visible en miniaturas.**
+      - Assert: `.photo-grid-status-circle` presente en cada item.
+  6. **Vídeo muestra badge ▶.**
+      - Assert: si hay vídeos, `.photo-grid-play-badge` visible en ellos.
+  7. **Click thumbnail → emite selección (F6).**
+      - Assert: al clickar miniatura, se abre detalle en panel derecho (`.photo-detail-name` visible).
 - **🟢 T-002** — Backend (Kip): Endpoint `GET /api/photos` con paginación + `GET /api/thumbnails/{assetId}`. Endpoint `GET /api/photos/directory` para listar contenido del sistema de archivos (subcarpetas + archivos). Servicio `IPhotoService`.
 - **🟢 T-003** — Frontend (Karris): `PhotoGrid.razor` con CSS Grid, breadcrumb, subcarpetas click, círculo estado, overlay vídeo. Carga manual (sin Virtualize para evitar flickering con CSS Grid). Foto vacía/loading/error states.
 - **🔵 T-004** — Refactor
