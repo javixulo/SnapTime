@@ -109,6 +109,7 @@ La UI Blazor WASM se valida con dos niveles de test:
 **Reglas:**
 - Todo componente nuevo debe tener un test bUnit que cubra su renderizado básico y sus estados (carga, vacío, error, datos).
 - Los flujos críticos (escaneo, revisión, aplicación de cambios, selección/detalle, navegación) deben tener un test Playwright.
+- Los tests E2E deben ser **autónomos**: arrancan el servidor web antes de la ejecución y lo paran al finalizar, sin depender de un servidor externo ya funcionando.
 - Los tests E2E se ejecutan contra un servidor real y una base de datos SQLite efímera (ver `SqliteDbFixture`).
 
 **Tests E2E existentes:**

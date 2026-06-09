@@ -1,16 +1,15 @@
 // [F5] E2E tests for PhotoGrid — central panel photo grid
-using Microsoft.Playwright.NUnit;
-
 namespace SnapTime.E2ETests.Pages;
 
 [Parallelizable(ParallelScope.Self)]
-public class PhotoGridE2ETests : PageTest
+[Category("E2E")]
+public class PhotoGridE2ETests : PlaywrightTestBase
 {
     [Test]
     public async Task PhotoGrid_SelectFolderInTree_LoadsGridWithItems()
     {
         // [F5] Select a folder in the left tree → the grid loads items for that folder
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         // Wait for the folder tree to load
         await Expect(Page.Locator(".folder-tree-name").First).ToBeVisibleAsync();
@@ -38,7 +37,7 @@ public class PhotoGridE2ETests : PageTest
     public async Task PhotoGrid_DoubleClickSubfolder_NavigatesInside()
     {
         // [F5] Double-click a subfolder in the grid → navigates into it (breadcrumb updates)
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         // Wait for tree and select a folder
         await Expect(Page.Locator(".folder-tree-name").First).ToBeVisibleAsync();
@@ -75,7 +74,7 @@ public class PhotoGridE2ETests : PageTest
     public async Task PhotoGrid_Breadcrumb_ClickNavigatesUp()
     {
         // [F5] Click a breadcrumb segment → navigates to the parent path
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         // Wait for tree and select a folder
         await Expect(Page.Locator(".folder-tree-name").First).ToBeVisibleAsync();
@@ -113,7 +112,7 @@ public class PhotoGridE2ETests : PageTest
     public async Task PhotoGrid_EmptyFolder_ShowsEmptyMessage()
     {
         // [F5] Select a folder that contains no photos → empty state message is displayed
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         // Wait for the folder tree to load
         await Expect(Page.Locator(".folder-tree-name").First).ToBeVisibleAsync();
@@ -146,7 +145,7 @@ public class PhotoGridE2ETests : PageTest
     public async Task PhotoGrid_StatusCircles_VisibleOnItems()
     {
         // [F5] Each photo grid item shows a status circle indicating confidence level
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         // Wait for the folder tree to load
         await Expect(Page.Locator(".folder-tree-name").First).ToBeVisibleAsync();
@@ -179,7 +178,7 @@ public class PhotoGridE2ETests : PageTest
     public async Task PhotoGrid_VideoBadge_VisibleOnVideos()
     {
         // [F5] Video items display a play badge overlay on the grid thumbnail
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         // Wait for the folder tree to load
         await Expect(Page.Locator(".folder-tree-name").First).ToBeVisibleAsync();

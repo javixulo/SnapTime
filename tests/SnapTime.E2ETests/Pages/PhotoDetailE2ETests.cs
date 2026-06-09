@@ -1,10 +1,9 @@
 // [F6] E2E tests for PhotoDetail — right panel photo detail with metadata, confidence, and evidence
-using Microsoft.Playwright.NUnit;
-
 namespace SnapTime.E2ETests.Pages;
 
 [Parallelizable(ParallelScope.Self)]
-public class PhotoDetailE2ETests : PageTest
+[Category("E2E")]
+public class PhotoDetailE2ETests : PlaywrightTestBase
 {
     /// <summary>
     /// Helper: select the first folder in the tree and wait for the grid to load items.
@@ -16,7 +15,7 @@ public class PhotoDetailE2ETests : PageTest
         var folderName = await firstFolder.TextContentAsync();
         await TestContext.Out.WriteLineAsync($"=== SELECTED FOLDER === {folderName}");
         await firstFolder.ClickAsync();
-        await Expect(Page.Locator(".photo-grid")).ToBeVisibleAsync(new() { Timeout = 10000 });
+        await Expect(Page.Locator(".photo-grid")).ToBeVisibleAsync();
     }
 
     /// <summary>
@@ -79,7 +78,7 @@ public class PhotoDetailE2ETests : PageTest
     public async Task PhotoDetail_ClickThumbnail_ShowsDetail()
     {
         // [F6] Click a photo thumbnail in the grid → detail panel shows the file name
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         await SelectFirstFolderInTreeAsync();
 
@@ -104,7 +103,7 @@ public class PhotoDetailE2ETests : PageTest
     public async Task PhotoDetail_ClickThumbnail_ShowsMetadata()
     {
         // [F6] Click a photo thumbnail → detail panel shows metadata section and file size
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         await SelectFirstFolderInTreeAsync();
 
@@ -118,7 +117,7 @@ public class PhotoDetailE2ETests : PageTest
         }
 
         await Expect(Page.Locator(".photo-detail-metadata")).ToBeVisibleAsync(new() { Timeout = 10000 });
-        await Expect(Page.Locator(".photo-detail-size")).ToBeVisibleAsync(new() { Timeout = 5000 });
+        await Expect(Page.Locator(".photo-detail-size")).ToBeVisibleAsync();
 
         var metadataHtml = await Page.Locator(".photo-detail-metadata").InnerHTMLAsync();
         await TestContext.Out.WriteLineAsync($"=== METADATA HTML (first 200 chars) === {metadataHtml[..Math.Min(metadataHtml.Length, 200)]}");
@@ -128,7 +127,7 @@ public class PhotoDetailE2ETests : PageTest
     public async Task PhotoDetail_ClickDifferentPhoto_UpdatesDetail()
     {
         // [F6] Click two different photos sequentially → the detail panel updates to the new selection
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         await SelectFirstFolderInTreeAsync();
 
@@ -166,7 +165,7 @@ public class PhotoDetailE2ETests : PageTest
     public async Task PhotoDetail_NavigateSubfolder_ClickPhoto_StaysInSubfolder()
     {
         // [F6] Navigate into a subfolder, click a photo → detail shows, breadcrumb stays in subfolder
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         await SelectFirstFolderInTreeAsync();
 
@@ -223,7 +222,7 @@ public class PhotoDetailE2ETests : PageTest
     {
         // [F6] After selecting a photo inside a subfolder, clicking the breadcrumb to navigate up
         // clears the detail panel and shows the placeholder
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         await SelectFirstFolderInTreeAsync();
 
@@ -276,7 +275,7 @@ public class PhotoDetailE2ETests : PageTest
         await Expect(Page.Locator(".photo-grid-item").First).ToBeVisibleAsync(new() { Timeout = 10000 });
 
         // The detail panel should clear and show the empty placeholder
-        await Expect(Page.Locator(".photo-detail-empty")).ToBeVisibleAsync(new() { Timeout = 5000 });
+        await Expect(Page.Locator(".photo-detail-empty")).ToBeVisibleAsync();
         var emptyText = await Page.Locator(".photo-detail-empty").TextContentAsync();
         await TestContext.Out.WriteLineAsync($"=== EMPTY STATE AFTER BREADCRUMB NAV === {emptyText}");
     }

@@ -285,9 +285,11 @@ Ambos deben estar configurados y validados con un test simple (smoke test) antes
 
 3. **Ambos proyectos añadidos a la solución:** `dotnet sln add tests/SnapTime.Client.Tests/ tests/SnapTime.E2ETests/`
 
-4. **Scripts de CI** (si aplica):
-   - Los tests E2E necesitan que el Server y el Client estén corriendo antes de ejecutarse.
-   - Documentar en `docs/` cómo lanzar los tests localmente.
+4. **Autonomía E2E** — los tests E2E deben ser autónomos: arrancar el servidor web al inicio, ejecutar los tests, y pararlo al finalizar. Sin dependencia de un servidor externo ya funcionando.
+   - Usar `WebApplicationFactory<Program>` para iniciar el server con `UseUrls("http://127.0.0.1:0")` (puerto aleatorio) y Kestrel real accesible desde el navegador Playwright.
+   - Base de datos SQLite efímera por ejecución.
+   - El `SetUpFixture` o `PageTest` base debe exponer la URL base para que los tests la usen en lugar de `http://localhost:5027` hardcodeado.
+   - Eliminar la dependencia de lanzar manualmente `dotnet run` en Server y Client.
 
 **Criterios de aceptación:**
 - `dotnet test tests/SnapTime.Client.Tests` pasa (smoke test de bUnit).

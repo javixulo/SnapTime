@@ -1,18 +1,17 @@
 // [F4-US-001] -- E2E: seleccionar carpeta del árbol + escanear
-using Microsoft.Playwright.NUnit;
-
 namespace SnapTime.E2ETests.Pages;
 
 [Parallelizable(ParallelScope.Self)]
-public class ScanPanelE2ETests : PageTest
+[Category("E2E")]
+public class ScanPanelE2ETests : PlaywrightTestBase
 {
     [Test]
     public async Task ScanPanel_SelectFolderAndScan_ShowsProgress()
     {
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         await Expect(Page.Locator("text=Sistema de archivos")).ToBeVisibleAsync();
-        await Page.Locator(".folder-tree-name").First.WaitForAsync(new() { Timeout = 5000 });
+        await Page.Locator(".folder-tree-name").First.WaitForAsync();
 
         var firstFolder = Page.Locator(".folder-tree-name").First;
         var folderName = await firstFolder.TextContentAsync();
@@ -36,10 +35,10 @@ public class ScanPanelE2ETests : PageTest
     // [F4]
     public async Task ScanPanel_ToggleIncludeSubfolders_TogglesState()
     {
-        await Page.GotoAsync("http://localhost:5027");
+        await Page.GotoAsync(BaseUrl);
 
         await Expect(Page.Locator("text=Sistema de archivos")).ToBeVisibleAsync();
-        await Page.Locator(".folder-tree-name").First.WaitForAsync(new() { Timeout = 5000 });
+        await Page.Locator(".folder-tree-name").First.WaitForAsync();
 
         // Select a folder first so the scan panel is active
         var firstFolder = Page.Locator(".folder-tree-name").First;

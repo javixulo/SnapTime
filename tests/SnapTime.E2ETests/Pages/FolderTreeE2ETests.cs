@@ -1,12 +1,10 @@
 // [F4-US-005] E2E: panel izquierdo con árbol del sistema de archivos
-using Microsoft.Playwright.NUnit;
-
 namespace SnapTime.E2ETests.Pages;
 
 [Parallelizable(ParallelScope.Self)]
-public class FolderTreeE2ETests : PageTest
+[Category("E2E")]
+public class FolderTreeE2ETests : PlaywrightTestBase
 {
-    private const string BaseUrl = "http://localhost:5027";
 
     [Test]
     public async Task FolderTree_PageLoad_ShowsFilesystemRoots()
@@ -15,7 +13,7 @@ public class FolderTreeE2ETests : PageTest
 
         await Expect(Page.Locator("text=Sistema de archivos")).ToBeVisibleAsync();
 
-        await Page.Locator(".folder-tree-name").First.WaitForAsync(new() { Timeout = 5000 });
+        await Page.Locator(".folder-tree-name").First.WaitForAsync();
 
         var directoryItems = Page.Locator(".folder-tree-name");
         var count = await directoryItems.CountAsync();
@@ -28,7 +26,7 @@ public class FolderTreeE2ETests : PageTest
         await Page.GotoAsync(BaseUrl);
 
         await Expect(Page.Locator("text=Sistema de archivos")).ToBeVisibleAsync();
-        await Page.Locator(".folder-tree-name").First.WaitForAsync(new() { Timeout = 5000 });
+        await Page.Locator(".folder-tree-name").First.WaitForAsync();
 
         var expandToggle = Page.Locator(".folder-tree-toggle").First;
         await expandToggle.ClickAsync();
@@ -43,7 +41,7 @@ public class FolderTreeE2ETests : PageTest
         await Page.GotoAsync(BaseUrl);
 
         await Expect(Page.Locator("text=Sistema de archivos")).ToBeVisibleAsync();
-        await Page.Locator(".folder-tree-name").First.WaitForAsync(new() { Timeout = 5000 });
+        await Page.Locator(".folder-tree-name").First.WaitForAsync();
 
         var firstFolder = Page.Locator(".folder-tree-name").First;
         var folderName = await firstFolder.TextContentAsync();
@@ -61,7 +59,7 @@ public class FolderTreeE2ETests : PageTest
         await Page.GotoAsync(BaseUrl);
 
         await Expect(Page.Locator("text=Sistema de archivos")).ToBeVisibleAsync();
-        await Page.Locator(".folder-tree-name").First.WaitForAsync(new() { Timeout = 5000 });
+        await Page.Locator(".folder-tree-name").First.WaitForAsync();
 
         var folders = Page.Locator(".folder-tree-name");
         var count = await folders.CountAsync();

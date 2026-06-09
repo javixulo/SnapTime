@@ -32,6 +32,15 @@ Toda funcionalidad frontend (Blazor, CSS, client services) requiere **ambos** ni
 
 Sin excepción. Janus debe escribir ambos en la fase roja, y ambos deben pasar antes de que Gavin apruebe.
 
+## Tests E2E autónomos
+
+Los tests E2E deben ejecutarse sin dependencia de un servidor externo ya funcionando:
+- **Arranque automático:** al inicio de la ejecución, el servidor web se inicia como parte del fixture de tests (vía `WebApplicationFactory<Program>` u otro mecanismo que lo haga accesible desde el navegador real).
+- **Parada automática:** al finalizar la ejecución, el servidor se detiene y libera recursos.
+- **Base de datos efímera:** cada ejecución usa una base de datos SQLite temporal, aislada.
+
+Esto aplica a todos los tests E2E (F4, F5, F6 y futuros).
+
 ## Agent pipeline
 
 Every User Story follows this strict workflow:
