@@ -77,9 +77,12 @@ La UI debe mostrar un grid navegable de miniaturas de archivos multimedia con re
 
 ### Criterios de aceptación
 
-- Grid de miniaturas con indicadores visuales de score y estado.
-- Al hacer clic en una miniatura se expande inline mostrando detalle: ruta, fecha actual, score, sugerencia, evidencias y pesos.
-- Sin acciones de aprobación/rechazo en MVP (solo visualización y previsualización).
+- Grid de miniaturas con indicadores visuales de score y estado (círculo de 16px: gris pendiente, verde correcto, rojo error, #ffc107 sin sugerencia, azul con sugerencia).
+- Al hacer clic en una miniatura se abre el detalle en el panel derecho (no inline): ruta, tamaño, fechas EXIF + filesystem, sugerencia, evidencias, barra de confianza.
+- Al hacer clic en otra miniatura, el detalle se actualiza. Al navegar (breadcrumb, subcarpeta), la selección se limpia.
+- Las miniaturas se sirven desde disco (`GET /api/thumbnails/from-file?path=`), no desde BD.
+- Doble click en subcarpeta navega dentro del grid independientemente del árbol izquierdo.
+- Sin acciones de aprobación/rechazo en F6 (los botones son placeholders hasta F7).
 - Filtros por score, carpeta, rango de fechas, estado de revisión (Fase 2).
 
 ## FR-09 Control de ejecución

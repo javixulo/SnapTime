@@ -355,4 +355,48 @@ public class PhotoGridTests : TestContext
         selectedItem!.Name.Should().Be("photo1.jpg");
     }
 
+    // ──────────────────────────────────────────────
+    // Bug 2: Re-render no debe resetear navegación
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public void photoGrid_doesNotResetBrowsingPath_onReRender()
+    {
+        // [F6-BUG2] When the user double-clicks a subfolder and the parent re-renders,
+        // the grid must NOT reset to the original SelectedFolderPath.
+        var callPaths = new List<string?>();
+        _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                var path = callInfo.ArgAt<string?>(0);
+                callPaths.Add(path);
+                return new PhotoGridResponse
+                {
+                    Items =
+                    [
+                        new() { Name = "subfolder", Path = "/test/subfolder", IsDirectory = true }
+                    ],
+                    TotalCount = 1,
+                    Page = 1
+                };
+            });
+
+        var cut = RenderComponent<PhotoGrid>(p => p.Add(c => c.SelectedFolderPath, "/test"));
+        callPaths.Clear(); // forget the initial load
+
+        // Act: double-click the subfolder to navigate inside
+        var subfolderItem = cut.Find(".photo-grid-item");
+        subfolderItem.DoubleClick();
+        callPaths.Clear(); // forget the navigation load
+
+        // Trigger re-render with the same SelectedFolderPath (simulating parent re-render)
+        cut.SetParametersAndRender(p => p.Add(c => c.SelectedFolderPath, "/test"));
+
+        // Assert: grid should NOT have loaded "/test" again (still showing subfolder content)
+        callPaths.Should().BeEmpty("grid must not reset browsing path on parent re-render");
+
+        // Also verify the breadcrumb still shows the subfolder
+        var breadcrumb = cut.Find(".photo-grid-breadcrumb");
+        breadcrumb.TextContent.Should().Contain("subfolder");
+    }
 }

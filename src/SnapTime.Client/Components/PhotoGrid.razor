@@ -49,7 +49,7 @@ else
             {
                 @foreach (var item in _items)
                 {
-                    <div class="photo-grid-item"
+                    <div class="photo-grid-item@(item.IsDirectory ? " is-directory" : "")"
                          title="@item.Name"
                          @ondblclick="@(() => HandleDoubleClick(item))"
                          @onclick="@(() => SelectItem(item))"
@@ -253,7 +253,11 @@ else
     [Parameter]
     public EventCallback<PhotoGridItem> OnPhotoSelected { get; set; }
 
+    [Parameter]
+    public EventCallback OnNavigate { get; set; }
+
     private string? _currentBrowsingPath;
+    private string? _lastSelectedFolderPath;
     private bool _isLoading;
     private string? _error;
     private bool _hasLoadedOnce;
@@ -266,8 +270,9 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        if (SelectedFolderPath != _currentBrowsingPath)
+        if (SelectedFolderPath != _lastSelectedFolderPath)
         {
+            _lastSelectedFolderPath = SelectedFolderPath;
             _currentBrowsingPath = SelectedFolderPath;
             _isLoading = true;
             _hasLoadedOnce = false;
@@ -327,6 +332,7 @@ else
 
     private async Task NavigateInto(PhotoGridItem item)
     {
+        await OnNavigate.InvokeAsync();
         _currentBrowsingPath = item.Path;
         _isLoading = true;
         _hasLoadedOnce = false;
@@ -338,6 +344,7 @@ else
 
     private async Task NavigateToParent()
     {
+        await OnNavigate.InvokeAsync();
         if (string.IsNullOrEmpty(_currentBrowsingPath)) return;
 
         var parent = System.IO.Path.GetDirectoryName(_currentBrowsingPath);
@@ -361,6 +368,7 @@ else
 
     private async Task NavigateToSegment(int index)
     {
+        await OnNavigate.InvokeAsync();
         if (index < 0 || index >= _breadcrumbSegments.Count) return;
 
         var target = _breadcrumbSegments[index].FullPath;

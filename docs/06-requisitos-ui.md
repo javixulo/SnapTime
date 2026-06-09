@@ -11,8 +11,8 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - **Pantalla única** con paneles (sin navegación entre páginas).
 - **Panel superior**: estado del proceso, métricas básicas y botones de control. Ocupa todo el ancho.
 - **Panel izquierdo** (20%): estructura de carpetas en árbol estilo Windows.
-- **Panel central** (60%): grid de miniaturas. Barra de breadcrumb con contador de archivos.
-- **Panel derecho** (20%): dos subpaneles apilados verticalmente. Arriba, detalle de la foto seleccionada (metadatos, evidencias, barra de confianza, botones Aceptar/Rechazar). Abajo, chat conversacional Ollama.
+- **Panel central** (60%): grid de miniaturas. Barra de breadcrumb con contador de archivos. Sin Virtualize — carga manual con `@foreach` + `CancellationTokenSource`. Navegación interna (doble click subcarpeta) independiente del árbol izquierdo. Estados visuales: círculo de 16px (gris pendiente, verde correcto, rojo error, #ffc107 sin sugerencia, azul con sugerencia). Vídeos con `<video preload="metadata">`, badge ▶. Miniaturas servidas desde disco vía `GET /api/thumbnails/from-file?path=`, sin dependencia de BD.
+- **Panel derecho** (20%): dos subpaneles apilados verticalmente con `display: flex; flex-direction: column`. Arriba, detalle de la foto seleccionada (metadatos, evidencias, barra de confianza; botones Aceptar/Rechazar como placeholders no funcionales hasta F7). Abajo, chat conversacional Ollama.
 - **Ventana modal de configuración**, abierta desde un botón del panel superior.
 
 ## 4) Requisitos funcionales de UI
@@ -25,14 +25,19 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Si no hay carpeta seleccionada, se usa `sample/` como ruta por defecto.
 
 ### 4.2) Panel central: grid de archivos multimedia
-- Cuadrícula de archivos con miniatura (fotos) o icono de vídeo (vídeos, con indicador de duración).
-- Indicadores visuales sobre la miniatura/icono (badge de score bajo/alto, icono de estado de revisión, icono de tipo de archivo).
-- Al hacer clic en una miniatura, se expande inline mostrando detalle con evidencias.
+- Cuadrícula de archivos con miniatura (fotos) o vídeo nativo con `<video preload="metadata">` (vídeos, badge ▶右下).
+- Indicadores visuales sobre la miniatura/icono: círculo de estado de 16px (gris pendiente, verde correcto, rojo error, #ffc107 sin sugerencia, azul con sugerencia).
+- Al hacer clic en una miniatura, se muestra el detalle en el panel derecho (no inline). Doble click en subcarpeta navega dentro del grid independientemente del árbol izquierdo.
 - **Solo visualización** en MVP. Sin acciones (aceptar/rechazar) desde el grid.
+- **Sin Virtualize:** reemplazado por `@foreach` manual + llamada asíncrona con `CancellationTokenSource` para cancelar peticiones en curso al navegar rápido.
+- Las miniaturas se sirven desde disco (`GET /api/thumbnails/from-file?path=`), no desde BD.
 
 ### 4.3) Vista de detalle
-- Se abre expandiendo la miniatura inline dentro del grid.
-- Muestra: ruta completa, fecha actual, score, sugerencia (si existe), desglose de evidencias (heurística aplicada, peso, dirección).
+- Se abre en la sección superior del panel derecho (no inline en el grid).
+- Muestra: ruta completa, tamaño, fechas EXIF (4 tags: Original, SubSec, Creado, Modificado), fechas filesystem (ctime/mtime). Para archivos escaneados: fecha sugerida, heurística aplicada, barra de confianza visual (0-100, verde ≥80, amarillo 50-79, rojo <50) y lista de evidencias. Para archivos no escaneados: metadatos básicos leídos directamente del disco vía `GET /api/media-assets/from-file?path=`, sin evidencias ni barra de confianza.
+- Si no hay foto seleccionada, muestra placeholder "Selecciona una foto".
+- Al navegar (breadcrumb, subir, doble click subcarpeta) la selección se limpia automáticamente.
+- Botones Aceptar/Rechazar: placeholders no funcionales. Se implementarán en F7 (revisión en lote).
 
 ### 4.4) Panel superior
 - Controles de ejecución: iniciar, pausar, reanudar y cancelar.
@@ -103,8 +108,12 @@ La UI Blazor WASM se valida con dos niveles de test:
 
 **Reglas:**
 - Todo componente nuevo debe tener un test bUnit que cubra su renderizado básico y sus estados (carga, vacío, error, datos).
-- Los flujos críticos (escaneo, revisión, aplicación de cambios) deben tener un test Playwright.
+- Los flujos críticos (escaneo, revisión, aplicación de cambios, selección/detalle, navegación) deben tener un test Playwright.
 - Los tests E2E se ejecutan contra un servidor real y una base de datos SQLite efímera (ver `SqliteDbFixture`).
+
+**Tests E2E existentes:**
+- `PhotoGridE2ETests.cs` (3 tests): selección de carpeta carga grid, doble click subcarpeta navega, breadcrumb navega arriba.
+- `PhotoDetailE2ETests.cs` (5 tests, pendientes de ejecución con web): click thumbnail muestra detalle, muestra metadatos, cambio de foto actualiza detalle, subcarpeta + foto mantiene breadcrumb, breadcrumb limpia detalle.
 
 ## 9) Panel izquierdo: árbol del sistema de archivos
 
@@ -230,6 +239,15 @@ El componente `FolderTreeItem` usa su propio método `Combine` para construir ru
 - Para árboles muy profundos (>10 niveles), el renderizado recursivo puede ser lento; en MVP esto no es un problema porque los directorios rara vez superan 5-6 niveles.
 
 ## 10) Decisiones de diseño
+
+### Navegación del grid limpia selección de detalle
+- Cuando el usuario navega (breadcrumb, flecha subir, doble click subcarpeta), `PhotoGrid` emite `OnNavigate` y `Home.razor` limpia `_selectedPhotoId` / `_selectedPhotoPath`, ocultando el detalle. Esto evita mostrar información obsoleta al cambiar de carpeta.
+
+### Identificación de subcarpetas en grid
+- Los items directorio tienen la clase CSS `is-directory` para permitir selección por selectores de Playwright. La clase se añade condicionalmente con `@(item.IsDirectory ? " is-directory" : "")`.
+
+### Botones Aceptar/Rechazar
+- Son placeholders no funcionales en `PhotoDetail.razor`. Se implementarán en F7 (revisión en lote). Renderizados siempre pero sin efecto hasta entonces.
 
 ### Subpanel de metainformación de carpeta
 - Ubicación definitiva: **zona inferior del panel central (grid)**, debajo de las miniaturas/iconos.

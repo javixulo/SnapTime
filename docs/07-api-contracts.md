@@ -50,7 +50,20 @@ public record MediaAssetDetailDto(
     int ConfidenceScore,
     DateTime? SuggestedDate,
     string? SuggestedByHeuristic,
+    MediaStatus Status,
     List<EvidenceDto> Evidence
+);
+
+public record FileMetadataDto(
+    string FilePath,
+    string FileName,
+    long FileSize,
+    DateTime? DateTimeOriginal,
+    string? SubSecDateTimeOriginal,
+    DateTime? CreateDate,
+    DateTime? ModifyDate,
+    DateTime? FileCreatedAt,
+    DateTime? FileModifiedAt
 );
 
 public record EvidenceDto(
@@ -154,7 +167,8 @@ public record HeuristicConfigDto(
 | Método | Ruta | Request Query | Response | Descripción |
 |--------|------|---------------|----------|-------------|
 | GET | `/media-assets` | `folderPath?`, `mediaType?`, `minConfidence?`, `maxConfidence?`, `status?`, `sortBy?`, `sortDir?`, `page`, `pageSize` | `PaginatedResponse<MediaAssetDto>` | Listado paginado con filtros |
-| GET | `/media-assets/{id}` | — | `MediaAssetDetailDto` | Detalle con evidencia |
+| GET | `/media-assets/{id}` | — | `MediaAssetDetailDto` | Detalle con evidencia (solo escaneados). |
+| GET | `/media-assets/from-file` | `path` (string, required) | `FileMetadataDto` | Metadatos del archivo leídos directamente del disco (EXIF + filesystem). Sin BD. Funciona para cualquier archivo, escaneado o no. |
 | GET | `/thumbnails/{assetId}` | — | `FileStream` | Miniatura desde un asset escaneado. Busca el asset en BD y sirve el archivo del disco. |
 | GET | `/thumbnails/from-file` | `path` (string, required) | `FileStream` | Miniatura de cualquier archivo. Sin dependencia de BD. Lee el archivo directamente del sistema de archivos. |
 | GET | `/thumbnails/placeholder` | — | `image/png` | Placeholder gris para directorios o archivos no soportados. |

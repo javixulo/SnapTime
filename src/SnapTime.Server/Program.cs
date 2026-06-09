@@ -1,4 +1,5 @@
 // [F0-US-006] [F0-US-008] [F1-US-005]
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using SnapTime.Domain.Entities;
@@ -190,6 +191,7 @@ app.MapGet("/api/photos", async (
                         !HasSystemPathPrefix(dirPath))
                     {
                         items.Add(new PhotoGridItem(
+                            Guid.Empty,
                             dirInfo.Name,
                             dirPath,
                             IsDirectory: true,
@@ -236,6 +238,7 @@ app.MapGet("/api/photos", async (
                         ? MediaStatus.HasSuggestion
                         : MediaStatus.NoSuggestion;
                     items.Add(new PhotoGridItem(
+                        asset.Id,
                         fileName,
                         filePath,
                         IsDirectory: false,
@@ -248,6 +251,7 @@ app.MapGet("/api/photos", async (
                 else
                 {
                     items.Add(new PhotoGridItem(
+                        Guid.Empty,
                         fileName,
                         filePath,
                         IsDirectory: false,
@@ -274,6 +278,7 @@ app.MapGet("/api/photos", async (
                     ? MediaStatus.HasSuggestion
                     : MediaStatus.NoSuggestion;
                 items.Add(new PhotoGridItem(
+                    asset.Id,
                     asset.FileName,
                     asset.FilePath,
                     IsDirectory: false,
@@ -317,6 +322,103 @@ app.MapGet("/api/photos", async (
     }
 })
 .WithName("GetPhotos");
+
+// [F6] Media asset detail — returns full detail with evidence and metadata
+app.MapGet("/api/media-assets/{id:guid}", async (Guid id, SnapTimeDbContext db) =>
+{
+    var asset = await db.MediaAssets
+        .Include(a => a.EvidenceEntries)
+        .Include(a => a.MetadataEntries)
+        .FirstOrDefaultAsync(a => a.Id == id);
+
+    if (asset is null)
+        return Results.NotFound();
+
+    var metadata = asset.MetadataEntries
+        .ToDictionary(m => m.Tag, m => m.Value, StringComparer.OrdinalIgnoreCase);
+
+    return Results.Ok(new MediaAssetDetailDto(
+        asset.Id,
+        asset.FilePath,
+        asset.FileName,
+        asset.MediaType,
+        asset.FileSize,
+        DateTimeOriginal: TryParseMetadataDate(metadata, "Exif SubIFD:Date/Time Original"),
+        SubSecDateTimeOriginal: metadata.TryGetValue("Exif SubIFD:Sub-Sec Time Original", out var sub) ? sub : null,
+        CreateDate: TryParseMetadataDate(metadata, "Exif IFD0:Date/Time Digitized")
+                    ?? TryParseMetadataDate(metadata, "QuickTime Movie Header:Created"),
+        ModifyDate: TryParseMetadataDate(metadata, "QuickTime Movie Header:Modified")
+                    ?? TryParseMetadataDate(metadata, "Exif IFD0:Date/Time"),
+        asset.FileCreatedAt,
+        asset.FileModifiedAt,
+        asset.ConfidenceScore,
+        asset.SuggestedDate,
+        asset.SuggestedByHeuristic,
+        asset.EvidenceEntries.OrderByDescending(e => e.Weight).Select(e => new EvidenceDto(
+            e.HeuristicId,
+            e.HeuristicName,
+            e.Weight,
+            MapDirection(e.Direction),
+            e.Description
+        )).ToList()
+    ));
+})
+.WithName("GetMediaAssetDetail");
+
+// [F6] File metadata — read metadata directly from disk without DB
+app.MapGet("/api/media-assets/from-file", async (string path, IMetadataExtractor metadataExtractor) =>
+{
+    if (string.IsNullOrWhiteSpace(path))
+        return Results.BadRequest(new { error = new { code = "INVALID_PATH", message = "Path is required." } });
+
+    try
+    {
+        var resolved = Path.GetFullPath(path);
+
+        if (!System.IO.File.Exists(resolved))
+            return Results.NotFound(new { error = new { code = "NOT_FOUND", message = "File does not exist." } });
+
+        var fileInfo = new FileInfo(resolved);
+        var ext = fileInfo.Extension.ToLowerInvariant();
+
+        var videoExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"
+        };
+        var mediaType = videoExtensions.Contains(ext) ? MediaType.Video : MediaType.Image;
+
+        var metadataEntries = await metadataExtractor.ExtractAsync(resolved, mediaType, CancellationToken.None);
+        var metadataDict = metadataEntries
+            .ToDictionary(m => m.Tag, m => m.Value, StringComparer.OrdinalIgnoreCase);
+
+        return Results.Ok(new FileMetadataDto(
+            resolved,
+            fileInfo.Name,
+            fileInfo.Length,
+            DateTimeOriginal: TryParseMetadataDate(metadataDict, "Exif SubIFD:Date/Time Original"),
+            SubSecDateTimeOriginal: metadataDict.TryGetValue("Exif SubIFD:Sub-Sec Time Original", out var sub) ? sub : null,
+            CreateDate: TryParseMetadataDate(metadataDict, "Exif IFD0:Date/Time Digitized")
+                        ?? TryParseMetadataDate(metadataDict, "QuickTime Movie Header:Created"),
+            ModifyDate: TryParseMetadataDate(metadataDict, "QuickTime Movie Header:Modified")
+                        ?? TryParseMetadataDate(metadataDict, "Exif IFD0:Date/Time"),
+            FileCreatedAt: fileInfo.CreationTime,
+            FileModifiedAt: fileInfo.LastWriteTime
+        ));
+    }
+    catch (UnauthorizedAccessException)
+    {
+        return Results.StatusCode(403);
+    }
+    catch (PathTooLongException)
+    {
+        return Results.BadRequest(new { error = new { code = "PATH_TOO_LONG", message = "Path exceeds the system maximum length." } });
+    }
+    catch (ArgumentException)
+    {
+        return Results.BadRequest(new { error = new { code = "INVALID_PATH", message = "Path contains invalid characters." } });
+    }
+})
+.WithName("GetFileMetadata");
 
 // [F5] Thumbnail — serve actual file as image (full-size, no resize yet)
 app.MapGet("/api/thumbnails/{assetId:guid}", async (Guid assetId, SnapTimeDbContext db) =>
@@ -571,6 +673,46 @@ static bool HasSystemPathPrefix(string fullPath)
 public partial class Program
 {
     private const string PlaceholderBase64 = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAJ0lEQVR4nO3NMQ0AAAwDoPpXVllVsWMJGCA9FoFAIBAIBAKBQPAlGGDXYIj+Um+RAAAAAElFTkSuQmCC";
+
+    private static readonly string[] MetadataDateFormats =
+    [
+        "yyyy:MM:dd HH:mm:ss",
+        "yyyy:MM:dd HH:mm:ss.fff",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-ddTHH:mm:ss",
+        "yyyy-MM-dd"
+    ];
+
+    /// <summary>
+    /// Maps the EvidenceDirection enum to a lowercase string for the API contract.
+    /// </summary>
+    internal static string MapDirection(EvidenceDirection direction) => direction switch
+    {
+        EvidenceDirection.Positive => "positive",
+        EvidenceDirection.Negative => "negative",
+        EvidenceDirection.Correction => "correction",
+        _ => "positive"
+    };
+
+    /// <summary>
+    /// Attempts to parse a date value from the metadata dictionary by tag key.
+    /// Handles both EXIF colon-separated dates and standard ISO formats.
+    /// Returns null if the tag is missing or unparseable.
+    /// </summary>
+    internal static DateTime? TryParseMetadataDate(Dictionary<string, string?> metadata, string tag)
+    {
+        if (!metadata.TryGetValue(tag, out var value) || value is null)
+            return null;
+
+        if (DateTime.TryParseExact(value, MetadataDateFormats,
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            return date;
+
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out date))
+            return date;
+
+        return null;
+    }
 }
 
 /// <summary>

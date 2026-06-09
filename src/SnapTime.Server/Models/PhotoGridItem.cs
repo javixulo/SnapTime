@@ -5,6 +5,7 @@ namespace SnapTime.Server.Models;
 /// <summary>
 /// Represents a single entry in the photo grid — either a file or a subdirectory.
 /// </summary>
+/// <param name="Id">Database ID for indexed assets; <see cref="Guid.Empty"/> for files/dirs not yet in DB.</param>
 /// <param name="Name">File or directory name.</param>
 /// <param name="Path">Full file system path.</param>
 /// <param name="IsDirectory">True if this is a directory, false if it's a file.</param>
@@ -14,6 +15,7 @@ namespace SnapTime.Server.Models;
 /// <param name="SuggestedDate">The suggested corrected date, if any.</param>
 /// <param name="MediaType">Type of media (Image or Video).</param>
 public record PhotoGridItem(
+    Guid Id,
     string Name,
     string Path,
     bool IsDirectory,

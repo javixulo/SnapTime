@@ -3,6 +3,7 @@ using Bunit;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
+using SnapTime.Client.Components;
 using SnapTime.Client.Pages;
 using SnapTime.Client.Services;
 using SnapTime.Client.Models;
@@ -37,5 +38,41 @@ public class HomePageTests : TestContext
         cut.Markup.Should().Contain("snaptime-right-panel");
         cut.Markup.Should().Contain("Sistema de archivos");
         cut.Markup.Should().Contain("Users");
+    }
+
+    [Fact]
+    public void homePage_passesSelectedAssetPath_toPhotoDetail()
+    {
+        // [F6-BUG1] After clicking a photo in the grid, PhotoDetail should receive SelectedAssetPath
+        _filesystemClient.GetDirectoriesAsync(null, Arg.Any<CancellationToken>())
+            .Returns(new[] { "Users" });
+
+        var photoItems = new List<PhotoGridItem>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "vacation.jpg",
+                Path = "/Users/vacation.jpg",
+                IsDirectory = false,
+                ThumbnailUrl = "/api/thumbnails/1"
+            }
+        };
+        _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(new PhotoGridResponse { Items = photoItems, TotalCount = 1, Page = 1 });
+
+        var cut = RenderComponent<Home>();
+
+        // Select a folder in the tree so the grid loads
+        var folderName = cut.Find(".folder-tree-name");
+        folderName.Click();
+
+        // The grid should now have items — click a photo thumbnail
+        var thumbnail = cut.Find(".photo-grid-thumbnail");
+        thumbnail.Click();
+
+        // Assert: PhotoDetail should be rendered with SelectedAssetPath
+        var photoDetail = cut.FindComponent<PhotoDetail>();
+        photoDetail.Instance.SelectedAssetPath.Should().Be("/Users/vacation.jpg");
     }
 }

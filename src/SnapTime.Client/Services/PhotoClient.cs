@@ -1,4 +1,4 @@
-// [F5] Photo HTTP client — calls GET /api/photos with pagination
+// [F5] [F6] Photo HTTP client — calls GET /api/photos, GET /api/media-assets/{id}, and GET /api/media-assets/from-file
 using System.Net.Http.Json;
 using SnapTime.Client.Models;
 
@@ -23,5 +23,21 @@ public class PhotoClient : IPhotoClient
         var response = await _http.GetAsync($"/api/photos{query}", ct);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<PhotoGridResponse>(ct) ?? new PhotoGridResponse();
+    }
+
+    public async Task<MediaAssetDetailDto> GetAssetDetailAsync(Guid id, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync($"/api/media-assets/{id}", ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<MediaAssetDetailDto>(ct)
+            ?? throw new InvalidOperationException("Response body was null");
+    }
+
+    public async Task<FileMetadataDto?> GetFileMetadataAsync(string filePath, CancellationToken ct = default)
+    {
+        var encoded = Uri.EscapeDataString(filePath);
+        var response = await _http.GetAsync($"/api/media-assets/from-file?path={encoded}", ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<FileMetadataDto>(ct);
     }
 }

@@ -24,12 +24,20 @@ This includes `git commit`, `git push`, `git add + commit`, and any alias or scr
 
 - Do not add NuGet, npm, or any external dependency without prior validation.
 
+## Tests de frontend: obligatorios siempre
+
+Toda funcionalidad frontend (Blazor, CSS, client services) requiere **ambos** niveles de test:
+- **bUnit** (`tests/SnapTime.Client.Tests/`): tests unitarios de componentes (renderizado, eventos, estados visuales). Rápidos, sin navegador.
+- **Playwright** (`tests/SnapTime.E2ETests/`): tests E2E con navegador real (flujos completos: selección → grid → detalle → navegación).
+
+Sin excepción. Janus debe escribir ambos en la fase roja, y ambos deben pasar antes de que Gavin apruebe.
+
 ## Agent pipeline
 
 Every User Story follows this strict workflow:
 
 0. 🗂 **Corvan** detects the need, writes/updates the backlog spec, then delegates
-1. 🔴 **Janus** writes failing tests first
+1. 🔴 **Janus** writes failing tests first — **bUnit + E2E** para frontend
 2. 🟢 **Kip** implements backend code (API, services, domain, EF); **Karris** implements frontend code (Blazor components, client HTTP services) in parallel
 3. 🔵 **Kip** refactors backend; **Karris** refactors frontend (tests must stay green)
 4. 🗄️ **Kip** generates EF migration if entities/DbContext changed (`dotnet ef migrations add`, `database update`, smoke test insert/read)
@@ -39,6 +47,7 @@ Every User Story follows this strict workflow:
 8. 🗂 **Corvan** updates documentation with implementation insights, closes the US
 
 **Area assignment:**
+- **Janus**: tests bUnit + E2E para frontend (Playwright). Tests de integración para backend. Unit tests para backend.
 - **Karris**: all Blazor components (`.razor`), client HTTP services (`IClient` / `Client`), styles, layouts, modals, everything under `Client/`
 - **Kip**: all backend (API endpoints, domain/infrastructure services, DTOs, EF, entities), everything under `Server/`, `Domain/`, `Infrastructure/`
 - **Corvan**: documentation only (`backlog/`, `docs/`, `AGENTS.md`, `README.md`) — never touches code

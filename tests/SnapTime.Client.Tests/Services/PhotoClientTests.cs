@@ -90,6 +90,110 @@ public class PhotoClientTests
         await act.Should().ThrowAsync<HttpRequestException>();
     }
 
+    [Fact]
+    public async Task photoClient_GetAssetDetail_ReturnsDetail()
+    {
+        // [F6] GetAssetDetailAsync returns the media asset detail from the API
+        var assetId = Guid.NewGuid();
+        var expected = new MediaAssetDetailDto
+        {
+            Id = assetId,
+            FilePath = "/test/photo.jpg",
+            FileName = "photo.jpg",
+            MediaType = "Image",
+            FileSize = 2048,
+            DateTimeOriginal = new DateTime(2024, 1, 15, 10, 0, 0),
+            SubSecDateTimeOriginal = null,
+            CreateDate = new DateTime(2024, 1, 15, 10, 0, 0),
+            ModifyDate = new DateTime(2024, 1, 16, 12, 0, 0),
+            FileCreatedAt = new DateTime(2024, 1, 15, 10, 0, 0),
+            FileModifiedAt = new DateTime(2024, 1, 16, 12, 0, 0),
+            ConfidenceScore = 90,
+            SuggestedDate = new DateTime(2024, 1, 15),
+            SuggestedByHeuristic = "FilenameHeuristic",
+            Evidence =
+            [
+                new EvidenceDto
+                {
+                    HeuristicId = "H006",
+                    HeuristicName = "Filename heuristic",
+                    Weight = 0.9,
+                    Direction = "positive",
+                    Description = "Filename contains date"
+                }
+            ]
+        };
+
+        var httpClient = CreateMockHttpClient(expected, HttpStatusCode.OK);
+        var client = new PhotoClient(httpClient);
+
+        var result = await client.GetAssetDetailAsync(assetId);
+
+        result.Should().NotBeNull();
+        result.Id.Should().Be(assetId);
+        result.FileName.Should().Be("photo.jpg");
+        result.Evidence.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task photoClient_GetAssetDetail_HandlesError()
+    {
+        // [F6] When the API returns an error, GetAssetDetailAsync throws
+        var assetId = Guid.NewGuid();
+        var httpClient = CreateMockHttpClient("Server error", HttpStatusCode.InternalServerError);
+        var client = new PhotoClient(httpClient);
+
+        Func<Task<MediaAssetDetailDto>> act = () => client.GetAssetDetailAsync(assetId);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    // ──────────────────────────────────────────────
+    // File metadata (F6 fallback for unscanned files)
+    // ──────────────────────────────────────────────
+
+    [Fact]
+    public async Task photoClient_GetFileMetadata_ReturnsMetadata()
+    {
+        // [F6] GetFileMetadataAsync returns FileMetadataDto from the API
+        var expected = new FileMetadataDto
+        {
+            FilePath = "/test/photo.jpg",
+            FileName = "photo.jpg",
+            FileSize = 2048,
+            DateTimeOriginal = new DateTime(2024, 1, 15, 10, 0, 0),
+            SubSecDateTimeOriginal = null,
+            CreateDate = new DateTime(2024, 1, 15, 10, 0, 0),
+            ModifyDate = new DateTime(2024, 1, 16, 12, 0, 0),
+            FileCreatedAt = new DateTime(2024, 1, 15, 10, 0, 0),
+            FileModifiedAt = new DateTime(2024, 1, 16, 12, 0, 0)
+        };
+
+        var httpClient = CreateMockHttpClient(expected, HttpStatusCode.OK);
+        var client = new PhotoClient(httpClient);
+
+        var result = await client.GetFileMetadataAsync("/test/photo.jpg");
+
+        result.Should().NotBeNull();
+        result.FileName.Should().Be("photo.jpg");
+        result.FilePath.Should().Be("/test/photo.jpg");
+        result.FileSize.Should().Be(2048);
+        result.DateTimeOriginal.Should().Be(new DateTime(2024, 1, 15, 10, 0, 0));
+        result.FileCreatedAt.Should().Be(new DateTime(2024, 1, 15, 10, 0, 0));
+    }
+
+    [Fact]
+    public async Task photoClient_GetFileMetadata_HandlesError()
+    {
+        // [F6] When the API returns an error, GetFileMetadataAsync throws
+        var httpClient = CreateMockHttpClient("Server error", HttpStatusCode.InternalServerError);
+        var client = new PhotoClient(httpClient);
+
+        Func<Task<FileMetadataDto>> act = () => client.GetFileMetadataAsync("/test/photo.jpg");
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
     private static HttpClient CreateMockHttpClient(object responseContent, HttpStatusCode statusCode)
     {
         var handler = new MockHttpMessageHandler(_ =>

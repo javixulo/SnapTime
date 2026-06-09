@@ -1,0 +1,240 @@
+@* [F6] PhotoDetail — Panel de detalle de foto con metadatos, confianza y evidencia *@
+@using SnapTime.Client.Models
+@using SnapTime.Client.Services
+@inject IPhotoClient PhotoClient
+
+@if (!SelectedAssetId.HasValue && string.IsNullOrEmpty(SelectedAssetPath))
+{
+    <div class="photo-detail-container">
+        <div class="photo-detail-empty">Selecciona una foto</div>
+    </div>
+}
+else if (_isLoading)
+{
+    <div class="photo-detail-container">
+        <div class="photo-detail-loading">Cargando...</div>
+    </div>
+}
+else if (_error is not null)
+{
+    <div class="photo-detail-container">
+        <div class="photo-detail-error">@_error</div>
+    </div>
+}
+else if (_detail is not null)
+{
+    <div class="photo-detail-container">
+        <h3 class="photo-detail-name">@_detail.FileName</h3>
+        <div class="photo-detail-path">@_detail.FilePath</div>
+        <div class="photo-detail-size">@FormatFileSize(_detail.FileSize)</div>
+
+        <div class="photo-detail-metadata">
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Original:</span>
+                <span>@_detail.DateTimeOriginal?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">SubSec:</span>
+                <span>@_detail.SubSecDateTimeOriginal</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Creado:</span>
+                <span>@_detail.CreateDate?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Modificado:</span>
+                <span>@_detail.ModifyDate?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Fichero creado:</span>
+                <span>@_detail.FileCreatedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Fichero mod:</span>
+                <span>@_detail.FileModifiedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            @if (_detail.SuggestedDate is not null)
+            {
+                <div class="photo-detail-metadata-row">
+                    <span class="photo-detail-metadata-label">Sugerida:</span>
+                    <span>@_detail.SuggestedDate?.ToString("dd/MM/yyyy")</span>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_detail.SuggestedByHeuristic))
+            {
+                <div class="photo-detail-metadata-row">
+                    <span class="photo-detail-metadata-label">Heurística:</span>
+                    <span>@_detail.SuggestedByHeuristic</span>
+                </div>
+            }
+        </div>
+
+        <div class="photo-detail-confidence-section">
+            <div class="photo-detail-confidence-label">Confianza: @_detail.ConfidenceScore%</div>
+            <div class="photo-detail-confidence-bar @GetConfidenceClass()" style="width: @_detail.ConfidenceScore%">
+                @_detail.ConfidenceScore
+            </div>
+        </div>
+
+        @if (_detail.Evidence is { Count: > 0 })
+        {
+            <div class="photo-detail-evidence-section">
+                <h4>Evidencia</h4>
+                <div class="photo-detail-evidence-list">
+                    @foreach (var ev in _detail.Evidence)
+                    {
+                        <div class="photo-detail-evidence-item">
+                            <div class="evidence-header">
+                                <span class="evidence-name">@ev.HeuristicName</span>
+                                <span class="evidence-weight">@ev.Weight.ToString("F2")</span>
+                                <span class="evidence-direction @GetDirectionClass(ev.Direction)">@ev.Direction</span>
+                            </div>
+                            <div class="evidence-description">@ev.Description</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="photo-detail-actions">
+            <button class="btn-accept" @onclick="() => OnAccept.InvokeAsync()">Aceptar</button>
+            <button class="btn-reject" @onclick="() => OnReject.InvokeAsync()">Rechazar</button>
+        </div>
+    </div>
+}
+else if (_fileMetadata is not null)
+{
+    <div class="photo-detail-container">
+        <h3 class="photo-detail-name">@_fileMetadata.FileName</h3>
+        <div class="photo-detail-path">@_fileMetadata.FilePath</div>
+        <div class="photo-detail-size">@FormatFileSize(_fileMetadata.FileSize)</div>
+
+        <div class="photo-detail-metadata">
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Original:</span>
+                <span>@_fileMetadata.DateTimeOriginal?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">SubSec:</span>
+                <span>@_fileMetadata.SubSecDateTimeOriginal</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Creado:</span>
+                <span>@_fileMetadata.CreateDate?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Modificado:</span>
+                <span>@_fileMetadata.ModifyDate?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Fichero creado:</span>
+                <span>@_fileMetadata.FileCreatedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="photo-detail-metadata-row">
+                <span class="photo-detail-metadata-label">Fichero mod:</span>
+                <span>@_fileMetadata.FileModifiedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid? SelectedAssetId { get; set; }
+
+    [Parameter]
+    public string? SelectedAssetPath { get; set; }
+
+    [Parameter]
+    public EventCallback OnAccept { get; set; }
+
+    [Parameter]
+    public EventCallback OnReject { get; set; }
+
+    private MediaAssetDetailDto? _detail;
+    private FileMetadataDto? _fileMetadata;
+    private bool _isLoading;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SelectedAssetId.HasValue)
+        {
+            _isLoading = true;
+            _error = null;
+            _detail = null;
+            _fileMetadata = null;
+
+            try
+            {
+                _detail = await PhotoClient.GetAssetDetailAsync(SelectedAssetId.Value);
+            }
+            catch (Exception ex)
+            {
+                _error = $"Error al cargar detalle: {ex.Message}";
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+        else if (!string.IsNullOrEmpty(SelectedAssetPath))
+        {
+            _isLoading = true;
+            _error = null;
+            _detail = null;
+            _fileMetadata = null;
+
+            try
+            {
+                _fileMetadata = await PhotoClient.GetFileMetadataAsync(SelectedAssetPath);
+                if (_fileMetadata is null)
+                    _error = "No se pudieron obtener los metadatos del archivo.";
+            }
+            catch (Exception ex)
+            {
+                _error = $"Error al cargar metadatos: {ex.Message}";
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+        else
+        {
+            _detail = null;
+            _fileMetadata = null;
+            _isLoading = false;
+            _error = null;
+        }
+    }
+
+    private string GetConfidenceClass()
+    {
+        if (_detail is null) return "";
+        if (_detail.ConfidenceScore >= 80) return "confidence-high";
+        if (_detail.ConfidenceScore >= 50) return "confidence-medium";
+        return "confidence-low";
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024)
+            return $"{bytes} B";
+        if (bytes < 1024 * 1024)
+            return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+
+    private static string GetDirectionClass(string direction)
+    {
+        return direction switch
+        {
+            "positive" => "direction-positive",
+            "negative" => "direction-negative",
+            "neutral" => "direction-neutral",
+            "correction" => "direction-correction",
+            _ => ""
+        };
+    }
+}

@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using SnapTime.Client.Models
 
 <PageTitle>SnapTime</PageTitle>
 
@@ -13,17 +14,53 @@
         </aside>
 
         <section class="snaptime-center-panel">
-            <PhotoGrid SelectedFolderPath="@_selectedPath" OnPhotoSelected="@((item) => { /* placeholder F6 */ })" />
+            <PhotoGrid SelectedFolderPath="@_selectedPath"
+                       OnPhotoSelected="@HandlePhotoSelected"
+                       OnNavigate="@HandleGridNavigate" />
         </section>
 
         <aside class="snaptime-right-panel">
-                <h3 class="snaptime-placeholder">Chat (próximamente)</h3>
+            <div class="snaptime-right-panel-top">
+                <PhotoDetail SelectedAssetId="@_selectedPhotoId"
+                             SelectedAssetPath="@_selectedPhotoPath"
+                             OnAccept="@HandleAcceptSuggestion"
+                             OnReject="@HandleRejectSuggestion" />
+            </div>
+            <div class="snaptime-right-panel-bottom">
+                <div class="snaptime-placeholder">Chat (F9)</div>
+            </div>
         </aside>
     </div>
 </div>
 
 @code {
     private string? _selectedPath;
+    private Guid? _selectedPhotoId;
+    private string? _selectedPhotoPath;
+
+    private void HandlePhotoSelected(PhotoGridItem item)
+    {
+        _selectedPhotoPath = item.Path;
+        _selectedPhotoId = item.Id != Guid.Empty ? item.Id : null;
+    }
+
+    private void HandleAcceptSuggestion()
+    {
+        _selectedPhotoId = null;
+        _selectedPhotoPath = null;
+    }
+
+    private void HandleRejectSuggestion()
+    {
+        _selectedPhotoId = null;
+        _selectedPhotoPath = null;
+    }
+
+    private void HandleGridNavigate()
+    {
+        _selectedPhotoId = null;
+        _selectedPhotoPath = null;
+    }
 }
 
 <style>
@@ -60,8 +97,19 @@
         width: 20%;
         min-width: 140px;
         border-left: 1px solid #e0e0e0;
-        padding: 16px;
         background: #fafafa;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .snaptime-right-panel-top {
+        flex: 1;
+        overflow-y: auto;
+    }
+    .snaptime-right-panel-bottom {
+        border-top: 1px solid #e0e0e0;
+        padding: 16px;
+        flex-shrink: 0;
     }
     .snaptime-placeholder {
         color: #999;
