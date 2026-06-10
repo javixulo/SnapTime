@@ -65,10 +65,10 @@ Every User Story follows this strict workflow:
 
 # LLM Assignment for Agents
 
-When Kip or Karris are executed to implement or modify code, they MUST use the local Ollama model `qwen2.5-coder:14b`. This model is specialized for programming tasks and is required for consistency and quality of backend (Kip) and frontend (Karris) implementations.
+When Kip, Karris, or Janus are executed to implement or modify code/tests, they MUST use the local Ollama model `qwen2.5-coder:14b`. This model is specialized for programming and test-writing tasks and is required for consistency and quality of backend (Kip), frontend (Karris), and TDD/test generation (Janus) work.
 
 - The model runs locally via Ollama and should be specified as the model parameter when launching those agents.
-- Do not substitute another model for Kip or Karris unless you receive explicit approval from the project owner.
+- Do not substitute another model for Kip, Karris, or Janus unless you receive explicit approval from the project owner.
 
 ## Stack and architecture
 
