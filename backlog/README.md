@@ -18,7 +18,7 @@
 | F5 | Grid de fotos (panel central) | ⏳ Pendiente | FR-08, FR-18 |
 | F6 | Panel detalle (foto seleccionada) | ⏳ Pendiente | FR-08 |
 | F7 | Revisión en lote | ⏳ Pendiente | FR-10 |
-| F8 | Aplicación de cambios (dry-run + escritura) | ⏳ Pendiente | FR-11 |
+| F8 | Aplicación de cambios (escritura real, batch) | ⏳ Pendiente | FR-11 |
 | F9 | Chat contextual con LLM (Ollama) | ⏳ Pendiente | FR-19 |
 
 ## Cómo trabajamos

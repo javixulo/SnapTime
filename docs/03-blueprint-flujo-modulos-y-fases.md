@@ -82,7 +82,7 @@ flowchart TB
 5. Resultados se persisten en SQLite con evidencia.
 6. La UI muestra lista/filtros/detalle y permite revisión.
 7. Usuario aprueba/rechaza cambios.
-8. Sistema ejecuta dry-run o aplicación real y registra auditoría.
+8. Sistema ejecuta aplicación real (batch) y registra auditoría. No hay dry-run en el MVP.
 
 ## 3) Contratos iniciales (sin implementación)
 
@@ -100,7 +100,7 @@ flowchart TB
 | GET | `/photos/{id}` | Detalle con evidencia |
 | GET | `/thumbnails/{photoId}` | Miniatura bajo demanda |
 | POST | `/reviews/batch` | Aprobar/rechazar en lote |
-| POST | `/apply` | Ejecutar dry-run o aplicación real |
+| POST | `/apply` | Ejecutar aplicación real (batch) |
 
 ### MCP tools (para agentes)
 | Tool | Descripción |
@@ -109,7 +109,7 @@ flowchart TB
 | `list_low_confidence(threshold, limit, filters)` | Listar archivos con baja confianza |
 | `get_media_evidence(media_id)` | Obtener evidencias de un archivo multimedia |
 | `suggest_date(media_id)` | Pedir sugerencia de fecha |
-| `apply_fix(media_id, mode, confirm_token)` | Aplicar cambio (dry_run o commit) |
+| `apply_fix(media_id, confirm_token)` | Aplicar cambio (commit) |
 
 ## 4) Reglas de decisión iniciales (baseline)
 
@@ -153,7 +153,6 @@ flowchart TB
 - API/MCP estabilizados y versionados.
 
 ### Fase 3 - Aplicación controlada de cambios
-- Dry-run formal.
 - Aplicación real con confirmaciones fuertes.
 - Auditoría completa y reportes post-operación.
 

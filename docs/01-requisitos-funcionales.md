@@ -106,7 +106,7 @@ El sistema debe permitir aceptar/rechazar sugerencias por ítem o por lote.
 - Soporta aprobación/rechazo individual desde el panel de detalle.
 - Soporta aprobación/rechazo por lote sobre la carpeta actual visible en el grid.
 - Soporta aprobación/rechazo por lote sobre el total de archivos escaneados.
-- Muestra resumen previo (dry-run) en modal con lista de cambios: archivo, fecha actual → fecha nueva.
+ - Muestra resumen previo en modal con lista de cambios: archivo, fecha actual → fecha nueva. (La ejecución es real only; el modal sirve para confirmar.)
 - Requiere confirmación explícita para aplicar (botón "Aplicar" / "Cancelar" en el modal).
 
 ## FR-11 Aplicación de cambios de metadatos
@@ -115,9 +115,9 @@ El sistema debe escribir la fecha aceptada en metadatos de forma controlada.
 
 ### Criterios de aceptación
 
-- Permite modo simulación (sin escritura real).
 - Registra resultado por archivo (ok/error/motivo).
-- Nunca modifica sin consentimiento del usuario.
+- Nunca modifica sin consentimiento explícita del usuario (modal de confirmación).
+- Proceso best-effort: aplica todo lo posible y devuelve listado de errores sin rollback.
 
 ## FR-12 Auditoría y trazabilidad
 

@@ -67,10 +67,11 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Orden por defecto en MVP: nombre.
 - El usuario puede cambiar el criterio de ordenación.
 
-### 4.7) Dry-run y aplicación
+### 4.7) Aplicación de cambios
 - Modal con lista de cambios: archivo, fecha actual → fecha nueva para cada ítem.
 - Botón "Aplicar" o "Cancelar".
 - Requiere confirmación explícita.
+- Las fechas que se muestran al usuario deben formatearse como `dd/MM/yyyy`. Las fechas sugeridas deben resaltarse visualmente (por ejemplo con `<strong>`). El modal mostrará un resumen final con los archivos que fallaron y la causa.
 
 ### 4.8) Filtros (Fase 2)
 - Los filtros por score, carpeta, rango de fechas, estado de revisión se implementan en Fase 2.

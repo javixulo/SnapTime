@@ -10,9 +10,11 @@ Corvan is the user's direct interlocutor. His job is **documentation and delegat
 
 ## Commits and pushes
 
-BEFORE any git commit or push: STOP and ask user for explicit permission.
-Do not proceed until user says "yes", "adelante", "dale", "commit", "push" or similar.
-This includes `git commit`, `git push`, `git add + commit`, and any alias or script that performs these operations.
+BEFORE any git commit or push: STOP and obtain explicit, prior permission from the user.
+Do not perform `git commit` or `git push` until the user has given a clear affirmative command such as "yes", "adelante", "dale", "commit", "push" or an equivalent approval message **before** running any git commands.
+This rule applies to all agents and humans operating under these agent rules. It includes `git commit`, `git push`, `git add + commit`, and any alias or script that performs these operations.
+
+If an agent or person makes file edits without having received prior explicit approval to commit, they must revert to the safe state of: keep changes in the working tree (uncommitted) and ask the user for instruction. Under no circumstances should an agent assume consent retroactively.
 
 ## Documentation
 

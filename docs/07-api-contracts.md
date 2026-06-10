@@ -118,16 +118,19 @@ public record BatchReviewRequest(
 );
 
 public record ApplyChangesRequest(
-    List<Guid> MediaAssetIds,
-    bool DryRun  // true = simulación, false = escritura real
+    List<Guid> MediaAssetIds
 );
 
 public record ApplyChangesResponse(
-    List<ApplyResult> Results
+    List<ApplyResult> Results,
+    int AppliedCount,
+    int FailedCount,
+    DateTime Timestamp
 );
 
 public record ApplyResult(
     Guid MediaAssetId,
+    string FileName,
     bool Success,
     string? Error
 );
@@ -192,7 +195,7 @@ public record HeuristicConfigDto(
 |--------|------|---------|----------|-------------|
 | POST | `/reviews/single` | `SingleReviewRequest` | `MediaAssetDto` | Aprobar/rechazar sugerencia de un archivo. |
 | POST | `/reviews/batch` | `BatchReviewRequest` | `List<Guid>` (200) | Aprobar/rechazar en lote (carpeta o total). Devuelve los IDs actualizados. |
-| POST | `/apply` | `ApplyChangesRequest` | `ApplyChangesResponse` | Dry-run o aplicación real |
+| POST | `/apply` | `ApplyChangesRequest` | `ApplyChangesResponse` | Ejecutar aplicación real (batch). Response incluye resultado por archivo y listado de errores |
 
 ### Chat
 

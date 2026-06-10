@@ -21,6 +21,7 @@ permission:
     "git add docs/*": allow
     "git add README.md": allow
     "git commit *": allow
+    # Push requires explicit user approval (see AGENTS.md)
     "git push *": ask
     "git status": allow
     "git log *": allow
