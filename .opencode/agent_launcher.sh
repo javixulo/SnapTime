@@ -9,8 +9,8 @@ MODEL_ARG="$2"
 TASK_DESC="$3"
 USER_NAME="$4"
 
-AGENT_MD=".opencode/agents/${AGENT_NAME,,}.md"
-# fallback: try capitalized
+AGENT_MD=".opencode/agents/$(echo "$AGENT_NAME" | tr '[:upper:]' '[:lower:]').md"
+# fallback: try as provided
 if [ ! -f "$AGENT_MD" ]; then
   AGENT_MD=".opencode/agents/${AGENT_NAME}.md"
 fi

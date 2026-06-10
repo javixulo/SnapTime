@@ -8,7 +8,8 @@ AGENT_NAME="$1"
 TASK_DESC="$2"
 USER_NAME="$3"
 
-AGENT_MD=".opencode/agents/${AGENT_NAME,,}.md"
+# try lowercase then as-is (bash on mac sometimes lacks ${var,,})
+AGENT_MD=".opencode/agents/$(echo "$AGENT_NAME" | tr '[:upper:]' '[:lower:]').md"
 if [ ! -f "$AGENT_MD" ]; then
   AGENT_MD=".opencode/agents/${AGENT_NAME}.md"
 fi
