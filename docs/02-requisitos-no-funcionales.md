@@ -14,7 +14,7 @@
 
 ## NFR-03 Fiabilidad operativa
 
-- Los jobs deben ser reanudables tras cierre inesperado.
+- Los jobs deben ser resilientes a cierre inesperado (checkpoints cada 50 archivos).
 - El sistema debe ser tolerante a archivos corruptos sin abortar ejecución completa.
 - Errores por archivo se registran y se continúa con el resto.
 
@@ -33,7 +33,7 @@
 
 - UI clara para flujos de revisión masiva.
 - Filtros y ordenación eficientes en listados grandes.
-- Estados de proceso visibles (en curso, pausado, cancelado, finalizado, error).
+- Estados de proceso visibles (idle, scanning, cancelled, completed, error).
 
 ## NFR-07 Mantenibilidad
 

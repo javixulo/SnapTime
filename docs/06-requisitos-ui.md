@@ -21,14 +21,14 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - No hay input de texto. La ruta se selecciona exclusivamente desde el árbol del panel izquierdo.
 - Al hacer clic en el nombre de una carpeta del árbol, se resalta como seleccionada (solo una a la vez).
 - Un toggle "Incluir subcarpetas" (checkbox) controla si el escaneo es recursivo (por defecto: sí).
-- El botón "Escanear" usa `{ rootPath: carpetaSeleccionada, includeSubfolders: bool }`.
+- La ruta seleccionada y el flag de subcarpetas se pasan al panel superior (4.4) para el botón "Escanear".
 - Si no hay carpeta seleccionada, se usa `sample/` como ruta por defecto.
 
 ### 4.2) Panel central: grid de archivos multimedia
 - Cuadrícula de archivos con miniatura (fotos) o vídeo nativo con `<video preload="metadata">` (vídeos, badge ▶右下).
-- Indicadores visuales sobre la miniatura/icono: círculo de estado de 16px (gris pendiente, verde correcto, rojo error, #ffc107 sin sugerencia, azul con sugerencia).
+- Indicadores visuales sobre la miniatura/icono: círculo de estado de 16px que muestra el **`AnalysisStatus`** del archivo (gris = Pending, verde = Correct, rojo = Error, #ffc107 = NoSuggestion, azul = HasSuggestion). El estado de revisión de la sugerencia (`SuggestionReviewStatus`) no se refleja en el círculo del grid en MVP.
 - Al hacer clic en una miniatura, se muestra el detalle en el panel derecho (no inline). Doble click en subcarpeta navega dentro del grid independientemente del árbol izquierdo.
-- **Solo visualización** en MVP. Sin acciones (aceptar/rechazar) desde el grid.
+- **Solo visualización.** Sin acciones (aceptar/rechazar) desde el grid. Sin checkboxes ni selección múltiple. La aprobación/rechazo de sugerencias se hace desde el panel de detalle (individual) o desde los botones de lote en el panel superior.
 - **Sin Virtualize:** reemplazado por `@foreach` manual + llamada asíncrona con `CancellationTokenSource` para cancelar peticiones en curso al navegar rápido.
 - Las miniaturas se sirven desde disco (`GET /api/thumbnails/from-file?path=`), no desde BD.
 
@@ -37,13 +37,22 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Muestra: ruta completa, tamaño, fechas EXIF (4 tags: Original, SubSec, Creado, Modificado), fechas filesystem (ctime/mtime). Para archivos escaneados: fecha sugerida, heurística aplicada, barra de confianza visual (0-100, verde ≥80, amarillo 50-79, rojo <50) y lista de evidencias. Para archivos no escaneados: metadatos básicos leídos directamente del disco vía `GET /api/media-assets/from-file?path=`, sin evidencias ni barra de confianza.
 - Si no hay foto seleccionada, muestra placeholder "Selecciona una foto".
 - Al navegar (breadcrumb, subir, doble click subcarpeta) la selección se limpia automáticamente.
-- Botones Aceptar/Rechazar: placeholders no funcionales. Se implementarán en F7 (revisión en lote).
+- Botones Aceptar/Rechazar: placeholders no funcionales hasta F7. En F7 se activan solo si:
+  1. El proceso de escaneo no está en ejecución (idle, completed o cancelled).
+  2. El archivo tiene una recomendación (`SuggestedDate` no nulo).
+  Si no se cumplen ambas, los botones se muestran deshabilitados (atenuados).
 
 ### 4.4) Panel superior
-- Controles de ejecución: iniciar, pausar, reanudar y cancelar.
+- **ScanPanel** (sección izquierda del panel superior):
+  - Botón "Escanear" — se deshabilita durante la ejecución del scan, se rehabilita al finalizar o cancelar.
+  - Botón "Cancelar" — visible solo durante el scan.
+  - Progreso: "Procesando N de M archivos".
+  - Al escanear una carpeta ya escaneada, se fuerza el reescaneo completo (datos previos reemplazados).
 - Botón para abrir configuración (modal).
-- Métricas: progreso de archivos procesados + resumen de confianza (altas, revisar, sugerir corrección).
-- Estados de proceso visibles: en curso, pausado, cancelado, finalizado, error.
+- Métricas: resumen de confianza post-scan (altas, revisar, sugerir corrección).
+- Estados de proceso visibles: idle, scanning, cancelled, completed, error.
+- Botones de revisión por lote: Aceptar Todo / Rechazar Todo (carpeta actual visible) y Aceptar Total / Rechazar Total (todo lo escaneado). Los botones de lote abren modal de confirmación con resumen antes de aplicar.
+- Los botones de lote se habilitan solo si el scan no está activo y hay al menos un archivo con recomendación en el ámbito correspondiente.
 
 ### 4.5) Pantalla de configuración (modal)
 - Ventana modal flotante sobre el grid.
@@ -91,7 +100,7 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Consultas del backend optimizadas para filtros y ordenación sobre grandes volúmenes.
 
 ## 7) Requisitos de experiencia de usuario
-- Los estados del sistema deben ser inequívocos (en curso, pausado, cancelado, finalizado, error).
+- Los estados del sistema deben ser inequívocos (idle, scanning, cancelled, completed, error).
 - Las acciones potencialmente destructivas deben requerir confirmación.
 - Los mensajes de error deben indicar causa y siguiente acción recomendada, mostrados en el propio panel.
 - La UI debe ser usable con bibliotecas grandes sin bloquear la interacción.
@@ -247,8 +256,21 @@ El componente `FolderTreeItem` usa su propio método `Combine` para construir ru
 ### Identificación de subcarpetas en grid
 - Los items directorio tienen la clase CSS `is-directory` para permitir selección por selectores de Playwright. La clase se añade condicionalmente con `@(item.IsDirectory ? " is-directory" : "")`.
 
-### Botones Aceptar/Rechazar
+### Botones Aceptar/Rechazar sugerencia (individual)
 - Son placeholders no funcionales en `PhotoDetail.razor`. Se implementarán en F7 (revisión en lote). Renderizados siempre pero sin efecto hasta entonces.
+- En F7 pasan a ser funcionales. No aprueban/rechazan la foto, sino su **sugerencia de fecha** (`SuggestedDate`):
+  - **Activos** solo si: (a) el proceso de escaneo no está en ejecución (idle, completed o cancelled), y (b) el archivo tiene `SuggestedDate` no nulo.
+  - Si no se cumplen ambas condiciones, los botones se muestran **deshabilitados** (opacidad reducida, cursor por defecto, sin respuesta al clic).
+- Al hacer clic en Aceptar → `SuggestionReviewStatus` pasa a `Approved`. Al hacer clic en Rechazar → pasa a `Rejected`. El cambio se persiste en SQLite.
+- El círculo de estado en el grid no cambia (sigue mostrando `AnalysisStatus`). El estado de revisión se refleja en el panel de detalle y opcionalmente como indicador secundario en el grid (Fase 2).
+
+### Botones Aceptar Todo / Rechazar Todo / Aceptar Total / Rechazar Total (lote)
+- Se ubican en el panel superior (4.4).
+- **Aceptar Todo / Rechazar Todo:** opera sobre todos los archivos visibles en la carpeta actual del grid, sin selección previa.
+- **Aceptar Total / Rechazar Total:** opera sobre todos los archivos escaneados hasta la fecha.
+- Se habilitan solo si el scan no está activo y hay al menos un archivo con recomendación en el ámbito correspondiente.
+- Al pulsarlos, se abre un modal de confirmación con resumen: "Se aprobarán/rechazarán N archivos".
+- No hay selección múltiple en el grid. No hay checkboxes por fila.
 
 ### Subpanel de metainformación de carpeta
 - Ubicación definitiva: **zona inferior del panel central (grid)**, debajo de las miniaturas/iconos.

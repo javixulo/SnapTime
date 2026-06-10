@@ -87,13 +87,15 @@ La UI debe mostrar un grid navegable de miniaturas de archivos multimedia con re
 
 ## FR-09 Control de ejecución
 
-La UI debe permitir iniciar, pausar, reanudar y cancelar procesos de escaneo/análisis.
+La UI debe permitir iniciar y cancelar procesos de escaneo/análisis.
 
 ### Criterios de aceptación
 
-- Cambios de estado visibles en tiempo real.
+- Cambios de estado visibles en tiempo real (idle, scanning, cancelled, completed, error).
 - Cancelación cooperativa con cierre consistente del job.
-- Reanudación desde último checkpoint disponible.
+- Progreso visible: archivos procesados / total.
+- El botón de escaneo se deshabilita durante la ejecución y se rehabilita al finalizar o cancelar.
+- Al escanear una carpeta ya escaneada previamente, se fuerza el reescaneo: los datos previos se eliminan y se recogen de nuevo desde cero.
 
 ## FR-10 Flujo de aprobación de cambios
 
@@ -101,7 +103,9 @@ El sistema debe permitir aceptar/rechazar sugerencias por ítem o por lote.
 
 ### Criterios de aceptación
 
-- Soporta selección múltiple por filtros.
+- Soporta aprobación/rechazo individual desde el panel de detalle.
+- Soporta aprobación/rechazo por lote sobre la carpeta actual visible en el grid.
+- Soporta aprobación/rechazo por lote sobre el total de archivos escaneados.
 - Muestra resumen previo (dry-run) en modal con lista de cambios: archivo, fecha actual → fecha nueva.
 - Requiere confirmación explícita para aplicar (botón "Aplicar" / "Cancelar" en el modal).
 

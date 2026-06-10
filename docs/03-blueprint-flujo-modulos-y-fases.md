@@ -90,8 +90,8 @@ flowchart TB
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | POST | `/jobs` | Crear job de análisis |
-| POST | `/jobs/{id}/pause` | Pausar job |
-| POST | `/jobs/{id}/resume` | Reanudar job |
+| POST | `/jobs/{id}/pause` | Pausar job (API/MCP, no expuesto en UI) |
+| POST | `/jobs/{id}/resume` | Reanudar job (API/MCP, no expuesto en UI) |
 | POST | `/jobs/{id}/cancel` | Cancelar job |
 | GET | `/jobs/{id}` | Estado y progreso |
 | GET | `/folders/tree` | Árbol de carpetas con estado de selección |
@@ -147,7 +147,8 @@ flowchart TB
 - UI mínima: árbol + grid miniaturas + detalle inline + chat MCP.
 
 ### Fase 2 - Revisión y sugerencias avanzadas
-- Filtros avanzados, revisión por lotes, exportes.
+- Filtros avanzados, exportes.
+- Aprobación/rechazo por lote (carpeta actual y total escaneado).
 - Mejoras de heurísticas de contexto.
 - API/MCP estabilizados y versionados.
 

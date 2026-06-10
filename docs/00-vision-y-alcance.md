@@ -31,7 +31,7 @@ Esto dificulta la ordenación cronológica, la búsqueda por eventos y el manten
 - Cálculo de confianza de fecha actual (0-100) para cada archivo.
 - Sugerencia de fecha alternativa para casos de baja confianza.
 - Evidencia trazable por regla/señal.
-- UI web con control de procesos (iniciar, pausar, cancelar) y revisión de resultados.
+- UI web con control de procesos (iniciar, cancelar) y revisión de resultados.
 - Persistencia local en SQLite.
 
 ## 5) Fuera de alcance inicial (Out of Scope)

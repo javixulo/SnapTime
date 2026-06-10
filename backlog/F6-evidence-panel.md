@@ -21,6 +21,7 @@
 - Si no hay foto seleccionada, la sección superior muestra un placeholder.
 - **Fotos sin escanear:** si el archivo no tiene ID en BD (Guid.Empty), se muestra la metadata básica desde el endpoint `from-file`. Sin evidencias ni sugerencias hasta que se escanee.
 - **Botones Aceptar/Rechazar:** no forman parte de esta feature. Se implementarán en F7 (revisión en lote). Los botones actuales son placeholders no funcionales.
+- **Preparación para F7:** el componente `PhotoDetail.razor` debe aceptar inyección de un servicio de estado (`IScanStateService` / `ScanStateService`) para que F7 US-003 pueda habilitar/deshabilitar los botones según el estado del scan. El placeholder debe renderizar los botones siempre (visibles pero sin efecto) y estar listo para recibir `ScanStateService` por DI. Los botones deben tener clase CSS `.btn-accept` y `.btn-reject` para selectores de test.
 - La navegación por doble click en subcarpetas del grid debe ser independiente del árbol izquierdo. Un re-render del padre no debe resetear la carpeta de navegación interna del grid.
 
 ### Contrato API

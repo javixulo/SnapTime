@@ -213,23 +213,24 @@ Endpoints REST para control de jobs.
 
 ---
 
-## F1-US-007 — Persistencia de resultados
+## F1-US-007 — Persistencia de resultados (reescaneo)
 
-**Estado actual:** El pipeline guarda en batch de 50 con checkpoints. Errores de persistencia se loguean y el job continúa. Los assets se crean con `MediaAsset.Add()`.
+**Estado actual:** El pipeline guarda en batch de 50 con checkpoints. Errores de persistencia se loguean y el job continúa. Los assets se crean con `MediaAsset.Add()`. No existe lógica de reescaneo.
 
-**Brecha:** No existe lógica de upsert por `FilePath` normalizado (`Path.GetFullPath`). `PersistProgressCheckpointAsync` siempre inserta, nunca actualiza. El batch size (50) está hardcodeado.
+**Brecha:** Al reescanear una carpeta (F7 US-001), los datos previos deben eliminarse y volverse a recoger desde cero. El batch size (50) está hardcodeado.
 
 **Requisitos precisos:**
-- [ ] Implementar upsert en `PersistProgressCheckpointAsync`: buscar `MediaAsset` existente por `FilePath` normalizado. Si existe, actualizar `ScanJobId` y reemplazar `MetadataEntries`; si no, insertar nuevo. `MediaType` no debe cambiar en upsert
+- [ ] En `CreateJobAsync`, antes de encolear el job, eliminar todos los `MediaAsset`, `MetadataEntry` y `EvidenceEntry` asociados a archivos dentro de `rootPath` (incluyendo subcarpetas si `includeSubfolders = true`). Usar `Path.GetFullPath` para normalizar rutas.
+- [ ] La eliminación debe ejecutarse en una transacción: si falla, el job no se crea.
 - [ ] Hacer configurable el batch size: parámetro `batchSize` en constructor de `ScanJobService` con default 50
 - [ ] Test: primer scan de carpeta con 3 archivos → se insertan 3 `MediaAsset`
-- [ ] Test: segundo scan de misma carpeta → upsert: siguen siendo 3 `MediaAsset`, `ScanJobId` actualizado al nuevo job, metadatos reemplazados
+- [ ] Test: segundo scan de misma carpeta → delete + re-insert: siguen siendo 3 `MediaAsset`, `ScanJobId` del nuevo job, metadatos reemplazados
 - [ ] Test: error de persistencia simulado incrementa `ErrorCount` y el job continúa (no se detiene)
 
 **Criterios de aceptación:**
-- [ ] Dos scans de la misma ruta: la tabla `MediaAssets` tiene exactamente tantas filas como archivos únicos (sin duplicados por `FilePath`)
-- [ ] `ScanJobId` se actualiza al último job en cada upsert
-- [ ] `MediaType` no cambia en upsert aunque el archivo haya sido reclasificado
+- [ ] Dos scans de la misma ruta: la tabla `MediaAssets` tiene exactamente tantas filas como archivos únicos
+- [ ] `ScanJobId` corresponde al último job tras el reescaneo
+- [ ] Al reescanear, los `MetadataEntry` y `EvidenceEntry` antiguos se eliminan (no quedan huérfanos)
 - [ ] Batch size configurable desde constructor
 - [ ] Fallo en `SaveChangesAsync` no detiene el job; incrementa `ErrorCount` y loguea
 

@@ -69,16 +69,21 @@ public class MediaAsset {
     public int ConfidenceScore { get; set; }
     public DateTime? SuggestedDate { get; set; }
     public string? SuggestedByHeuristic { get; set; }
-    public MediaStatus Status { get; set; }
+    public AnalysisStatus Status { get; set; }
+    public SuggestionReviewStatus SuggestionStatus { get; set; }
     public Guid ScanJobId { get; set; }
     public ScanJob ScanJob { get; set; } = null!;
     public List<MetadataEntry> MetadataEntries { get; set; } = [];
     public List<EvidenceEntry> EvidenceEntries { get; set; } = [];
 }
 
-public enum MediaStatus { Pending, Review, Approved, Rejected }
+/// <summary>Estado del análisis de la foto. Determina el círculo de color en el grid.</summary>
+public enum AnalysisStatus { Pending, Correct, Error, NoSuggestion, HasSuggestion }
 
-public enum EvidenceDirection { Positive, Negative }
+/// <summary>Estado de revisión de la sugerencia (si existe).</summary>
+public enum SuggestionReviewStatus { Unreviewed, Approved, Rejected }
+
+public enum EvidenceDirection { Positive, Negative, Correction }
 
 public class MetadataEntry {
     public Guid Id { get; set; }

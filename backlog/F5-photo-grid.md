@@ -22,13 +22,14 @@
 - La navegación es **independiente del árbol izquierdo** — el árbol mantiene su selección.
 - El grid expone una **miga de pan (breadcrumb)** para navegar hacia arriba.
 
-### Círculo de estado
-- Esquina superior derecha de cada miniatura, círculo pequeño (16px diámetro).
-- **Gris** — no escaneado / pendiente.
-- **Verde** — escaneado y fecha correcta.
-- **Rojo** — escaneado con error.
-- **Amarillo** — escaneado, sin sugerencia de mejora.
-- **Azul** — escaneado, hay sugerencia de mejor fecha.
+### Círculo de estado (AnalysisStatus)
+- Esquina superior derecha de cada miniatura, círculo pequeño (16px diámetro). Representa el `AnalysisStatus` del archivo.
+- **Gris** (`Pending`) — no escaneado / pendiente.
+- **Verde** (`Correct`) — escaneado y fecha correcta.
+- **Rojo** (`Error`) — escaneado con error.
+- **Amarillo** (`NoSuggestion`) — escaneado, sin sugerencia de mejora.
+- **Azul** (`HasSuggestion`) — escaneado, hay sugerencia de mejor fecha.
+- El estado de revisión de la sugerencia (`SuggestionReviewStatus: Unreviewed/Approved/Rejected`) no se refleja en el círculo del grid en MVP. Se muestra en el panel de detalle.
 
 ### Indicador de recuento
 - Muestra el número de archivos de la carpeta seleccionada, desglosado por tipo: imagen y vídeo.

@@ -19,7 +19,11 @@ public enum MediaType { Image, Video }
 
 public enum SelectionState { Selected, None, Partial }
 
-public enum MediaStatus { Pending, Correct, Error, NoSuggestion, HasSuggestion }
+/// <summary>Estado del análisis de la foto. Determina el círculo de color en el grid.</summary>
+public enum AnalysisStatus { Pending, Correct, Error, NoSuggestion, HasSuggestion }
+
+/// <summary>Estado de revisión de la sugerencia (si existe).</summary>
+public enum SuggestionReviewStatus { Unreviewed, Approved, Rejected }
 
 public enum JobStatus { Running, Paused, Completed, Cancelled, Error }
 
@@ -32,7 +36,8 @@ public record MediaAssetDto(
     DateTime? SuggestedDate,
     int ConfidenceScore,
     string? SuggestedByHeuristic,
-    MediaStatus Status
+    AnalysisStatus Status,
+    SuggestionReviewStatus SuggestionStatus
 );
 
 public record MediaAssetDetailDto(
@@ -50,7 +55,8 @@ public record MediaAssetDetailDto(
     int ConfidenceScore,
     DateTime? SuggestedDate,
     string? SuggestedByHeuristic,
-    MediaStatus Status,
+    AnalysisStatus Status,
+    SuggestionReviewStatus SuggestionStatus,
     List<EvidenceDto> Evidence
 );
 
@@ -70,7 +76,7 @@ public record EvidenceDto(
     string HeuristicId,
     string HeuristicName,
     double Weight,
-    string Direction,  // "positive" | "negative"
+    string Direction,  // "positive" | "negative" | "correction"
     string Description
 );
 
@@ -100,9 +106,15 @@ public record PaginatedResponse<T>(
     int PageSize
 );
 
+public record SingleReviewRequest(
+    Guid AssetId,
+    string Status  // "approved" | "rejected"
+);
+
 public record BatchReviewRequest(
-    List<Guid> MediaAssetIds,
-    string Action  // "approve" | "reject"
+    string Scope,    // "folder" | "total"
+    string Status,   // "approved" | "rejected"
+    string? RootPath // obligatorio si Scope == "folder"
 );
 
 public record ApplyChangesRequest(
@@ -148,11 +160,11 @@ public record HeuristicConfigDto(
 
 | Método | Ruta | Request | Response | Descripción |
 |--------|------|---------|----------|-------------|
-| POST | `/jobs` | `{ rootPath: string }` | `JobDto` (201) | Crear y arrancar job de análisis |
+| POST | `/jobs` | `{ rootPath: string, includeSubfolders: bool }` | `JobDto` (201) | Crear y arrancar job de análisis |
 | GET | `/jobs` | — | `List<JobDto>` | Listar jobs |
 | GET | `/jobs/{id}` | — | `JobDto` | Estado y progreso |
-| POST | `/jobs/{id}/pause` | — | `JobDto` | Pausar |
-| POST | `/jobs/{id}/resume` | — | `JobDto` | Reanudar |
+| POST | `/jobs/{id}/pause` | — | `JobDto` | Pausar (API/MCP, no expuesto en UI) |
+| POST | `/jobs/{id}/resume` | — | `JobDto` | Reanudar (API/MCP, no expuesto en UI) |
 | POST | `/jobs/{id}/cancel` | — | `JobDto` | Cancelar |
 
 ### Carpetas
@@ -178,7 +190,8 @@ public record HeuristicConfigDto(
 
 | Método | Ruta | Request | Response | Descripción |
 |--------|------|---------|----------|-------------|
-| POST | `/reviews/batch` | `BatchReviewRequest` | `List<Guid>` (200) | Aprobar/rechazar en lote. Devuelve los IDs actualizados. |
+| POST | `/reviews/single` | `SingleReviewRequest` | `MediaAssetDto` | Aprobar/rechazar sugerencia de un archivo. |
+| POST | `/reviews/batch` | `BatchReviewRequest` | `List<Guid>` (200) | Aprobar/rechazar en lote (carpeta o total). Devuelve los IDs actualizados. |
 | POST | `/apply` | `ApplyChangesRequest` | `ApplyChangesResponse` | Dry-run o aplicación real |
 
 ### Chat
