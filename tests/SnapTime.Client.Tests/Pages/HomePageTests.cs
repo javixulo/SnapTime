@@ -21,7 +21,7 @@ public class HomePageTests : TestContext
         Services.AddSingleton(_filesystemClient);
         Services.AddSingleton(_scanClient);
         Services.AddSingleton(_photoClient);
-        Services.AddSingleton(new ApiConfig { BaseUrl = "http://localhost:5000" });
+        Services.AddSingleton(new ApiConfig { BaseUrl = "http://localhost:3000" });
     }
 
     [Fact]

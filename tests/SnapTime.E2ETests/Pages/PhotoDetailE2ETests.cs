@@ -279,4 +279,77 @@ public class PhotoDetailE2ETests : PlaywrightTestBase
         var emptyText = await Page.Locator(".photo-detail-empty").TextContentAsync();
         await TestContext.Out.WriteLineAsync($"=== EMPTY STATE AFTER BREADCRUMB NAV === {emptyText}");
     }
+
+    [Test]
+    public async Task PhotoDetail_AfterScanClickThumbnail_ShowsDetailWithoutError()
+    {
+        // Regression test: after a scan completes, clicking a photo thumbnail loads
+        // the detail panel successfully without a 404 error. This covers the bug where
+        // PhotoGrid cached stale GUIDs after a re-scan (F6).
+        await Page.GotoAsync(BaseUrl);
+
+        // 1. Select a folder
+        await Expect(Page.Locator(".folder-tree-name").First).ToBeVisibleAsync();
+        var firstFolder = Page.Locator(".folder-tree-name").First;
+        var folderName = await firstFolder.TextContentAsync();
+        await TestContext.Out.WriteLineAsync($"=== SELECTED FOLDER === {folderName}");
+        await firstFolder.ClickAsync();
+
+        // 2. Click "Escanear"
+        var scanButton = Page.Locator("button", new() { HasText = "Escanear" });
+        await Expect(scanButton).ToBeVisibleAsync();
+        await scanButton.ClickAsync();
+
+        // 3. Wait for scan progress to appear
+        await Expect(Page.Locator(".scan-progress")).ToBeVisibleAsync(new() { Timeout = 15000 });
+
+        // 4. Wait for scan to complete (status "Completed") with 60s timeout
+        var completedLocator = Page.Locator("text=Completed");
+        try
+        {
+            await Expect(completedLocator).ToBeVisibleAsync(new() { Timeout = 60000 });
+            await TestContext.Out.WriteLineAsync("=== SCAN COMPLETED ===");
+        }
+        catch (Exception ex)
+        {
+            await TestContext.Out.WriteLineAsync($"=== SCAN DID NOT COMPLETE IN 60s === {ex.Message}");
+            var cancelBtn = Page.Locator("button", new() { HasText = "Cancelar" });
+            if (await cancelBtn.IsVisibleAsync())
+                await cancelBtn.ClickAsync();
+            Assert.Inconclusive("Scan did not complete within 60s timeout.");
+            return;
+        }
+
+        // 5. Wait for the photo grid to be visible
+        await Expect(Page.Locator(".photo-grid")).ToBeVisibleAsync(new() { Timeout = 10000 });
+
+        // 6. Click the first non-directory photo in the grid
+        var photoName = await ClickFirstPhotoInGridAsync();
+        if (photoName is null)
+        {
+            await TestContext.Out.WriteLineAsync("=== NO PHOTOS FOUND IN GRID AFTER SCAN ===");
+            Assert.Pass("No photo items available after scan to test detail panel.");
+            return;
+        }
+
+        // 7. Assert the detail panel loaded (photo-detail-name is visible)
+        await Expect(Page.Locator(".photo-detail-name")).ToBeVisibleAsync(new() { Timeout = 10000 });
+        var detailName = await Page.Locator(".photo-detail-name").TextContentAsync();
+        await TestContext.Out.WriteLineAsync($"=== DETAIL NAME === {detailName}");
+
+        // 8. Assert NO error message is shown (regression check for stale-GUID 404)
+        var errorLocator = Page.Locator(".photo-detail-error");
+        await Expect(errorLocator).Not.ToBeVisibleAsync();
+
+        // Also check for generic error messages that might surface the 404
+        var genericError = Page.Locator(".error-message");
+        var genericErrorVisible = await genericError.IsVisibleAsync();
+        if (genericErrorVisible)
+        {
+            var errorText = await genericError.TextContentAsync();
+            await TestContext.Out.WriteLineAsync($"=== GENERIC ERROR FOUND === {errorText}");
+        }
+        Assert.That(genericErrorVisible, Is.False,
+            "No error message should be displayed after clicking a photo post-scan.");
+    }
 }

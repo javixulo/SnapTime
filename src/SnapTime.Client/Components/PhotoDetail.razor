@@ -1,7 +1,7 @@
-@* [F6] PhotoDetail — Panel de detalle de foto con metadatos, confianza y evidencia *@
+@* [F6][F7] PhotoDetail — Panel de detalle de foto con metadatos, confianza, evidencia y botones Aceptar/Rechazar *@
 @using SnapTime.Client.Models
 @using SnapTime.Client.Services
-@inject IPhotoClient PhotoClient
+@implements IDisposable
 
 @if (!SelectedAssetId.HasValue && string.IsNullOrEmpty(SelectedAssetPath))
 {
@@ -69,6 +69,13 @@ else if (_detail is not null)
             }
         </div>
 
+        @if (_detail.SuggestedDate is not null)
+        {
+            <div class="suggestion-status @GetReviewStatusClass()">
+                @GetReviewStatusLabel()
+            </div>
+        }
+
         <div class="photo-detail-confidence-section">
             <div class="photo-detail-confidence-label">Confianza: @_detail.ConfidenceScore%</div>
             <div class="photo-detail-confidence-bar @GetConfidenceClass()" style="width: @_detail.ConfidenceScore%">
@@ -89,7 +96,7 @@ else if (_detail is not null)
                                 <span class="evidence-weight">@ev.Weight.ToString("F2")</span>
                                 <span class="evidence-direction @GetDirectionClass(ev.Direction)">@ev.Direction</span>
                             </div>
-                            <div class="evidence-description">@ev.Description</div>
+                            <div class="evidence-description">@((MarkupString)ev.Description)</div>
                         </div>
                     }
                 </div>
@@ -97,8 +104,8 @@ else if (_detail is not null)
         }
 
         <div class="photo-detail-actions">
-            <button class="btn-accept" @onclick="() => OnAccept.InvokeAsync()">Aceptar</button>
-            <button class="btn-reject" @onclick="() => OnReject.InvokeAsync()">Rechazar</button>
+            <button class="@GetAcceptClass()" @onclick="HandleAcceptAsync" disabled="@(!_canAccept)">Aceptar</button>
+            <button class="@GetRejectClass()" @onclick="HandleRejectAsync" disabled="@(!_canAccept)">Rechazar</button>
         </div>
     </div>
 }
@@ -138,103 +145,4 @@ else if (_fileMetadata is not null)
     </div>
 }
 
-@code {
-    [Parameter]
-    public Guid? SelectedAssetId { get; set; }
 
-    [Parameter]
-    public string? SelectedAssetPath { get; set; }
-
-    [Parameter]
-    public EventCallback OnAccept { get; set; }
-
-    [Parameter]
-    public EventCallback OnReject { get; set; }
-
-    private MediaAssetDetailDto? _detail;
-    private FileMetadataDto? _fileMetadata;
-    private bool _isLoading;
-    private string? _error;
-
-    protected override async Task OnParametersSetAsync()
-    {
-        if (SelectedAssetId.HasValue)
-        {
-            _isLoading = true;
-            _error = null;
-            _detail = null;
-            _fileMetadata = null;
-
-            try
-            {
-                _detail = await PhotoClient.GetAssetDetailAsync(SelectedAssetId.Value);
-            }
-            catch (Exception ex)
-            {
-                _error = $"Error al cargar detalle: {ex.Message}";
-            }
-            finally
-            {
-                _isLoading = false;
-            }
-        }
-        else if (!string.IsNullOrEmpty(SelectedAssetPath))
-        {
-            _isLoading = true;
-            _error = null;
-            _detail = null;
-            _fileMetadata = null;
-
-            try
-            {
-                _fileMetadata = await PhotoClient.GetFileMetadataAsync(SelectedAssetPath);
-                if (_fileMetadata is null)
-                    _error = "No se pudieron obtener los metadatos del archivo.";
-            }
-            catch (Exception ex)
-            {
-                _error = $"Error al cargar metadatos: {ex.Message}";
-            }
-            finally
-            {
-                _isLoading = false;
-            }
-        }
-        else
-        {
-            _detail = null;
-            _fileMetadata = null;
-            _isLoading = false;
-            _error = null;
-        }
-    }
-
-    private string GetConfidenceClass()
-    {
-        if (_detail is null) return "";
-        if (_detail.ConfidenceScore >= 80) return "confidence-high";
-        if (_detail.ConfidenceScore >= 50) return "confidence-medium";
-        return "confidence-low";
-    }
-
-    private static string FormatFileSize(long bytes)
-    {
-        if (bytes < 1024)
-            return $"{bytes} B";
-        if (bytes < 1024 * 1024)
-            return $"{bytes / 1024.0:F1} KB";
-        return $"{bytes / (1024.0 * 1024.0):F1} MB";
-    }
-
-    private static string GetDirectionClass(string direction)
-    {
-        return direction switch
-        {
-            "positive" => "direction-positive",
-            "negative" => "direction-negative",
-            "neutral" => "direction-neutral",
-            "correction" => "direction-correction",
-            _ => ""
-        };
-    }
-}

@@ -114,6 +114,9 @@ public class ScanJobServiceIntegrationTests
 
             var jobRunner = Substitute.For<IBackgroundJobRunner>();
             var logger = Substitute.For<ILogger<ScanJobService>>();
+            var heuristicEngine = Substitute.For<IHeuristicEngine>();
+            heuristicEngine.EvaluateAsync(Arg.Any<IReadOnlyList<EvidenceEntry>>(), Arg.Any<CancellationToken>())
+                .Returns(new HeuristicResult { Status = MediaStatus.Correct, ConfidenceScore = 0 });
 
             var services = new ServiceCollection();
             services.AddScoped<SnapTimeDbContext>(_ => _fixture.CreateContext());
@@ -122,7 +125,7 @@ public class ScanJobServiceIntegrationTests
 
             var scanJobService = new ScanJobService(
                 jobRunner, walker, metadataExtractor, fileSystemExtractor,
-                Enumerable.Empty<IHeuristic>(),
+                Enumerable.Empty<IHeuristic>(), heuristicEngine,
                 scopeFactory, logger);
 
             // Act — create job with includeSubfolders: false
@@ -260,6 +263,9 @@ public class ScanJobServiceIntegrationTests
 
         var jobRunner = Substitute.For<IBackgroundJobRunner>();
         var logger = Substitute.For<ILogger<ScanJobService>>();
+        var heuristicEngine = Substitute.For<IHeuristicEngine>();
+        heuristicEngine.EvaluateAsync(Arg.Any<IReadOnlyList<EvidenceEntry>>(), Arg.Any<CancellationToken>())
+            .Returns(new HeuristicResult { Status = MediaStatus.Correct, ConfidenceScore = 0 });
 
         var services = new ServiceCollection();
         services.AddScoped<SnapTimeDbContext>(_ => _fixture.CreateContext());
@@ -268,7 +274,7 @@ public class ScanJobServiceIntegrationTests
 
         var scanJobService = new ScanJobService(
             jobRunner, walker, metadataExtractor, fileSystemExtractor,
-            heuristics ?? Enumerable.Empty<IHeuristic>(),
+            heuristics ?? Enumerable.Empty<IHeuristic>(), heuristicEngine,
             scopeFactory, logger);
 
         var job = await scanJobService.CreateJobAsync(tempDir);

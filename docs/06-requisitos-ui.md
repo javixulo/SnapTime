@@ -248,7 +248,30 @@ El componente `FolderTreeItem` usa su propio método `Combine` para construir ru
 - Los resultados se cachean por nodo en memoria durante la vida del panel.
 - Para árboles muy profundos (>10 niveles), el renderizado recursivo puede ser lento; en MVP esto no es un problema porque los directorios rara vez superan 5-6 niveles.
 
-## 10) Decisiones de diseño
+## 10) Formato de fechas
+
+### 10.1) Requisito general
+Todas las fechas mostradas en la UI al usuario deben estar en formato **`dd/MM/yyyy`** (día/mes/año).
+
+### 10.2) Fechas de corrección (sugerencias)
+Las fechas que representen **sugerencias de corrección** (es decir, `SuggestedDate` en la respuesta del análisis) deben renderizarse en **negrita** (`<strong>`) para destacarlas visualmente respecto a las fechas actuales del archivo.
+
+Ejemplo de evidencia:
+```
+"Filename suggests 10/06/2024, but metadata has 15/06/2024"
+```
+Ambas fechas están en negrita (`<strong>`) para resaltar la información crítica.
+
+### 10.3) Fechas actuales y metadatos
+Las fechas de metadatos actuales (EXIF, filesystem, etc.) se muestran en formato `dd/MM/yyyy` sin negrita en el panel de detalle.
+
+### 10.4) Implementación
+- **Backend (heurísticas):** todas las descripciones de evidencias generadas por las heurísticas utilizan `ToString("dd/MM/yyyy")` y envuelven las fechas en tags `<strong>`.
+- **Frontend (Blazor):** las descripciones de evidencias se renderizam como `(MarkupString)description` para que los tags HTML se interpreten correctamente.
+
+---
+
+## 11) Decisiones de diseño
 
 ### Navegación del grid limpia selección de detalle
 - Cuando el usuario navega (breadcrumb, flecha subir, doble click subcarpeta), `PhotoGrid` emite `OnNavigate` y `Home.razor` limpia `_selectedPhotoId` / `_selectedPhotoPath`, ocultando el detalle. Esto evita mostrar información obsoleta al cambiar de carpeta.

@@ -18,5 +18,7 @@ public record MediaAssetDetailDto(
     int ConfidenceScore,
     DateTime? SuggestedDate,
     string? SuggestedByHeuristic,
+    MediaStatus Status,
+    SuggestionReviewStatus SuggestionStatus,
     List<EvidenceDto> Evidence
 );

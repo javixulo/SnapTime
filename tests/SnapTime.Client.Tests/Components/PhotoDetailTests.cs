@@ -18,7 +18,7 @@ public class PhotoDetailTests : TestContext
     public PhotoDetailTests()
     {
         Services.AddSingleton(_photoClient);
-        Services.AddSingleton(new ApiConfig { BaseUrl = "http://localhost:5000" });
+        Services.AddSingleton(new ApiConfig { BaseUrl = "http://localhost:3000" });
 
         _sampleDetail = new MediaAssetDetailDto
         {

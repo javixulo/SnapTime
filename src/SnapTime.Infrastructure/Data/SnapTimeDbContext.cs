@@ -23,6 +23,7 @@ public class SnapTimeDbContext : DbContext
             entity.HasIndex(e => e.FilePath).IsUnique();
             entity.HasIndex(e => e.ScanJobId);
             entity.Property(e => e.Status).HasConversion<string>();
+            entity.Property(e => e.SuggestionStatus).HasConversion<string>();
             entity.Property(e => e.MediaType).HasConversion<string>();
         });
 

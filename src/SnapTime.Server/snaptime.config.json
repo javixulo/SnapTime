@@ -1,22 +1,56 @@
 {
   "$schema": "snaptime.config.schema.json",
   "database": {
-    "path": "SnapTime.db"
+    "path": "/var/folders/v3/p0cgnn955797lzjcy50y1z000000gn/T/snaptime-e2e-42cbd7f2-f574-4ff4-8650-eb3228c455f5.db"
   },
   "analysis": {
     "confidenceThreshold": 80,
     "maxConcurrency": 4,
     "batchSize": 100,
-    "imageExtensions": [".jpg", ".jpeg"],
-    "videoExtensions": [".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"]
+    "imageExtensions": [
+      ".jpg",
+      ".jpeg"
+    ],
+    "videoExtensions": [
+      ".mp4",
+      ".mov",
+      ".avi",
+      ".mkv",
+      ".webm",
+      ".m4v"
+    ]
   },
   "heuristics": [
-    { "id": "H-001", "enabled": true, "weight": 1.0 },
-    { "id": "H-002", "enabled": true, "weight": 1.0 },
-    { "id": "H-003", "enabled": true, "weight": 1.0 },
-    { "id": "H-004", "enabled": true, "weight": 0.5 },
-    { "id": "H-005", "enabled": true, "weight": 0.7 },
-    { "id": "H-006", "enabled": true, "weight": 1.0 }
+    {
+      "id": "H-001",
+      "enabled": true,
+      "weight": 1.0
+    },
+    {
+      "id": "H-002",
+      "enabled": true,
+      "weight": 1.0
+    },
+    {
+      "id": "H-003",
+      "enabled": true,
+      "weight": 1.0
+    },
+    {
+      "id": "H-004",
+      "enabled": true,
+      "weight": 0.5
+    },
+    {
+      "id": "H-005",
+      "enabled": true,
+      "weight": 0.7
+    },
+    {
+      "id": "H-006",
+      "enabled": true,
+      "weight": 1.0
+    }
   ],
   "ollama": {
     "endpoint": "http://localhost:11434",
@@ -28,7 +62,7 @@
     "quality": 80
   },
   "logging": {
-    "level": "Information",
+    "level": "Warning",
     "file": "snaptime.log"
   }
 }

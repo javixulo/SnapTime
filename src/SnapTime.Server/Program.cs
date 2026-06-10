@@ -30,10 +30,18 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("https://localhost:7099", "http://localhost:5213", "http://localhost:5027")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .SetIsOriginAllowed(_ => builder.Environment.IsDevelopment());
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+        else
+        {
+            policy.WithOrigins("https://localhost:7300", "http://localhost:3000", "http://localhost:3001")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
     });
 });
 
@@ -51,6 +59,11 @@ builder.Services.AddSingleton<BackgroundJobRunner>();
 builder.Services.AddSingleton<IBackgroundJobRunner>(sp => sp.GetRequiredService<BackgroundJobRunner>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BackgroundJobRunner>());
 builder.Services.AddScoped<IHeuristic, H006FilenameHeuristic>();
+builder.Services.AddScoped<IHeuristicEngine>(sp =>
+{
+    var config = sp.GetRequiredService<ConfigService>();
+    return new HeuristicEngine(config.Current.Analysis.ConfidenceThreshold);
+});
 builder.Services.AddScoped<IScanJobService, ScanJobService>();
 
 var app = builder.Build();
@@ -220,7 +233,7 @@ app.MapGet("/api/photos", async (
             // Batch lookup: find all matching assets in DB
             var prefix = resolved.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
             var assets = await db.MediaAssets
-                .Where(a => a.FilePath.StartsWith(prefix))
+                .Where(a => a.FilePath == resolved || a.FilePath.StartsWith(prefix))
                 .ToListAsync();
 
             var assetMap = assets.ToDictionary(a => a.FilePath, a => a);
@@ -269,7 +282,7 @@ app.MapGet("/api/photos", async (
             // Directory does not exist on filesystem — fallback to DB query
             var prefix = resolved.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
             var assets = await db.MediaAssets
-                .Where(a => a.FilePath.StartsWith(prefix))
+                .Where(a => a.FilePath == resolved || a.FilePath.StartsWith(prefix))
                 .OrderBy(a => a.FileName)
                 .ToListAsync();
 
@@ -355,6 +368,8 @@ app.MapGet("/api/media-assets/{id:guid}", async (Guid id, SnapTimeDbContext db) 
         asset.ConfidenceScore,
         asset.SuggestedDate,
         asset.SuggestedByHeuristic,
+        asset.Status,
+        asset.SuggestionStatus,
         asset.EvidenceEntries.OrderByDescending(e => e.Weight).Select(e => new EvidenceDto(
             e.HeuristicId,
             e.HeuristicName,
@@ -529,6 +544,93 @@ app.MapGet("/api/video/stream", (string path) =>
     }
 })
 .WithName("StreamVideo");
+
+// [F7-US-004] Single review: approve or reject one asset's suggestion
+app.MapPost("/api/reviews/single", async (SingleReviewRequest request, SnapTimeDbContext db) =>
+{
+    if (request.AssetId == Guid.Empty)
+        return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "AssetId is required" } });
+
+    var newStatus = ParseReviewStatus(request.Status);
+    if (newStatus is null)
+        return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "Status must be 'approved' or 'rejected'" } });
+
+    var asset = await db.MediaAssets.FindAsync(request.AssetId);
+    if (asset is null)
+        return Results.NotFound();
+
+    asset.SuggestionStatus = newStatus.Value;
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new MediaAssetDto(
+        asset.Id,
+        asset.FilePath,
+        asset.FileName,
+        asset.MediaType,
+        DateTimeOriginal: null,
+        asset.SuggestedDate,
+        asset.ConfidenceScore,
+        asset.SuggestedByHeuristic,
+        asset.Status,
+        asset.SuggestionStatus
+    ));
+})
+.WithName("ReviewSingle");
+
+// [F7-US-004] Batch review: approve or reject all unreviewed suggestions in a folder or across all scanned assets
+app.MapPost("/api/reviews/batch", async (BatchReviewRequest request, SnapTimeDbContext db) =>
+{
+    // Validate status
+    var newStatus = ParseReviewStatus(request.Status);
+    if (newStatus is null)
+        return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "Status must be 'approved' or 'rejected'" } });
+
+    // Validate scope
+    if (string.IsNullOrWhiteSpace(request.Scope))
+        return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "Scope is required ('folder' or 'total')" } });
+
+    var scope = request.Scope.ToLowerInvariant();
+    if (scope != "folder" && scope != "total")
+        return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "Scope must be 'folder' or 'total'" } });
+
+    // For folder scope, rootPath is required
+    if (scope == "folder" && string.IsNullOrWhiteSpace(request.RootPath))
+        return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "RootPath is required when scope is 'folder'" } });
+
+    IQueryable<MediaAsset> query = db.MediaAssets;
+
+    if (scope == "folder")
+    {
+        string resolved;
+        try
+        {
+            resolved = Path.GetFullPath(request.RootPath!);
+        }
+        catch
+        {
+            return Results.BadRequest(new { error = new { code = "VALIDATION_ERROR", message = "RootPath contains invalid characters" } });
+        }
+
+        var prefix = resolved.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        query = query.Where(a => a.FilePath == resolved || a.FilePath.StartsWith(prefix));
+    }
+
+    var assets = await query
+        .Where(a => a.SuggestionStatus == SuggestionReviewStatus.Unreviewed && a.SuggestedDate != null)
+        .ToListAsync();
+
+    var updatedIds = new List<Guid>(assets.Count);
+    foreach (var asset in assets)
+    {
+        asset.SuggestionStatus = newStatus.Value;
+        updatedIds.Add(asset.Id);
+    }
+
+    await db.SaveChangesAsync();
+
+    return Results.Ok(updatedIds);
+})
+.WithName("ReviewBatch");
 
 if (app.Environment.IsDevelopment())
 {
@@ -713,6 +815,24 @@ public partial class Program
             return date;
 
         return null;
+    }
+
+    /// <summary>
+    /// Parses a status string from the review API contract ("approved" / "rejected")
+    /// into the corresponding <see cref="SuggestionReviewStatus"/> enum value.
+    /// Returns null if the string is not recognized.
+    /// </summary>
+    internal static SuggestionReviewStatus? ParseReviewStatus(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+            return null;
+
+        return status.ToLowerInvariant() switch
+        {
+            "approved" => SuggestionReviewStatus.Approved,
+            "rejected" => SuggestionReviewStatus.Rejected,
+            _ => null
+        };
     }
 }
 

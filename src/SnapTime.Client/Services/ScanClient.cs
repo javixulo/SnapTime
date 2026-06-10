@@ -24,4 +24,10 @@ public class ScanClient : IScanClient
     {
         return await _http.GetFromJsonAsync<ScanJobDto>($"/api/jobs/{jobId}", ct);
     }
+
+    public async Task CancelScanAsync(Guid jobId, CancellationToken ct = default)
+    {
+        var response = await _http.PostAsync($"/api/jobs/{jobId}/cancel", null, ct);
+        response.EnsureSuccessStatusCode();
+    }
 }

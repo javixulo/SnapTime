@@ -256,8 +256,16 @@ else
     [Parameter]
     public EventCallback OnNavigate { get; set; }
 
+    /// <summary>
+    /// Increment this value to force a data reload even when the folder path hasn't changed.
+    /// Used to refresh the grid after a scan completes.
+    /// </summary>
+    [Parameter]
+    public int RefreshTrigger { get; set; }
+
     private string? _currentBrowsingPath;
     private string? _lastSelectedFolderPath;
+    private int _lastRefreshTrigger;
     private bool _isLoading;
     private string? _error;
     private bool _hasLoadedOnce;
@@ -270,8 +278,12 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        if (SelectedFolderPath != _lastSelectedFolderPath)
+        var folderChanged = SelectedFolderPath != _lastSelectedFolderPath;
+        var triggerChanged = RefreshTrigger != _lastRefreshTrigger;
+
+        if (folderChanged || triggerChanged)
         {
+            _lastRefreshTrigger = RefreshTrigger;
             _lastSelectedFolderPath = SelectedFolderPath;
             _currentBrowsingPath = SelectedFolderPath;
             _isLoading = true;

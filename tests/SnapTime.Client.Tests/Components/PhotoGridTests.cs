@@ -16,7 +16,7 @@ public class PhotoGridTests : TestContext
     public PhotoGridTests()
     {
         Services.AddSingleton(_photoClient);
-        Services.AddSingleton(new ApiConfig { BaseUrl = "http://localhost:5000" });
+        Services.AddSingleton(new ApiConfig { BaseUrl = "http://localhost:3000" });
     }
 
     // ──────────────────────────────────────────────

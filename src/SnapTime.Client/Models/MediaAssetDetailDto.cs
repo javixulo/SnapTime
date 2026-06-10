@@ -17,5 +17,6 @@ public class MediaAssetDetailDto
     public int ConfidenceScore { get; set; }
     public DateTime? SuggestedDate { get; set; }
     public string? SuggestedByHeuristic { get; set; }
+    public string? SuggestionReviewStatus { get; set; }
     public List<EvidenceDto> Evidence { get; set; } = [];
 }

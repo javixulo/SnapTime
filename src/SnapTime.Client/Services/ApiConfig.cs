@@ -3,5 +3,5 @@ namespace SnapTime.Client.Services;
 
 public class ApiConfig
 {
-    public string BaseUrl { get; init; } = "http://localhost:5000";
+    public string BaseUrl { get; init; } = "http://localhost:3000";
 }

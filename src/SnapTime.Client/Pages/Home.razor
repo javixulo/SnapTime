@@ -1,20 +1,32 @@
 ﻿@page "/"
 @using SnapTime.Client.Models
+@using SnapTime.Client.Services
+@implements IDisposable
+@inject IScanStateService ScanStateService
+@inject IPhotoClient PhotoClient
 
 <PageTitle>SnapTime</PageTitle>
 
 <div class="snaptime-page">
     <div class="snaptime-top-bar">
-        <ScanPanel SelectedFolderPath="@_selectedPath" />
+        <div class="snaptime-top-bar-left">
+            <ScanPanel SelectedFolderPath="@_selectedPath" />
+        </div>
+        <div class="snaptime-top-bar-right">
+            <BatchActions HasRecommendations="@_hasRecommendations"
+                          RecommendationCount="@_recommendationCount"
+                          CurrentFolderPath="@_selectedPath" />
+        </div>
     </div>
 
     <div class="snaptime-layout">
         <aside class="snaptime-left-panel">
-            <FolderTreePanel OnFolderSelected="@((path) => _selectedPath = path)" />
+            <FolderTreePanel OnFolderSelected="@(async (path) => { _selectedPath = path; await UpdateRecommendationCountAsync(); StateHasChanged(); })" />
         </aside>
 
         <section class="snaptime-center-panel">
             <PhotoGrid SelectedFolderPath="@_selectedPath"
+                       RefreshTrigger="@_gridRefreshCounter"
                        OnPhotoSelected="@HandlePhotoSelected"
                        OnNavigate="@HandleGridNavigate" />
         </section>
@@ -37,6 +49,52 @@
     private string? _selectedPath;
     private Guid? _selectedPhotoId;
     private string? _selectedPhotoPath;
+    private bool _hasRecommendations;
+    private int _recommendationCount;
+    private int _gridRefreshCounter;
+
+    protected override void OnInitialized()
+    {
+        ScanStateService.StateChanged += OnScanStateChanged;
+    }
+
+    public void Dispose()
+    {
+        ScanStateService.StateChanged -= OnScanStateChanged;
+    }
+
+    private async void OnScanStateChanged()
+    {
+        if (ScanStateService is { HasCompletedScan: true, IsScanning: false })
+        {
+            // Increment to force PhotoGrid to reload with fresh data from the DB
+            _gridRefreshCounter++;
+            await UpdateRecommendationCountAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task UpdateRecommendationCountAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_selectedPath))
+            {
+                _hasRecommendations = false;
+                _recommendationCount = 0;
+                return;
+            }
+
+            var response = await PhotoClient.GetPhotosAsync(_selectedPath, 1, int.MaxValue);
+            _recommendationCount = response.Items.Count(i => i.HasSuggestion);
+            _hasRecommendations = _recommendationCount > 0;
+        }
+        catch
+        {
+            _hasRecommendations = false;
+            _recommendationCount = 0;
+        }
+    }
 
     private void HandlePhotoSelected(PhotoGridItem item)
     {
@@ -74,6 +132,18 @@
         border-bottom: 1px solid #e0e0e0;
         background: #f5f5f5;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .snaptime-top-bar-left {
+        display: flex;
+        align-items: center;
+    }
+    .snaptime-top-bar-right {
+        display: flex;
+        align-items: center;
     }
     .snaptime-layout {
         display: flex;

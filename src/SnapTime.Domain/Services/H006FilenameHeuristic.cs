@@ -50,14 +50,14 @@ public class H006FilenameHeuristic : IHeuristic
 
         if (canonicalDate == null)
             return Task.FromResult<EvidenceEntry?>(CreateEvidence(asset.Id, EvidenceDirection.Correction, parsedDate.Value,
-                $"Filename suggests {parsedDate:yyyy-MM-dd}, no metadata date available"));
+                $"Filename suggests <strong>{parsedDate:dd/MM/yyyy}</strong>, no metadata date available"));
 
         if (canonicalDate.Value.Date == parsedDate.Value.Date)
             return Task.FromResult<EvidenceEntry?>(CreateEvidence(asset.Id, EvidenceDirection.Positive, null,
-                $"Filename date {parsedDate:yyyy-MM-dd} matches metadata date", weight: 0.3));
+                $"Filename date <strong>{parsedDate:dd/MM/yyyy}</strong> matches metadata date", weight: 0.3));
 
         return Task.FromResult<EvidenceEntry?>(CreateEvidence(asset.Id, EvidenceDirection.Correction, parsedDate.Value,
-            $"Filename suggests {parsedDate:yyyy-MM-dd}, but metadata has {canonicalDate:yyyy-MM-dd}", weight: 0.7));
+            $"Filename suggests <strong>{parsedDate:dd/MM/yyyy}</strong>, but metadata has <strong>{canonicalDate:dd/MM/yyyy}</strong>", weight: 0.7));
     }
 
     private static EvidenceEntry CreateEvidence(

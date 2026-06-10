@@ -24,6 +24,7 @@ public class ScanJobService : IScanJobService
     private readonly IMetadataExtractor _metadataExtractor;
     private readonly IFileSystemMetadataExtractor _fileSystemExtractor;
     private readonly IEnumerable<IHeuristic> _heuristics;
+    private readonly IHeuristicEngine _heuristicEngine;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ScanJobService> _logger;
     private readonly string[] _imageExtensions;
@@ -38,6 +39,7 @@ public class ScanJobService : IScanJobService
         IMetadataExtractor metadataExtractor,
         IFileSystemMetadataExtractor fileSystemExtractor,
         IEnumerable<IHeuristic> heuristics,
+        IHeuristicEngine heuristicEngine,
         IServiceScopeFactory scopeFactory,
         ILogger<ScanJobService> logger,
         string[]? imageExtensions = null,
@@ -49,6 +51,7 @@ public class ScanJobService : IScanJobService
         _metadataExtractor = metadataExtractor;
         _fileSystemExtractor = fileSystemExtractor;
         _heuristics = heuristics;
+        _heuristicEngine = heuristicEngine;
         _scopeFactory = scopeFactory;
         _logger = logger;
         _imageExtensions = imageExtensions ?? [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"];
@@ -75,13 +78,57 @@ public class ScanJobService : IScanJobService
 
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
+
+        // [F7-US-001] [F1-US-007] Re-scan: delete existing data for this root path before creating job
+        await using var transaction = await db.Database.BeginTransactionAsync();
+
+        await DeleteExistingAssetsAsync(db, rootPath, includeSubfolders);
+
         db.ScanJobs.Add(job);
         db.AuditEntries.Add(CreateAuditEntry(jobId, "Created", $"Job created for path: {rootPath}"));
         await db.SaveChangesAsync();
 
+        await transaction.CommitAsync();
+
         await _jobRunner.EnqueueJobAsync(job);
 
         return job;
+    }
+
+    /// <summary>
+    /// Deletes all existing <see cref="MediaAsset"/>, <see cref="MetadataEntry"/>,
+    /// and <see cref="EvidenceEntry"/> records for files under the given root path.
+    /// Uses <c>Path.GetFullPath</c> for path normalization.
+    /// Cascading deletes handle child MetadataEntry and EvidenceEntry removal.
+    /// </summary>
+    private static async Task DeleteExistingAssetsAsync(
+        SnapTimeDbContext db,
+        string rootPath,
+        bool includeSubfolders)
+    {
+        var normalizedRoot = Path.GetFullPath(rootPath);
+        var prefix = normalizedRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+        var assetsToDelete = await db.MediaAssets
+            .Where(a => a.FilePath == normalizedRoot || a.FilePath.StartsWith(prefix))
+            .ToListAsync();
+
+        if (!includeSubfolders)
+        {
+            // Only direct children: exclude files in subdirectories
+            var rootFolderName = Path.GetFileName(normalizedRoot);
+            assetsToDelete = assetsToDelete
+                .Where(a =>
+                {
+                    var relative = a.FilePath[prefix.Length..];
+                    return !relative.Contains(Path.DirectorySeparatorChar)
+                        && !relative.Contains(Path.AltDirectorySeparatorChar);
+                })
+                .ToList();
+        }
+
+        if (assetsToDelete.Count > 0)
+            db.MediaAssets.RemoveRange(assetsToDelete);
     }
 
     public async Task<ScanJob?> GetJobAsync(Guid jobId)
@@ -280,6 +327,15 @@ public class ScanJobService : IScanJobService
                 if (evidence != null)
                     asset.EvidenceEntries.Add(evidence);
             }
+
+            // [F7-US-002] Run HeuristicEngine after all evidence is collected
+            var heuristicResult = await _heuristicEngine.EvaluateAsync(asset.EvidenceEntries, ct);
+            asset.Status = heuristicResult.Status;
+            asset.ConfidenceScore = heuristicResult.ConfidenceScore;
+            asset.SuggestedDate = heuristicResult.SuggestedDate;
+            asset.SuggestedByHeuristic = heuristicResult.SuggestedByHeuristic;
+            if (heuristicResult.SuggestionReviewStatus.HasValue)
+                asset.SuggestionStatus = heuristicResult.SuggestionReviewStatus.Value;
 
             pendingAssets.Add(asset);
             _jobs[jobId].MediaAssets.Add(asset);

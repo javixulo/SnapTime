@@ -16,6 +16,7 @@ public class MediaAsset
     public DateTime? SuggestedDate { get; set; }
     public string? SuggestedByHeuristic { get; set; }
     public MediaStatus Status { get; set; }
+    public SuggestionReviewStatus SuggestionStatus { get; set; } = SuggestionReviewStatus.Unreviewed;
     public Guid ScanJobId { get; set; }
     public ScanJob ScanJob { get; set; } = null!;
     public List<MetadataEntry> MetadataEntries { get; set; } = [];

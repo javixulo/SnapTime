@@ -214,3 +214,15 @@ La UI debe incluir un panel de chat conversacional que permita ejecutar acciones
 - Indicador visual de "escribiendo..." mientras el LLM procesa.
 - Historial de conversación visible en el panel.
 
+## FR-20 Formato de presentación de fechas
+
+El sistema debe presentar todas las fechas a los usuarios en formato `dd/MM/yyyy` de forma consistente en toda la interfaz.
+
+### Criterios de aceptación
+
+- Todas las fechas mostradas en la UI (metadatos, evidencias, sugerencias) están en formato `dd/MM/yyyy`.
+- Las fechas de corrección (sugerencias) se renderizam en **negrita** (`<strong>`) en el panel de detalle para destacarlas.
+- Las heurísticas generan evidencias con fechas formateadas como `dd/MM/yyyy` envueltas en tags HTML `<strong>`.
+- El frontend Blazor renderiza estas descripciones como `MarkupString` para mostrar correctamente las etiquetas HTML.
+- La presentación es consistente en toda la aplicación (grid, detalle, listados).
+

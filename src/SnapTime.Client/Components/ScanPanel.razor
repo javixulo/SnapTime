@@ -1,4 +1,4 @@
-@* [F4-US-000] ScanPanel — Input de ruta, botón "Escanear", indicador de progreso *@
+@* [F4-US-000 / F7-US-001] ScanPanel — Escaneo con progreso, cancelación y reescaneo *@
 @using SnapTime.Client.Services
 
 <div class="scan-panel">
@@ -10,23 +10,36 @@
         <button @onclick="StartScanAsync" disabled="@_isScanning">
             Escanear
         </button>
+
+        @if (_isScanning)
+        {
+            <button @onclick="CancelScanAsync">Cancelar</button>
+            <span class="scan-progress">Procesando @_processed de @_total archivos</span>
+        }
     </div>
+
+    @if (_state == "Cancelled")
+    {
+        <span class="scan-status cancelled">Cancelled</span>
+    }
+
+    @if (_state == "Completed")
+    {
+        <span class="scan-status completed">Completed</span>
+    }
 
     @if (_currentJob is not null)
     {
-        <div class="scan-progress">
-            <span><strong>Job:</strong> @_currentJob.Id</span>
-            <span><strong>Ruta:</strong> @_currentJob.RootPath</span>
-            <span><strong>Estado:</strong> @_currentJob.Status</span>
-            <span><strong>Progreso:</strong> @_currentJob.ProcessedFiles / @_currentJob.TotalFiles</span>
+        <div class="scan-job-detail">
+            <span>Job: @_currentJob.Id</span>
+            <span>Ruta: @_currentJob.RootPath</span>
+            <span>Progreso: @_currentJob.ProcessedFiles / @_currentJob.TotalFiles</span>
         </div>
     }
 
     @if (_error is not null)
     {
-        <div class="scan-error" style="color: red;">
-            @_error
-        </div>
+        <div class="scan-error">@_error</div>
     }
 </div>
 
@@ -54,12 +67,31 @@
         cursor: pointer;
     }
     .scan-progress {
-        display: flex;
-        gap: 16px;
         font-size: 12px;
         color: #555;
     }
+    .scan-status {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+    .scan-status.cancelled {
+        color: #d32f2f;
+        background: #ffebee;
+    }
+    .scan-status.completed {
+        color: #2e7d32;
+        background: #e8f5e9;
+    }
+    .scan-job-detail {
+        display: flex;
+        gap: 12px;
+        font-size: 11px;
+        color: #999;
+    }
     .scan-error {
         font-size: 12px;
+        color: #d32f2f;
     }
 </style>

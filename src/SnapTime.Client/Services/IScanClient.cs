@@ -8,4 +8,6 @@ public interface IScanClient
     Task<ScanJobDto?> StartScanAsync(string rootPath, bool includeSubfolders = true, CancellationToken ct = default);
 
     Task<ScanJobDto?> GetJobAsync(Guid jobId, CancellationToken ct = default);
+
+    Task CancelScanAsync(Guid jobId, CancellationToken ct = default);
 }
