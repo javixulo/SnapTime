@@ -207,7 +207,7 @@ La UI debe incluir un panel de chat conversacional que permita ejecutar acciones
 
 - Panel de chat en el lado derecho de la interfaz (15% ancho).
 - El usuario escribe mensajes en lenguaje natural y el sistema responde.
-- El backend utiliza un LLM local (Ollama) para interpretar los mensajes.
+- El backend utiliza un LLM local (Ollama) para interpretar los mensajes. Backend code tasks MUST use model `qwen2.5-coder:14b`.
 - El LLM tiene acceso a las MCP tools como herramientas (tool calling).
 - El chat refleja el resultado de las operaciones en lenguaje natural.
 - Las operaciones ejecutadas desde el chat tienen efecto en los demás paneles de la UI.
@@ -225,4 +225,3 @@ El sistema debe presentar todas las fechas a los usuarios en formato `dd/MM/yyyy
 - Las heurísticas generan evidencias con fechas formateadas como `dd/MM/yyyy` envueltas en tags HTML `<strong>`.
 - El frontend Blazor renderiza estas descripciones como `MarkupString` para mostrar correctamente las etiquetas HTML.
 - La presentación es consistente en toda la aplicación (grid, detalle, listados).
-

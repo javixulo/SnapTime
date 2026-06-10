@@ -99,7 +99,7 @@ SnapTime is a **local-first** application for analyzing photo libraries and vali
 | Media types | Imágenes (JPG/JPEG) y vídeos (MP4, MOV, etc.) con `MediaType` enum |
 | Date canonical | Prioridad unificada: `SubSecDateTimeOriginal` → `DateTimeOriginal` → `CreationDate` → `CreateDate` → `MediaCreateDate` → fallback fs. Write at 5:00 AM. |
 | H-006 | Parse filename `yyyyMMdd`, compare with canonical date, suggest filename date at 5:00 AM |
-| LLM | Ollama (localhost:11434, default `llama3.2`) |
+| LLM | Ollama (localhost:11434) — for backend and frontend code work Kip and Karris MUST use model `qwen2.5-coder:14b`. When launching an agent for code tasks pass `--model qwen2.5-coder:14b`. |
 | Logging | Serilog |
 | Testing | xUnit + NSubstitute |
 

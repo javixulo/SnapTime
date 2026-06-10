@@ -61,7 +61,7 @@ flowchart TB
 
 #### Chat conversacional
 - LLM local: Ollama. Sin envío de datos a internet.
-- Modelo configurable en `snaptime.config.json` (default: `llama3.2`).
+-- Modelo configurable en `snaptime.config.json` (default: `qwen2.5-coder:14b`).
 - El chat backend envía el mensaje al LLM con tool calling sobre las MCP tools.
 - El LLM interpreta el mensaje, ejecuta la tool correspondiente y devuelve la respuesta formateada.
 

@@ -162,7 +162,7 @@ public class SnapTimeConfig {
     public string[] ImageExtensions { get; set; } = [".jpg", ".jpeg"];
     public string[] VideoExtensions { get; set; } = [".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"];
     public string OllamaEndpoint { get; set; } = "http://localhost:11434";
-    public string OllamaModel { get; set; } = "llama3.2";
+    public string OllamaModel { get; set; } = "qwen2.5-coder:14b";
     public List<HeuristicConfig> Heuristics { get; set; } = [];
 }
 

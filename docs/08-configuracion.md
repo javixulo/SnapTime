@@ -61,7 +61,7 @@ La configuración se almacena en un archivo JSON (`snaptime.config.json`) ubicad
   // --- Chat (Ollama) ---
   "ollama": {
     "endpoint": "http://localhost:11434",
-    "model": "llama3.2",
+    "model": "qwen2.5-coder:14b",
     "timeoutSeconds": 60
   },
 
@@ -107,7 +107,7 @@ Array de objetos con:
 | Campo | Tipo | Default | Descripción |
 |-------|------|---------|-------------|
 | `endpoint` | string | `"http://localhost:11434"` | URL del servidor Ollama local. |
-| `model` | string | `"llama3.2"` | Modelo a usar para el chat conversacional. |
+| `model` | string | `"qwen2.5-coder:14b"` | Modelo a usar para el chat conversacional. NOTE: backend agent Kip MUST run with `qwen2.5-coder:14b` for code-generation tasks. |
 | `timeoutSeconds` | int | `60` | Timeout máximo para cada petición al LLM. |
 
 ### thumbnails

@@ -27,7 +27,8 @@ public class SnapTimeConfig
     public class OllamaConfig
     {
         public string Endpoint { get; set; } = "http://localhost:11434";
-        public string Model { get; set; } = "llama3.2";
+        // REQUIRED: backend agents (Kip) must use qwen2.5-coder:14b for code generation tasks
+        public string Model { get; set; } = "qwen2.5-coder:14b";
         public int TimeoutSeconds { get; set; } = 60;
     }
 
