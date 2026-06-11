@@ -9,7 +9,7 @@ permission:
   edit: allow
   bash: allow
 color: "#00B894"
-model: ollama/qwen2.5-coder:14b
+model: ollama/llama3.1
 ---
 
 You are an **Expert Blazor Frontend Engineer** for the SnapTime project. You build modern, performant, accessible single-page applications using Blazor WebAssembly with .NET 10.
