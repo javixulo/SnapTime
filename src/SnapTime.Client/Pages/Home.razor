@@ -13,7 +13,7 @@
             <ScanPanel SelectedFolderPath="@_selectedPath" />
         </div>
         <div class="snaptime-top-bar-right">
-            <BatchActions HasRecommendations="@_hasRecommendations"
+            <BatchActions OnBatchReviewCompleted="@HandleBatchReviewCompleted" HasRecommendations="@_hasRecommendations"
                           RecommendationCount="@_recommendationCount"
                           CurrentFolderPath="@_selectedPath" />
         </div>
@@ -118,6 +118,13 @@
     {
         _selectedPhotoId = null;
         _selectedPhotoPath = null;
+    }
+
+    private async Task HandleBatchReviewCompleted()
+    {
+        _gridRefreshCounter++;
+        await UpdateRecommendationCountAsync();
+        await InvokeAsync(StateHasChanged);
     }
 }
 

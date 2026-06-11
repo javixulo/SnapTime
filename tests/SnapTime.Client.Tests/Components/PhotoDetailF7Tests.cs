@@ -148,4 +148,70 @@ public class PhotoDetailF7Tests : TestContext
         rejectBtn.ClassName.Should().NotContain("disabled",
             "el botón Rechazar debe estar habilitado: scan completado + SuggestedDate presente");
     }
+
+    [Fact]
+    public void ClickAceptar_LlamaASingleReviewAsync()
+    {
+        var reviewClient = Substitute.For<IReviewClient>();
+        Services.AddSingleton(reviewClient);
+        _scanStateService.IsScanning.Returns(false);
+        _scanStateService.HasCompletedScan.Returns(true);
+        _photoClient.GetAssetDetailAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(_detailConSugerencia);
+        var cut = RenderComponent<PhotoDetail>(p =>
+            p.Add(c => c.SelectedAssetId, _detailConSugerencia.Id));
+        cut.Find(".btn-accept").Click();
+        reviewClient.Received(1).SingleReviewAsync(_detailConSugerencia.Id, "approved");
+    }
+
+    [Fact]
+    public void ClickRechazar_LlamaASingleReviewAsync()
+    {
+        var reviewClient = Substitute.For<IReviewClient>();
+        Services.AddSingleton(reviewClient);
+        _scanStateService.IsScanning.Returns(false);
+        _scanStateService.HasCompletedScan.Returns(true);
+        _photoClient.GetAssetDetailAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(_detailConSugerencia);
+        var cut = RenderComponent<PhotoDetail>(p =>
+            p.Add(c => c.SelectedAssetId, _detailConSugerencia.Id));
+        cut.Find(".btn-reject").Click();
+        reviewClient.Received(1).SingleReviewAsync(_detailConSugerencia.Id, "rejected");
+    }
+
+    [Fact]
+    public void ClickAceptar_BadgeCambiaAVerde()
+    {
+        var reviewClient = Substitute.For<IReviewClient>();
+        reviewClient.SingleReviewAsync(Arg.Any<Guid>(), Arg.Any<string>())
+            .Returns(new MediaAssetDto { SuggestionReviewStatus = "Approved" });
+        Services.AddSingleton(reviewClient);
+        _scanStateService.IsScanning.Returns(false);
+        _scanStateService.HasCompletedScan.Returns(true);
+        _photoClient.GetAssetDetailAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(_detailConSugerencia);
+        var cut = RenderComponent<PhotoDetail>(p =>
+            p.Add(c => c.SelectedAssetId, _detailConSugerencia.Id));
+        cut.Find(".btn-accept").Click();
+        cut.WaitForAssertion(() =>
+            cut.Find(".suggestion-status").ClassName.Should().Contain("status-approved"));
+    }
+
+    [Fact]
+    public void ClickRechazar_BadgeCambiaARojo()
+    {
+        var reviewClient = Substitute.For<IReviewClient>();
+        reviewClient.SingleReviewAsync(Arg.Any<Guid>(), Arg.Any<string>())
+            .Returns(new MediaAssetDto { SuggestionReviewStatus = "Rejected" });
+        Services.AddSingleton(reviewClient);
+        _scanStateService.IsScanning.Returns(false);
+        _scanStateService.HasCompletedScan.Returns(true);
+        _photoClient.GetAssetDetailAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(_detailConSugerencia);
+        var cut = RenderComponent<PhotoDetail>(p =>
+            p.Add(c => c.SelectedAssetId, _detailConSugerencia.Id));
+        cut.Find(".btn-reject").Click();
+        cut.WaitForAssertion(() =>
+            cut.Find(".suggestion-status").ClassName.Should().Contain("status-rejected"));
+    }
 }

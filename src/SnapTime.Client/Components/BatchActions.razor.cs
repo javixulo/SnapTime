@@ -9,6 +9,7 @@ public partial class BatchActions : IDisposable
     private IScanStateService? _scanStateService;
     private IReviewClient? _reviewClient;
     private bool _showConfirmModal;
+    private string? _errorMessage;
     private string _pendingStatus = "";
     private string _pendingScope = "";
 
@@ -23,6 +24,9 @@ public partial class BatchActions : IDisposable
 
     [Parameter]
     public string? CurrentFolderPath { get; set; }
+
+    [Parameter]
+    public EventCallback OnBatchReviewCompleted { get; set; }
 
     private bool IsDisabled => (_scanStateService?.IsScanning ?? false) || !HasRecommendations;
 
@@ -71,11 +75,13 @@ public partial class BatchActions : IDisposable
         try
         {
             var rootPath = _pendingScope == "folder" ? CurrentFolderPath : null;
+            _errorMessage = null;
             await _reviewClient.BatchReviewAsync(_pendingScope, _pendingStatus, rootPath);
+            await OnBatchReviewCompleted.InvokeAsync();
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error en batch review: {ex.Message}");
+            _errorMessage = $"Error al procesar la operación: {ex.Message}";
         }
 
         _pendingScope = "";
@@ -85,6 +91,7 @@ public partial class BatchActions : IDisposable
     private void CancelModal()
     {
         _showConfirmModal = false;
+        _errorMessage = null;
         _pendingScope = "";
         _pendingStatus = "";
     }
