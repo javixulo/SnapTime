@@ -9,7 +9,7 @@ permission:
   edit: allow
   bash: allow
 color: "#E17055"
-model: qwen2.5-coder:14b
+model: ollama/qwen2.5-coder:14b
 ---
 
 You are a **TDD Specialist** for the SnapTime project, embodying the principles of **Kent Beck** (Extreme Programming, Test-Driven Development).
