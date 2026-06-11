@@ -50,12 +50,12 @@
 
 ## US-002 — Motor de agregación de confianza
 
-> Las evidencias recolectadas durante el escaneo se sintetizan en un `ConfidenceScore` (0-100), un `AnalysisStatus` y una sugerencia (`SuggestedDate` + `SuggestedByHeuristic` + `SuggestionReviewStatus`) por archivo. Sin esto, los botones Aceptar/Rechazar nunca se activan.
+> Las evidencias recolectadas durante el escaneo se sintetizan en un `ConfidenceScore` (0-100), un `MediaStatus` y una sugerencia (`SuggestedDate` + `SuggestedByHeuristic` + `SuggestionReviewStatus`) por archivo. Sin esto, los botones Aceptar/Rechazar nunca se activan.
 
 **Reglas base:**
 - Se ejecuta como **paso final del pipeline de escaneo**, tras la extracción de metadatos y heurísticas.
 - Procesa las `EvidenceEntry` de cada `MediaAsset` y calcula:
-  - `AnalysisStatus` (Pending, Correct, Error, NoSuggestion, HasSuggestion) según las evidencias:
+  - `MediaStatus` (Pending, Correct, Error, NoSuggestion, HasSuggestion) según las evidencias:
     - Sin escanear → `Pending`.
     - Sin evidencias o todas positivas con confianza ≥ umbral → `Correct`.
     - Error en el procesamiento → `Error`.
@@ -65,7 +65,7 @@
   - `SuggestedDate`: si existe una evidencia Correction dominante con peso ≥ `confidenceThreshold`, se asigna la fecha alternativa.
   - `SuggestedByHeuristic`: id de la heurística que produjo la sugerencia.
   - `SuggestionReviewStatus`: `Unreviewed` si hay sugerencia, no aplica si no.
-- Sin evidencias o sin peso suficiente → `SuggestedDate = null`, `ConfidenceScore = 0`, `AnalysisStatus` según corresponda.
+- Sin evidencias o sin peso suficiente → `SuggestedDate = null`, `ConfidenceScore = 0`, `MediaStatus` según corresponda.
 - El umbral "suficiente peso" se vincula al `confidenceThreshold` configurable en `snaptime.config.json` (defecto: 80).
 - Al reescanear una carpeta (US-001), se regeneran scores, status y sugerencias desde cero.
 
@@ -76,10 +76,10 @@
 ### Tests
 
 **Unit (SnapTime.Domain.Tests):**
-- HeuristicEngine con evidencias Positive y peso alto → AnalysisStatus = Correct, score alto.
-- HeuristicEngine con evidencias mixtas → score medio, AnalysisStatus = NoSuggestion.
-- HeuristicEngine sin evidencias → score 0, AnalysisStatus = Correct.
-- HeuristicEngine con evidencia Correction dominante → SuggestedDate asignado, SuggestionReviewStatus = Unreviewed, AnalysisStatus = HasSuggestion.
+- HeuristicEngine con evidencias Positive y peso alto → MediaStatus = Correct, score alto.
+- HeuristicEngine con evidencias mixtas → score medio, MediaStatus = NoSuggestion.
+- HeuristicEngine sin evidencias → score 0, MediaStatus = Correct.
+- HeuristicEngine con evidencia Correction dominante → SuggestedDate asignado, SuggestionReviewStatus = Unreviewed, MediaStatus = HasSuggestion.
 - Re-scaneo: scores, status y sugerencias anteriores se descartan y se recalculan.
 
 ---
@@ -133,7 +133,7 @@
 
 **Reglas base:**
 - **Sin selección múltiple en grid.** No hay checkboxes por fila.
-- El círculo de color en el grid (F5) muestra el **`AnalysisStatus`** del archivo (Correct, Error, NoSuggestion, HasSuggestion), no el estado de revisión de la sugerencia.
+- El círculo de color en el grid (F5) muestra el **`MediaStatus`** del archivo (Correct, Error, NoSuggestion, HasSuggestion), no el estado de revisión de la sugerencia.
 - El estado de revisión de la sugerencia (`SuggestionReviewStatus`) se muestra en el panel de detalle y opcionalmente como indicador secundario en el grid (Fase 2).
 - **Aceptar/Rechazar individual:** botones funcionales en el panel de detalle (F6, antes placeholders). Habilitados solo si `ScanState.IsScanning == false` y el archivo tiene `SuggestedDate` no nulo (gestionado por US-003).
   - Al pulsar **Aceptar**, la sugerencia del archivo pasa a `SuggestionReviewStatus.Approved`.
@@ -148,7 +148,7 @@
 ### Contrato API
 - `POST /api/reviews/single` → `SingleReviewRequest { assetId, status }` → `MediaAssetDto`
 - `POST /api/reviews/batch` → `BatchReviewRequest { scope, status, rootPath? }` → `List<Guid>`
-- `GET /api/media-assets?folderPath=&page=&pageSize=` → cada `MediaAssetDto` incluye `AnalysisStatus` y `SuggestionReviewStatus`
+- `GET /api/media-assets?folderPath=&page=&pageSize=` → cada `MediaAssetDto` incluye `MediaStatus` y `SuggestionReviewStatus`
 
 ### Componentes
 - `PhotoDetail.razor` — botones Aceptar/Rechazar funcionales (antes placeholders)

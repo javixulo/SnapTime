@@ -22,8 +22,8 @@
 - La navegación es **independiente del árbol izquierdo** — el árbol mantiene su selección.
 - El grid expone una **miga de pan (breadcrumb)** para navegar hacia arriba.
 
-### Círculo de estado (AnalysisStatus)
-- Esquina superior derecha de cada miniatura, círculo pequeño (16px diámetro). Representa el `AnalysisStatus` del archivo.
+### Círculo de estado (MediaStatus)
+- Esquina superior derecha de cada miniatura, círculo pequeño (16px diámetro). Representa el `MediaStatus` del archivo.
 - **Gris** (`Pending`) — no escaneado / pendiente.
 - **Verde** (`Correct`) — escaneado y fecha correcta.
 - **Rojo** (`Error`) — escaneado con error.

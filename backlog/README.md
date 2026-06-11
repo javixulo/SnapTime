@@ -17,7 +17,7 @@
 | F4 | Árbol de carpetas (panel izquierdo) | ⏳ Pendiente (bloqueado por F0-US-010) | FR-17 |
 | F5 | Grid de fotos (panel central) | ⏳ Pendiente | FR-08, FR-18 |
 | F6 | Panel detalle (foto seleccionada) | ⏳ Pendiente | FR-08 |
-| F7 | Revisión en lote | ⏳ Pendiente | FR-10 |
+| F7 | Revisión en lote | 🟡 En curso (faltan tests y refresco de grid) | FR-10 |
 | F8 | Aplicación de cambios (escritura real, batch) | ⏳ Pendiente | FR-11 |
 | F9 | Chat contextual con LLM (Ollama) | ⏳ Pendiente | FR-19 |
 

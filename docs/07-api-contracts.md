@@ -20,7 +20,7 @@ public enum MediaType { Image, Video }
 public enum SelectionState { Selected, None, Partial }
 
 /// <summary>Estado del análisis de la foto. Determina el círculo de color en el grid.</summary>
-public enum AnalysisStatus { Pending, Correct, Error, NoSuggestion, HasSuggestion }
+public enum MediaStatus { Pending, Correct, Error, NoSuggestion, HasSuggestion }
 
 /// <summary>Estado de revisión de la sugerencia (si existe).</summary>
 public enum SuggestionReviewStatus { Unreviewed, Approved, Rejected }
@@ -36,7 +36,7 @@ public record MediaAssetDto(
     DateTime? SuggestedDate,
     int ConfidenceScore,
     string? SuggestedByHeuristic,
-    AnalysisStatus Status,
+    MediaStatus Status,
     SuggestionReviewStatus SuggestionStatus
 );
 
@@ -55,7 +55,7 @@ public record MediaAssetDetailDto(
     int ConfidenceScore,
     DateTime? SuggestedDate,
     string? SuggestedByHeuristic,
-    AnalysisStatus Status,
+    MediaStatus Status,
     SuggestionReviewStatus SuggestionStatus,
     List<EvidenceDto> Evidence
 );

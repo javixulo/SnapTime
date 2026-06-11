@@ -26,7 +26,7 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 
 ### 4.2) Panel central: grid de archivos multimedia
 - Cuadrícula de archivos con miniatura (fotos) o vídeo nativo con `<video preload="metadata">` (vídeos, badge ▶右下).
-- Indicadores visuales sobre la miniatura/icono: círculo de estado de 16px que muestra el **`AnalysisStatus`** del archivo (gris = Pending, verde = Correct, rojo = Error, #ffc107 = NoSuggestion, azul = HasSuggestion). El estado de revisión de la sugerencia (`SuggestionReviewStatus`) no se refleja en el círculo del grid en MVP.
+- Indicadores visuales sobre la miniatura/icono: círculo de estado de 16px que muestra el **`MediaStatus`** del archivo (gris = Pending, verde = Correct, rojo = Error, #ffc107 = NoSuggestion, azul = HasSuggestion). El estado de revisión de la sugerencia (`SuggestionReviewStatus`) no se refleja en el círculo del grid en MVP.
 - Al hacer clic en una miniatura, se muestra el detalle en el panel derecho (no inline). Doble click en subcarpeta navega dentro del grid independientemente del árbol izquierdo.
 - **Solo visualización.** Sin acciones (aceptar/rechazar) desde el grid. Sin checkboxes ni selección múltiple. La aprobación/rechazo de sugerencias se hace desde el panel de detalle (individual) o desde los botones de lote en el panel superior.
 - **Sin Virtualize:** reemplazado por `@foreach` manual + llamada asíncrona con `CancellationTokenSource` para cancelar peticiones en curso al navegar rápido.
@@ -286,7 +286,7 @@ Las fechas de metadatos actuales (EXIF, filesystem, etc.) se muestran en formato
   - **Activos** solo si: (a) el proceso de escaneo no está en ejecución (idle, completed o cancelled), y (b) el archivo tiene `SuggestedDate` no nulo.
   - Si no se cumplen ambas condiciones, los botones se muestran **deshabilitados** (opacidad reducida, cursor por defecto, sin respuesta al clic).
 - Al hacer clic en Aceptar → `SuggestionReviewStatus` pasa a `Approved`. Al hacer clic en Rechazar → pasa a `Rejected`. El cambio se persiste en SQLite.
-- El círculo de estado en el grid no cambia (sigue mostrando `AnalysisStatus`). El estado de revisión se refleja en el panel de detalle y opcionalmente como indicador secundario en el grid (Fase 2).
+- El círculo de estado en el grid no cambia (sigue mostrando `MediaStatus`). El estado de revisión se refleja en el panel de detalle y opcionalmente como indicador secundario en el grid (Fase 2).
 
 ### Botones Aceptar Todo / Rechazar Todo / Aceptar Total / Rechazar Total (lote)
 - Se ubican en el panel superior (4.4).
