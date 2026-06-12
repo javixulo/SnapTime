@@ -195,7 +195,7 @@ public record HeuristicConfigDto(
 |--------|------|---------|----------|-------------|
 | POST | `/reviews/single` | `SingleReviewRequest` | `MediaAssetDto` | Aprobar/rechazar sugerencia de un archivo. |
 | POST | `/reviews/batch` | `BatchReviewRequest` | `List<Guid>` (200) | Aprobar/rechazar en lote (carpeta o total). Devuelve los IDs actualizados. |
-| POST | `/apply` | `ApplyChangesRequest` | `ApplyChangesResponse` | Ejecutar aplicación real (batch). Response incluye resultado por archivo y listado de errores |
+| POST | `/apply` | `ApplyChangesRequest` | `ApplyChangesResponse` | Ejecutar aplicación real (batch). Response incluye resultado por archivo y listado de errores. Además de escribir la fecha, anota en los metadatos el valor original y la heurística responsable (`EXIF UserComment` en fotos, `QuickTime ©cmt` en vídeos) |
 
 ### Chat
 

@@ -82,7 +82,7 @@ flowchart TB
 5. Resultados se persisten en SQLite con evidencia.
 6. La UI muestra lista/filtros/detalle y permite revisión.
 7. Usuario aprueba/rechaza cambios.
-8. Sistema ejecuta aplicación real (batch) y registra auditoría. No hay dry-run en el MVP.
+8. Sistema ejecuta aplicación real (batch), anota el cambio en los metadatos del archivo (UserComment / ©cmt) y registra auditoría. No hay dry-run en el MVP.
 
 ## 3) Contratos iniciales (sin implementación)
 
@@ -118,6 +118,7 @@ flowchart TB
 - Al escribir, se fija hora 5:00 AM en todas las correcciones automáticas.
   - Fotos: se escribe en `EXIF:DateTimeOriginal`.
   - Vídeos: se escribe en `QuickTime:CreateDate`.
+  - Junto con la fecha, se anota el valor original y la heurística responsable en `EXIF UserComment` (fotos) o `QuickTime ©cmt` (vídeos), con formato: `SnapTime;original=YYYY-MM-DDTHH:mm:ss;heuristics=H-XXX,H-YYY`.
 - Referencia: `docs/00-vision-y-alcance.md §8`.
 
 ### 4.2) Reglas baseline

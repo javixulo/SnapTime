@@ -2,7 +2,7 @@
 
 > Escribir la fecha aceptada en los metadatos EXIF (fotos) o QuickTime (vídeos) del archivo real. Proceso real, best-effort, con resumen final de errores por archivo.
 
-**Referencias:** FR-11, docs/07-api-contracts.md, docs/00-vision-y-alcance.md §8
+**Referencias:** FR-11, docs/07-api-contracts.md, docs/03-blueprint-flujo-modulos-y-fases.md §4.1, docs/00-vision-y-alcance.md §8
 
 **Dependencias:** F7 (assets aprobados y SuggestedDate poblada en BD)
 
@@ -18,6 +18,9 @@ Reglas base:
 - Campo a escribir:
   - Fotos: `EXIF:DateTimeOriginal`.
   - Vídeos: `QuickTime:CreateDate`.
+  - Además, se anota el valor original y las heurísticas responsables en `EXIF UserComment` (fotos) o `QuickTime ©cmt` (vídeos).
+- Formato de la anotación: `SnapTime;original=YYYY-MM-DDTHH:mm:ss;heuristics=H-XXX,H-YYY`.
+- La anotación se escribe en la misma operación que la fecha (misma transacción de escritura).
 - Aplicación real: el servicio intentará escribir cada archivo (best-effort). Para cada archivo se registra el resultado (ok/error/motivo). No hay rollback en el MVP.
 - Modal de confirmación antes de aplicar: lista de cambios (archivo, fecha actual → fecha nueva). El modal mostrará las fechas al usuario en formato `dd/MM/yyyy` y la fecha sugerida deberá ir resaltada (por ejemplo con `<strong>`).
 - Si falla la escritura en un archivo (p.ej. archivo readonly) se captura la excepción y se añade al resumen de errores; no detiene la ejecución del lote.
@@ -26,10 +29,11 @@ Reglas base:
 Contrato (alto nivel):
 
 - Servicio `IApplyService` en Server (métodos para ejecución batch, best-effort).
-- `IExifWriter` en Infrastructure (escribir tag EXIF/QuickTime).
+- `IExifWriter` en Infrastructure (escribir tag EXIF/QuickTime + UserComment/©cmt).
 - Endpoint `POST /apply` con `ApplyChangesRequest / ApplyChangesResponse` (respuesta incluye resultado por archivo y listado de errores).
 - Componente Blazor `ApplyModal.razor` (modal de confirmación con lista y resumen final).
 - Tests: escritura real, archivo readonly, mezcla de éxitos/errores, auditoría registrada, y bloqueo si hay scan en curso.
+- Al escribir la fecha, se anota en los metadatos el valor original y los IDs de heurística (`EXIF UserComment` en fotos, `QuickTime ©cmt` en vídeos).
 
 ---
 
@@ -64,15 +68,37 @@ Acceptance: endpoint responde conforme al contrato y tiene tests unitarios bási
   ```csharp
   public interface IExifWriter
   {
-      Task<ExifWriteResult> WriteAsync(string filePath, MediaType mediaType, DateTime newDate, CancellationToken ct = default);
+      Task<ExifWriteResult> WriteAsync(
+          string filePath,
+          MediaType mediaType,
+          DateTime newDate,
+          DateTime? originalDate,
+          IReadOnlyList<string> heuristicIds,
+          CancellationToken ct = default);
   }
   public record ExifWriteResult(bool Success, string? ErrorMessage);
   ```
 - Intentar usar API .NET nativa (p. ej. System.Formats) sin dependencias externas. Si no es viable para escritura o ciertos formatos, proponer `ExifLibrary` (MIT) como fallback y documentar la elección.
+- La implementación debe:
+  1. Escribir la nueva fecha en `EXIF:DateTimeOriginal` (fotos) o `QuickTime:CreateDate` (vídeos).
+  2. Escribir la anotación en `EXIF UserComment` (0x9286) para fotos o `QuickTime ©cmt` para vídeos con formato `SnapTime;original=YYYY-MM-DDTHH:mm:ss;heuristics=H-XXX,H-YYY`.
+  3. Si `originalDate` es null, escribir `original=unknown`.
+  4. Si `heuristicIds` está vacío, escribir `heuristics=none`.
+  5. Ambas escrituras en la misma transacción/operación (éxito completo o fallo completo a nivel de archivo).
 
-Acceptance: implementation writes expected EXIF/QuickTime tags on sample files in integration tests.
+Acceptance: implementation writes expected EXIF/QuickTime tags + UserComment/©cmt on sample files in integration tests.
 
 **🔵 T-003 — Refactor y review (Gavin)**
+
+**🔴 T-004 — Tests de anotación UserComment/©cmt (Janus)**
+- Tests unitarios que verifiquen:
+  - Al escribir la fecha, el campo UserComment/©cmt contiene el formato esperado.
+  - `originalDate` null produce `original=unknown`.
+  - `heuristicIds` vacío produce `heuristics=none`.
+  - Múltiples heuristics IDs separados por coma.
+- Tests de integración con archivos reales JPEG y MOV/MP4 para verificar que el tag se escribe y se puede leer de vuelta.
+
+Acceptance: tests confirman que la anotación se escribe y parsea correctamente.
 
 ---
 
@@ -90,19 +116,26 @@ Acceptance: implementation writes expected EXIF/QuickTime tags on sample files i
 
 **🟢 T-002 — Implementación (Kip)**
 - Lógica propuesta:
-  - Recuperar assets por id desde BD.
+  - Recuperar assets por id desde BD (incluye `SuggestedByHeuristic` y fecha original desde `MetadataEntry` o método análogo).
   - Validar `SuggestionStatus == Approved`. Si no, añadir `ApplyResult` con `Success = false, Error = "NotApproved"`.
   - Para cada asset aprobado:
     - Tomar `SuggestedDate` desde BD. Si nulo → `Error = "MissingSuggestedDate"`.
-    - Llamar `IExifWriter.WriteAsync(filePath, mediaType, suggestedDate)`.
+    - Obtener fecha original: priorizar `EXIF:DateTimeOriginal`/`QuickTime:CreateDate` de `MetadataEntries`, o si no, null.
+    - Obtener heuristic IDs desde `MediaAsset.SuggestedByHeuristic` (formato string separado por comas, parsear a lista).
+    - Llamar `IExifWriter.WriteAsync(filePath, mediaType, suggestedDate, originalDate, heuristicIds)`.
     - Si éxito: actualizar `MediaAsset.Status` a `Completed` y persistir cambios.
     - Si error: capturar excepción y añadir `ApplyResult` con `Error = ex.Message`.
   - Crear un `AuditEntry` con el resumen (applied/failed/results) y persistir.
   - Antes de iniciar: verificar si existe un ScanJob con estado `Running`; si sí, rechazar la ejecución con 409 Conflict.
 
-Acceptance: Servicio pasa tests de integración y crea AuditEntry.
+Acceptance: Servicio pasa tests de integración y crea AuditEntry. Writer recibe originalDate y heuristicIds correctamente.
 
 **🔵 T-003 — Refactor/optimización (Kip)**
+
+**🔴 T-004 — Tests de integración con anotación (Janus)**
+- Tests que verifiquen que `IApplyService` pasa correctamente la fecha original y los heuristic IDs al writer.
+- Tests con asset que tiene `SuggestedByHeuristic = "H-001,H-003"` → writer recibe `["H-001", "H-003"]`.
+- Tests con asset sin fecha original → writer recibe `originalDate = null`.
 
 ---
 

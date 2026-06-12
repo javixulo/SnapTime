@@ -118,6 +118,7 @@ El sistema debe escribir la fecha aceptada en metadatos de forma controlada.
 - Registra resultado por archivo (ok/error/motivo).
 - Nunca modifica sin consentimiento explícita del usuario (modal de confirmación).
 - Proceso best-effort: aplica todo lo posible y devuelve listado de errores sin rollback.
+- Al modificar la fecha, anota en los metadatos del archivo el valor original y la heurística responsable: campo `EXIF UserComment` (0x9286) en fotos, `QuickTime ©cmt` (UserData Comment) en vídeos.
 
 ## FR-12 Auditoría y trazabilidad
 
