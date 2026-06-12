@@ -15,9 +15,8 @@ public class E2EWebFixture
     private static Process? _serverProcess;
     private static Process? _clientProcess;
     private static string? _tempDbPath;
-    private static string? _originalConfigContent;
     private static string? _originalClientSettings;
-    private static string? _serverProjectPath;
+    private static string? _testProjectDir;
     private static string? _clientProjectPath;
 
     /// <summary>
@@ -30,13 +29,14 @@ public class E2EWebFixture
     public async Task OneTimeSetUp()
     {
         var testDir = TestContext.CurrentContext.TestDirectory;
+        _testProjectDir = Path.GetFullPath(Path.Combine(testDir, "..", "..", "..", "..", "..", "tests", "SnapTime.E2ETests"));
         var solutionRoot = Path.GetFullPath(Path.Combine(testDir, "..", "..", "..", "..", ".."));
 
-        _serverProjectPath = Path.Combine(solutionRoot, "src", "SnapTime.Server");
+        var serverProjectPath = Path.Combine(solutionRoot, "src", "SnapTime.Server");
         _clientProjectPath = Path.Combine(solutionRoot, "src", "SnapTime.Client");
 
-        if (!Directory.Exists(_serverProjectPath))
-            throw new DirectoryNotFoundException($"Server project not found at {_serverProjectPath}");
+        if (!Directory.Exists(serverProjectPath))
+            throw new DirectoryNotFoundException($"Server project not found at {serverProjectPath}");
         if (!Directory.Exists(_clientProjectPath))
             throw new DirectoryNotFoundException($"Client project not found at {_clientProjectPath}");
 
@@ -47,37 +47,41 @@ public class E2EWebFixture
         var clientUrl = $"http://127.0.0.1:{clientPort}";
         BaseUrl = clientUrl;
 
-        // 2. Save original server config and write modified one with a temp database
-        var configPath = Path.Combine(_serverProjectPath, "snaptime.config.json");
-        _originalConfigContent = File.Exists(configPath) ? File.ReadAllText(configPath) : null;
-
+        // 2. Create a temp server config from the test template
         _tempDbPath = Path.Combine(Path.GetTempPath(), $"snaptime-e2e-{Guid.NewGuid()}.db");
 
-        var configJson = JsonNode.Parse(_originalConfigContent ?? "{}")!;
-        configJson["database"] ??= new JsonObject();
+        var e2eConfigPath = Path.Combine(_testProjectDir, "e2e.snaptime.config.json");
+        if (!File.Exists(e2eConfigPath))
+            throw new FileNotFoundException($"Test config template not found: {e2eConfigPath}");
+
+        var configJson = JsonNode.Parse(File.ReadAllText(e2eConfigPath))!;
         configJson["database"]!["path"] = _tempDbPath;
-        configJson["logging"] ??= new JsonObject();
-        configJson["logging"]!["level"] = "Warning";
 
+        var tempConfigPath = Path.Combine(Path.GetTempPath(), $"snaptime-e2e-config-{Guid.NewGuid()}.json");
         var writeOptions = new JsonSerializerOptions { WriteIndented = true };
-        File.WriteAllText(configPath, configJson.ToJsonString(writeOptions));
+        File.WriteAllText(tempConfigPath, configJson.ToJsonString(writeOptions));
 
-        // 3. Save original client settings and write modified one pointing to the server
+        // 3. Write client settings to point to the server (Blazor WASM reads from wwwroot)
         var clientSettingsPath = Path.Combine(_clientProjectPath, "wwwroot", "appsettings.Development.json");
         _originalClientSettings = File.Exists(clientSettingsPath) ? File.ReadAllText(clientSettingsPath) : null;
 
-        var clientSettings = new JsonObject { ["ApiBaseUrl"] = serverUrl };
-        File.WriteAllText(clientSettingsPath, clientSettings.ToJsonString(writeOptions));
+        var e2eClientPath = Path.Combine(_testProjectDir, "e2e.appsettings.json");
+        if (!File.Exists(e2eClientPath))
+            throw new FileNotFoundException($"Test client settings template not found: {e2eClientPath}");
 
-        // 4. Start the Server API process
+        var clientSettingsJson = File.ReadAllText(e2eClientPath).Replace("PLACEHOLDER", serverUrl);
+        File.WriteAllText(clientSettingsPath, clientSettingsJson);
+
+        // 4. Start the Server API process with env var pointing to temp config
         var serverPsi = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"run --project \"{_serverProjectPath}\" -- --urls \"{serverUrl}\"",
+            Arguments = $"run --project \"{serverProjectPath}\" -- --urls \"{serverUrl}\"",
             UseShellExecute = false,
             CreateNoWindow = true,
         };
         serverPsi.EnvironmentVariables["ASPNETCORE_ENVIRONMENT"] = "Development";
+        serverPsi.EnvironmentVariables["SNAPTIME_CONFIG_PATH"] = tempConfigPath;
 
         _serverProcess = Process.Start(serverPsi);
         if (_serverProcess is null)
@@ -159,23 +163,6 @@ public class E2EWebFixture
         KillProcess(_serverProcess, "Server");
         KillProcess(_clientProcess, "Client");
 
-        // Restore server config
-        if (_serverProjectPath is not null)
-        {
-            var configPath = Path.Combine(_serverProjectPath, "snaptime.config.json");
-            try
-            {
-                if (_originalConfigContent is not null)
-                    File.WriteAllText(configPath, _originalConfigContent);
-                else if (File.Exists(configPath))
-                    File.Delete(configPath);
-            }
-            catch (Exception ex)
-            {
-                TestContext.WriteLine($"Warning: could not restore server config: {ex.Message}");
-            }
-        }
-
         // Restore client settings
         if (_clientProjectPath is not null)
         {
@@ -184,6 +171,8 @@ public class E2EWebFixture
             {
                 if (_originalClientSettings is not null)
                     File.WriteAllText(settingsPath, _originalClientSettings);
+                else if (File.Exists(settingsPath))
+                    File.Delete(settingsPath);
             }
             catch (Exception ex)
             {

@@ -14,7 +14,8 @@ using SnapTime.Server.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var configService = new ConfigService("snaptime.config.json");
+var configPath = Environment.GetEnvironmentVariable("SNAPTIME_CONFIG_PATH") ?? "snaptime.config.json";
+var configService = new ConfigService(configPath);
 builder.Services.AddSingleton(configService);
 
 Log.Logger = SerilogSetup.CreateConfiguration(configService.Current).CreateLogger();
@@ -68,11 +69,12 @@ builder.Services.AddScoped<IScanJobService, ScanJobService>();
 
 var app = builder.Build();
 
-// Apply pending migrations on startup
+// Apply pending migrations on startup, then init runtime config from DB
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<SnapTimeDbContext>();
     db.Database.Migrate();
+    configService.Initialize(db);
 }
 
 app.MapGet("/api/health", () => Results.Ok(new HealthResponse("ok", DateTime.UtcNow)));
@@ -640,6 +642,69 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 app.UseHttpsRedirection();
+
+// [F10-US-003] Config API: read runtime config (bootstrap + DB)
+app.MapGet("/api/config", (ConfigService config) =>
+    Results.Ok(config.Current));
+
+// [F10-US-003] Config API: update runtime config in DB
+app.MapPut("/api/config", (ConfigUpdateRequest request, ConfigService config, SnapTimeDbContext db) =>
+{
+    var settings = db.Settings.Find(1);
+    if (settings is null)
+    {
+        settings = new Settings();
+        db.Settings.Add(settings);
+    }
+
+    if (request.ConfidenceThreshold.HasValue)
+        settings.ConfidenceThreshold = Math.Clamp(request.ConfidenceThreshold.Value, 0, 100);
+    if (request.MaxConcurrency.HasValue)
+        settings.MaxConcurrency = Math.Max(1, request.MaxConcurrency.Value);
+    if (request.BatchSize.HasValue)
+        settings.BatchSize = Math.Max(1, request.BatchSize.Value);
+    if (request.ImageExtensionsCsv is not null)
+        settings.ImageExtensionsCsv = request.ImageExtensionsCsv;
+    if (request.VideoExtensionsCsv is not null)
+        settings.VideoExtensionsCsv = request.VideoExtensionsCsv;
+    if (request.OllamaEndpoint is not null)
+        settings.OllamaEndpoint = request.OllamaEndpoint;
+    if (request.OllamaModel is not null)
+        settings.OllamaModel = request.OllamaModel;
+    if (request.OllamaTimeoutSeconds.HasValue)
+        settings.OllamaTimeoutSeconds = Math.Max(1, request.OllamaTimeoutSeconds.Value);
+    if (request.ThumbnailMaxDimension.HasValue)
+        settings.ThumbnailMaxDimension = Math.Max(50, request.ThumbnailMaxDimension.Value);
+    if (request.ThumbnailQuality.HasValue)
+        settings.ThumbnailQuality = Math.Clamp(request.ThumbnailQuality.Value, 1, 100);
+
+    // Apply heuristic updates
+    foreach (var h in request.Heuristics ?? [])
+    {
+        var existing = db.HeuristicConfigs.Find(h.Id);
+        if (existing is not null)
+        {
+            if (h.Enabled.HasValue) existing.Enabled = h.Enabled.Value;
+            if (h.Weight.HasValue) existing.Weight = h.Weight.Value;
+        }
+        else
+        {
+            db.HeuristicConfigs.Add(new HeuristicConfigEntity
+            {
+                Id = h.Id,
+                Enabled = h.Enabled ?? true,
+                Weight = h.Weight ?? 1.0,
+            });
+        }
+    }
+
+    db.SaveChanges();
+
+    // Refresh in-memory config from DB
+    config.UpdateRuntimeFromDb(db);
+
+    return Results.Ok(config.Current);
+});
 
 app.Run();
 

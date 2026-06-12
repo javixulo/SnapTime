@@ -150,7 +150,9 @@ public class AuditEntry {
 
 ---
 
-## F0-US-005 — ConfigService + snaptime.config.json
+## F0-US-005 — ConfigService + snaptime.config.json (⚠️ Superseded by F10)
+
+> **Nota:** Esta US describe el diseño original (todo-JSON). F10 migra la configuración runtime a BD, dejando el JSON solo para bootstrap (`database.path`, `logging`). Los criterios de F0-US-005 siguen siendo válidos como base, pero el `ConfigService` actual se refactoriza en F10.
 
 Servicio singleton que lee y expone `SnapTimeConfig`.
 

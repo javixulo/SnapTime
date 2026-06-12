@@ -20,6 +20,7 @@
 | F7 | Revisión en lote | 🟡 En curso (faltan tests y refresco de grid) | FR-10 |
 | F8 | Aplicación de cambios (escritura real, batch) | ⏳ Pendiente | FR-11 |
 | F9 | Chat contextual con LLM (Ollama) | ⏳ Pendiente | FR-19 |
+| F10 | Configuración runtime en BD | 📋 Planificado | docs/08-configuracion.md, FR-15, FR-16 |
 
 ## Cómo trabajamos
 

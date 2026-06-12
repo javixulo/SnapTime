@@ -66,7 +66,7 @@
   - `SuggestedByHeuristic`: id de la heurística que produjo la sugerencia.
   - `SuggestionReviewStatus`: `Unreviewed` si hay sugerencia, no aplica si no.
 - Sin evidencias o sin peso suficiente → `SuggestedDate = null`, `ConfidenceScore = 0`, `MediaStatus` según corresponda.
-- El umbral "suficiente peso" se vincula al `confidenceThreshold` configurable en `snaptime.config.json` (defecto: 80).
+- El umbral "suficiente peso" se vincula al `confidenceThreshold` configurable en BD (tabla `Settings`, columna `ConfidenceThreshold`; defecto: 80). Ver `docs/08-configuracion.md`.
 - Al reescanear una carpeta (US-001), se regeneran scores, status y sugerencias desde cero.
 
 ### Contrato API (servicio interno, sin endpoint nuevo)

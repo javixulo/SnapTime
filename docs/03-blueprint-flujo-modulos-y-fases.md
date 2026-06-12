@@ -61,18 +61,18 @@ flowchart TB
 
 #### Chat conversacional
 - LLM local: Ollama. Sin envío de datos a internet.
--- Modelo configurable en `snaptime.config.json` (default: `qwen2.5-coder:14b`).
+-- Modelo configurable en BD (tabla `Settings`, columna `OllamaModel`; default: `qwen2.5-coder:14b`).
 - El chat backend envía el mensaje al LLM con tool calling sobre las MCP tools.
 - El LLM interpreta el mensaje, ejecuta la tool correspondiente y devuelve la respuesta formateada.
 
 #### Configuración
-- Archivo JSON: `snaptime.config.json` (ver `docs/08-configuracion.md`).
-- ConfigService singleton con FileSystemWatcher para detección de cambios externos.
+- Modelo híbrido: bootstrap JSON (`snaptime.config.json`) con solo `database.path` y `logging`; runtime en BD (`Settings` + `HeuristicConfig`).
+- ConfigService singleton: carga bootstrap del JSON, conecta a BD, carga runtime, expone `Current` combinado.
 - Validación de valores antes de aplicar. Cada cambio se registra en auditoría.
 
 #### Logging
 - Librería: Serilog. Integración con `Microsoft.Extensions.Logging`.
-- Logging estructurado como estándar. Nivel configurable en `snaptime.config.json`.
+- Logging estructurado como estándar. Nivel configurable en bootstrap JSON (`snaptime.config.json`).
 
 ## 2) Flujo operativo end-to-end
 1. Usuario selecciona ruta y parámetros (umbral, concurrencia, filtros).

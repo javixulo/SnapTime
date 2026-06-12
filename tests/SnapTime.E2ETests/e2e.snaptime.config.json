@@ -1,9 +1,9 @@
 {
   "database": {
-    "path": "SnapTime.db"
+    "path": "snaptime-e2e-test.db"
   },
   "logging": {
-    "level": "Information",
+    "level": "Warning",
     "file": "snaptime.log"
   }
 }

@@ -18,7 +18,7 @@ El sistema debe descubrir archivos de imagen (JPG/JPEG) y vídeo (MP4, MOV, y ot
 
 - Se contabilizan archivos candidatos y archivos descartados.
 - Se informa motivo de descarte (extensión no soportada, archivo corrupto, etc.).
-- Las extensiones soportadas son configurables en `snaptime.config.json`.
+- Las extensiones soportadas son configurables en BD (tabla `Settings`, columnas `ImageExtensionsCsv`/`VideoExtensionsCsv`).
 
 ## FR-03 Extracción de metadatos de fecha
 
@@ -153,7 +153,7 @@ El sistema debe permitir ajustar pesos, umbrales y activación/desactivación de
 
 ### Criterios de aceptación
 
-- Config editable desde archivo o UI de administración básica.
+- Config editable desde UI de administración (persistido en BD, no en archivo).
 - Cada heurística puede activarse o desactivarse de forma independiente.
 - Permite ajustar pesos de heurísticas habilitadas.
 - Los cambios de configuración deben aplicarse en runtime sin reiniciar la aplicación.

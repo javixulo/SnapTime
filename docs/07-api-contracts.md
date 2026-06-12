@@ -155,7 +155,7 @@ public record HeuristicConfigDto(
 );
 ```
 
-> `SnapTimeConfig` (response de `GET/PUT /config`) está definido en [`docs/08-configuracion.md`](08-configuracion.md).
+> `SnapTimeConfig` es la combinación de bootstrap JSON + runtime BD. Ver [`docs/08-configuracion.md`](08-configuracion.md) para el esquema completo.
 
 ## 3) Endpoints
 
@@ -207,8 +207,8 @@ public record HeuristicConfigDto(
 
 | Método | Ruta | Request | Response | Descripción |
 |--------|------|---------|----------|-------------|
-| GET | `/config` | — | `SnapTimeConfig` | Config actual |
-| PUT | `/config` | `ConfigUpdateRequest` | `SnapTimeConfig` | Actualizar en runtime |
+| GET | `/config` | — | `SnapTimeConfig` | Config actual (bootstrap + BD runtime) |
+| PUT | `/config` | `ConfigUpdateRequest` | `SnapTimeConfig` | Actualizar runtime en BD |
 
 ## 4) Notas técnicas
 
