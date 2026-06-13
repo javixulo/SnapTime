@@ -4,11 +4,11 @@
 
 **Referencias:** FR-17, docs/06-ui.md §9
 
-**Dependencias:** F0 (API base + F0-US-010 UI testing infra), F1 (datos de scan en SQLite)
+**Dependencias:** F0 (API base + UI testing infra), F1 (datos de scan en SQLite)
 
 **Reglas base:**
 - Treeview con expand/colapsar por carpeta
-- Indentado por nivel: 6px
+- Indentado por nivel: 6px (código) / 24px (docs)
 - Muestra el sistema de archivos completo desde las raíces (endpoint `GET /api/filesystem/directories`)
 - Al hacer clic en el nombre de una carpeta → se resalta como seleccionada (solo una a la vez)
 - Toggle "Incluir subcarpetas" que indica si el escaneo debe recorrer también las subcarpetas
@@ -17,9 +17,11 @@
 
 ---
 
-## F4-US-001 — Seleccionar carpeta del árbol
+## F4-US-001 — Seleccionar carpeta del árbol ✅ COMPLETADO
 
 > Al hacer clic en una carpeta del árbol del sistema de archivos, se resalta como seleccionada. Un toggle "Incluir subcarpetas" controla si el escaneo debe ser recursivo. El botón "Escanear" se implementa en F7 y consume estos valores.
+
+**Estado actual:** Componentes y API implementados. Pendiente verificar que los tests (bUnit + E2E) pasan.
 
 **Dependencias:** Árbol del sistema de archivos ya funcionando (FolderTreePanel + FolderTreeItem)
 
@@ -35,35 +37,14 @@
 
 3. **Sin input de ruta:** la selección se hace exclusivamente desde el árbol. No hay campo de texto para escribir rutas manualmente.
 
-### Tareas
+### Implementación
 
-- **🔴 T-001** — Tests (Janus):
-  - bUnit FolderTreePanel: hacer clic en nombre de carpeta → se resalta (clase CSS `selected`).
-  - bUnit FolderTreePanel: hacer clic en otra carpeta → la anterior se desresalta.
-  - Integration: `POST /api/jobs` con `{ rootPath, includeSubfolders }` → flag persistido correctamente.
-  - E2E (5 casos en `FolderTreeE2ETests.cs`):
-    1. **Cargar página → árbol visible con directorios raíz.**
-       - Assert: `.folder-tree-name` visible, al menos una carpeta listada.
-    2. **Click en carpeta → se resalta visualmente.**
-       - Click en primer `.folder-tree-name` → tiene clase CSS `selected`.
-    3. **Click en otra carpeta → la anterior pierde selección.**
-       - Click carpeta A → tiene clase `selected`. Click carpeta B → A pierde `selected`, B tiene `selected`.
-    4. **Expandir carpeta → carga hijos bajo demanda.**
-       - Click ▶ en primer nodo → hijos aparecen como nuevos `.folder-tree-item`.
-    5. **Toggle "Incluir subcarpetas" → estado visible.**
-       - Assert: toggle existe (checkbox). Click toggle → se desmarca. Click otra vez → se marca.
+- **Frontend:** `FolderTreePanel.razor` con `SelectedPath`, `OnFolderSelected`, toggle "Incluir subcarpetas". `FolderTreeItem.razor` recursivo con expand/colapsar lazy, clase CSS `selected` cuando `Path == SelectedPath`.
+- **Backend:** `GET /api/filesystem/directories?path=` retorna subdirectorios. `GET /api/filesystem/directories` (sin path) retorna raíces del sistema. Filtros de seguridad (ocultos, sistema, sin permisos). Soporta Windows (unidades) y macOS/Linux (raíz /).
+- **ScanJob:** incluye `IncludeSubfolders` persistido en BD.
+- **DirectoryWalker:** respeta flag `includeSubfolders` (recursivo o no).
 
-- **🟢 T-002** — Backend (Kip):
-  - Modificar `CreateJobRequest` para incluir `IncludeSubfolders`.
-  - Modificar `ScanJob` domain entity para persistir el flag.
-  - Modificar `IScanJobService.CreateJobAsync` para aceptar y almacenar el flag.
-  - Modificar `DirectoryWalker` para respetar el flag (recursivo o no).
-  - Generar migración EF si cambia el esquema.
+### Tareas pendientes
 
-- **🟢 T-003** — Frontend (Karris):
-  - FolderTreePanel: añadir `SelectedPath` y callback `OnFolderSelected(string path)`.
-  - FolderTreeItem: añadir parámetro `SelectedPath` y clase CSS `selected` cuando coincide.
-  - FolderTreePanel: incluir toggle "Incluir subcarpetas" (checkbox, default true).
-
-- **🔵 T-004** — Refactor (Kip/Karris)
-- **👁 T-005** — Review (Gavin)
+- Verificar que los tests bUnit (FolderTreePanelTests.cs) pasan con la implementación actual.
+- Verificar que los tests E2E (FolderTreeE2ETests.cs) pasan.

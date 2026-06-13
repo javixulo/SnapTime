@@ -27,11 +27,11 @@ Cada heurística implementa `IHeuristic`. El motor itera las heurísticas activa
 
 ---
 
-## F3-US-001 — Interfaz IHeuristic + H-006 (fecha desde filename)
+## F3-US-001 — Interfaz IHeuristic + H-006 (fecha desde filename) ✅ COMPLETADO
 
 ### Tareas
 
-**🔴 T-001 — Tests de H-006 (Janus)**
+**🔴 T-001 — Tests de H-006 (Janus)** ✅
 - Tests unitarios para `H006FilenameHeuristic` (7 casos de `docs/05`):
   1. `20250315_123456.jpg`, metadatos mismo día → `EvidenceEntry` con `Direction = Positive`
   2. `20250315_123456.jpg`, metadatos 2024-07-10 → `Correction`, `SuggestedDate = 2025-03-15 05:00`
@@ -42,20 +42,8 @@ Cada heurística implementa `IHeuristic`. El motor itera las heurísticas activa
   7. `20250315_123456.jpg`, sin metadatos → `Correction`, `SuggestedDate = 2025-03-15 05:00`
 - Test: el método recibe `(string fileName, DateTime? canonicalDate)` o `(MediaAsset, IReadOnlyList<MetadataEntry>, CancellationToken)` según diseño
 
-**🟢 T-002 — Implementar IHeuristic + H006FilenameHeuristic (Kip)**
-- `IHeuristic` en `Domain/Interfaces/`:
-  ```csharp
-  public interface IHeuristic
-  {
-      string Id { get; }
-      string Name { get; }
-      bool IsEnabled { get; }
-      Task<EvidenceEntry?> EvaluateAsync(
-          MediaAsset asset,
-          IReadOnlyList<MetadataEntry> metadata,
-          CancellationToken ct);
-  }
-  ```
+**🟢 T-002 — Implementar IHeuristic + H006FilenameHeuristic (Kip)** ✅
+- `IHeuristic` en `Domain/Interfaces/`
 - `H006FilenameHeuristic` en `Domain/Services/`:
   - Parsear `yyyyMMdd` (8 dígitos) al inicio del filename sin extensión
   - Fallback `yyyy-MM-dd`
@@ -63,25 +51,27 @@ Cada heurística implementa `IHeuristic`. El motor itera las heurísticas activa
   - Comparar año/mes/día. Si coinciden → `EvidenceEntry(Direction.Positive)`. Si no o sin metadatos → `EvidenceEntry(Direction.Correction, SuggestedDate = fecha + 5:00)`. Sin fecha en filename → `null`
 - Hacer pasar los 7 tests
 
-**🔵 T-003 — Refactor (Kip)**
+**🔵 T-003 — Refactor (Kip)** ✅
 - Mejorar legibilidad, nombres, estructura del heuristic
 - Tests deben seguir verdes
 
-**👁 T-004 — Review (Gavin)**
+**👁 T-004 — Review (Gavin)** ✅
 - Revisar calidad, cobertura, arquitectura
 
 ---
 
-## F3-US-002 — Integrar H-006 en el pipeline de jobs
+## F3-US-002 — Integrar H-006 en el pipeline de jobs ✅ COMPLETADO
 
-**Requisitos:**
-- [ ] En `ScanJobService.ProcessSingleFileAsync`, tras extraer metadatos EXIF/QuickTime + filesystem, ejecutar todas las `IHeuristic` activas
-- [ ] Cada `EvidenceEntry` generado se agrega al `MediaAsset.EvidenceEntries`
-- [ ] Los `EvidenceEntry` se persisten junto con el asset en el checkpoint
+**Estado actual:** Implementado en `ScanJobService.ProcessSingleFileAsync`.
+
+- [x] En `ScanJobService.ProcessSingleFileAsync`, tras extraer metadatos EXIF/QuickTime + filesystem, ejecutar todas las `IHeuristic` activas
+- [x] Cada `EvidenceEntry` generado se agrega al `MediaAsset.EvidenceEntries`
+- [x] Los `EvidenceEntry` se persisten junto con el asset en el checkpoint
+- [x] Tras las heurísticas, se ejecuta `HeuristicEngine` para calcular `ConfidenceScore`, `AnalysisStatus`, `SuggestedDate` y `SuggestionReviewStatus`
 
 **Criterios de aceptación:**
-- [ ] Al escanear una foto con filename `20250315_123456.jpg` y EXIF con fecha distinta → el asset persistido tiene un `EvidenceEntry` en BD
-- [ ] Test de integración con SQLite real que verifica el ciclo completo
+- [x] Al escanear una foto con filename `20250315_123456.jpg` y EXIF con fecha distinta → el asset persistido tiene un `EvidenceEntry` en BD
+- [x] Test de integración con SQLite real que verifica el ciclo completo
 
 ---
 

@@ -84,11 +84,17 @@ public record JobDto(
     Guid Id,
     JobStatus Status,
     string RootPath,
+    bool IncludeSubfolders,
     int TotalFiles,
     int ProcessedFiles,
     int ErrorCount,
     DateTime CreatedAt,
     DateTime? CompletedAt
+);
+
+public record CreateJobRequest(
+    string RootPath,
+    bool IncludeSubfolders = true
 );
 
 public record FolderTreeNodeDto(
@@ -155,7 +161,7 @@ public record HeuristicConfigDto(
 );
 ```
 
-> `SnapTimeConfig` es la combinación de bootstrap JSON + runtime BD. Ver [`docs/08-configuracion.md`](08-configuracion.md) para el esquema completo.
+> `SnapTimeConfig` (response de `GET/PUT /config`) está definido en [`docs/08-configuracion.md`](08-configuracion.md).
 
 ## 3) Endpoints
 
@@ -163,7 +169,7 @@ public record HeuristicConfigDto(
 
 | Método | Ruta | Request | Response | Descripción |
 |--------|------|---------|----------|-------------|
-| POST | `/jobs` | `{ rootPath: string, includeSubfolders: bool }` | `JobDto` (201) | Crear y arrancar job de análisis |
+| POST | `/jobs` | `CreateJobRequest { rootPath: string, includeSubfolders: bool }` | `JobDto` (201) | Crear y arrancar job de análisis |
 | GET | `/jobs` | — | `List<JobDto>` | Listar jobs |
 | GET | `/jobs/{id}` | — | `JobDto` | Estado y progreso |
 | POST | `/jobs/{id}/pause` | — | `JobDto` | Pausar (API/MCP, no expuesto en UI) |
@@ -174,14 +180,13 @@ public record HeuristicConfigDto(
 
 | Método | Ruta | Request | Response | Descripción |
 |--------|------|---------|----------|-------------|
-| GET | `/folders/tree` | — | `List<FolderTreeNodeDto>` | Árbol completo con estado |
-| POST | `/folders/selection` | `{ path: string, selected: bool }` | `List<FolderTreeNodeDto>` | Cambiar selección (cascada) |
+| GET | `/filesystem/directories` | `?path=` (opcional) | `string[]` | Subdirectorios de una ruta (sin path = raíces del sistema) |
 
 ### Archivos multimedia
 
 | Método | Ruta | Request Query | Response | Descripción |
 |--------|------|---------------|----------|-------------|
-| GET | `/media-assets` | `folderPath?`, `mediaType?`, `minConfidence?`, `maxConfidence?`, `status?`, `sortBy?`, `sortDir?`, `page`, `pageSize` | `PaginatedResponse<MediaAssetDto>` | Listado paginado con filtros |
+| GET | `/photos` | `path?`, `page`, `pageSize` | `PhotoGridResponse` | Listado paginado de archivos + subcarpetas con cross-reference a BD |
 | GET | `/media-assets/{id}` | — | `MediaAssetDetailDto` | Detalle con evidencia (solo escaneados). |
 | GET | `/media-assets/from-file` | `path` (string, required) | `FileMetadataDto` | Metadatos del archivo leídos directamente del disco (EXIF + filesystem). Sin BD. Funciona para cualquier archivo, escaneado o no. |
 | GET | `/thumbnails/{assetId}` | — | `FileStream` | Miniatura desde un asset escaneado. Busca el asset en BD y sirve el archivo del disco. |
@@ -195,20 +200,20 @@ public record HeuristicConfigDto(
 |--------|------|---------|----------|-------------|
 | POST | `/reviews/single` | `SingleReviewRequest` | `MediaAssetDto` | Aprobar/rechazar sugerencia de un archivo. |
 | POST | `/reviews/batch` | `BatchReviewRequest` | `List<Guid>` (200) | Aprobar/rechazar en lote (carpeta o total). Devuelve los IDs actualizados. |
-| POST | `/apply` | `ApplyChangesRequest` | `ApplyChangesResponse` | Ejecutar aplicación real (batch). Response incluye resultado por archivo y listado de errores. Además de escribir la fecha, anota en los metadatos el valor original y la heurística responsable (`EXIF UserComment` en fotos, `QuickTime ©cmt` en vídeos) |
+| POST | `/apply` | `ApplyChangesRequest` | `ApplyChangesResponse` | Ejecutar aplicación real (batch). ⏳ Pendiente de implementar |
 
 ### Chat
 
 | Método | Ruta | Request | Response | Descripción |
 |--------|------|---------|----------|-------------|
-| POST | `/chat` | `ChatRequest` | `ChatResponse` | Mensaje al LLM con tool calling |
+| POST | `/chat` | `ChatRequest` | `ChatResponse` | Mensaje al LLM con tool calling. ⏳ Pendiente de implementar |
 
 ### Configuración
 
 | Método | Ruta | Request | Response | Descripción |
 |--------|------|---------|----------|-------------|
-| GET | `/config` | — | `SnapTimeConfig` | Config actual (bootstrap + BD runtime) |
-| PUT | `/config` | `ConfigUpdateRequest` | `SnapTimeConfig` | Actualizar runtime en BD |
+| GET | `/config` | — | `SnapTimeConfig` | Config actual |
+| PUT | `/config` | `ConfigUpdateRequest` | `SnapTimeConfig` | Actualizar en runtime |
 
 ## 4) Notas técnicas
 

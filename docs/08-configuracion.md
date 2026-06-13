@@ -1,117 +1,157 @@
 # SnapTime - Configuración del sistema
 
-## 1) Modelo híbrido: bootstrap + runtime
+## 1) Archivo de configuración
 
-La configuración se divide en dos niveles:
+La configuración se almacena en un archivo JSON (`snaptime.config.json`) ubicado en el mismo directorio que la base de datos SQLite. Es la fuente de verdad persistente, editable tanto desde la UI como directamente a mano.
 
-| Nivel | Almacenamiento | Contenido | Se necesita antes de conectar BD |
-|-------|---------------|-----------|-----------------------------------|
-| **Bootstrap** | `snaptime.config.json` | `database.path`, `logging.*` | Sí |
-| **Runtime** | Tabla `Settings` + `HeuristicConfig` en SQLite | `analysis.*`, `ollama.*`, `thumbnails.*`, heuristics[] | No |
-
-### Bootstrap JSON (`snaptime.config.json`)
-
-Ubicado junto al ejecutable del servidor. Contiene solo lo imprescindible para arrancar:
+## 2) Esquema completo
 
 ```jsonc
 {
+  "$schema": "snaptime.config.schema.json",
+
   // --- Base de datos ---
   "database": {
     "path": "SnapTime.db"
   },
 
-  // --- Logging (antes de tener BD) ---
+  // --- Análisis ---
+  "analysis": {
+    "confidenceThreshold": 80,
+    "maxConcurrency": 4,
+    "batchSize": 100,
+    "imageExtensions": [".jpg", ".jpeg"],
+    "videoExtensions": [".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"]
+  },
+
+  // --- Heurísticas ---
+  "heuristics": [
+    {
+      "id": "H-001",
+      "enabled": true,
+      "weight": 1.0
+    },
+    {
+      "id": "H-002",
+      "enabled": true,
+      "weight": 1.0
+    },
+    {
+      "id": "H-003",
+      "enabled": true,
+      "weight": 1.0
+    },
+    {
+      "id": "H-004",
+      "enabled": true,
+      "weight": 0.5
+    },
+    {
+      "id": "H-005",
+      "enabled": true,
+      "weight": 0.7
+    },
+    {
+      "id": "H-006",
+      "enabled": true,
+      "weight": 1.0
+    }
+  ],
+
+  // --- Chat (Ollama) ---
+  "ollama": {
+    "endpoint": "http://localhost:11434",
+    "model": "qwen2.5-coder:14b",
+    "timeoutSeconds": 60
+  },
+
+  // --- Miniaturas ---
+  "thumbnails": {
+    "maxDimension": 300,
+    "quality": 80
+  },
+
+  // --- Logging ---
   "logging": {
-    "level": "Information",
-    "file": "snaptime.log"
+    "level": "Information"
   }
 }
 ```
 
-### Configuración runtime (BD)
+## 3) Descripción de campos
 
-Todo lo demás se persiste en SQLite una vez que la conexión está establecida. El `ConfigService`, tras cargar el bootstrap, conecta a la BD y lee/escribe la configuración runtime.
+### database
+| Campo | Tipo | Default | Descripción |
+|-------|------|---------|-------------|
+| `path` | string | `"SnapTime.db"` | Ruta del archivo SQLite. Puede ser relativa al directorio de datos de la app o absoluta. |
 
-## 2) Entidades de BD
+### analysis
+| Campo | Tipo | Default | Descripción |
+|-------|------|---------|-------------|
+| `confidenceThreshold` | int | `80` | Umbral global de confianza (0-100). Por debajo de este valor se genera sugerencia. |
+| `maxConcurrency` | int | `4` | Número máximo de análisis en paralelo. |
+| `batchSize` | int | `100` | Archivos por lote en cada iteración de escaneo. |
+| `imageExtensions` | string[] | `[".jpg", ".jpeg"]` | Extensiones de imagen a incluir en el escaneo. |
+| `videoExtensions` | string[] | `[".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"]` | Extensiones de vídeo a incluir en el escaneo. |
 
-### Settings (fila única, Id = 1)
+### heuristics
+Array de objetos con:
+| Campo | Tipo | Default | Descripción |
+|-------|------|---------|-------------|
+| `id` | string | — | Identificador único de la heurística (ej: `"H-006"`). |
+| `enabled` | bool | `true` | Si está activa o no. Si es `false`, no influye en score ni sugerencias. |
+| `weight` | number | `1.0` | Peso relativo de la heurística en el cálculo del score. |
 
-| Columna | Tipo | Default | Descripción |
-|---------|------|---------|-------------|
-| `ConfidenceThreshold` | int | `80` | Umbral global de confianza (0–100) |
-| `MaxConcurrency` | int | `4` | Máximo de análisis en paralelo |
-| `BatchSize` | int | `100` | Archivos por lote en cada iteración de escaneo |
-| `ImageExtensionsCsv` | string | `".jpg,.jpeg"` | Extensiones de imagen separadas por coma |
-| `VideoExtensionsCsv` | string | `".mp4,.mov,.avi,.mkv,.webm,.m4v"` | Extensiones de vídeo separadas por coma |
-| `OllamaEndpoint` | string | `"http://localhost:11434"` | URL del servidor Ollama |
-| `OllamaModel` | string | `"qwen2.5-coder:14b"` | Modelo de chat. Backend agent Kip MUST use this model. |
-| `OllamaTimeoutSeconds` | int | `60` | Timeout máximo por petición al LLM |
-| `ThumbnailMaxDimension` | int | `300` | Tamaño máximo del lado más largo de miniatura (px) |
-| `ThumbnailQuality` | int | `80` | Calidad JPEG de miniatura (1–100) |
+### ollama
+| Campo | Tipo | Default | Descripción |
+|-------|------|---------|-------------|
+| `endpoint` | string | `"http://localhost:11434"` | URL del servidor Ollama local. |
+| `model` | string | `"qwen2.5-coder:14b"` | Modelo a usar para el chat conversacional. NOTE: backend agent Kip MUST run with `qwen2.5-coder:14b` for code-generation tasks. |
+| `timeoutSeconds` | int | `60` | Timeout máximo para cada petición al LLM. |
 
-### HeuristicConfig (una fila por heurística)
+### thumbnails
+| Campo | Tipo | Default | Descripción |
+|-------|------|---------|-------------|
+| `maxDimension` | int | `300` | Tamaño máximo en píxeles del lado más largo de la miniatura. |
+| `quality` | int | `80` | Calidad JPEG de la miniatura (1-100). |
 
-| Columna | Tipo | Default | Descripción |
-|---------|------|---------|-------------|
-| `Id` | string PK | — | Identificador único (ej. `"H-006"`) |
-| `Enabled` | bool | `true` | Si la heurística está activa |
-| `Weight` | double | `1.0` | Peso relativo en el cálculo del score |
+### logging
+| Campo | Tipo | Default | Descripción |
+|-------|------|---------|-------------|
+| `level` | string | `"Information"` | Nivel de log de Serilog (Verbose, Debug, Information, Warning, Error, Fatal). |
+| `file` | string | `null` | Ruta del archivo de log. Opcional. Si no se especifica, solo salida por consola. |
 
-## 3) Servicio de configuración (ConfigService)
+## 4) Servicio de configuración (ConfigService)
 
-### Comportamiento en startup
+- **Singleton** en el contenedor DI.
+- Carga el JSON al arrancar en `SnapTime.Domain/Config/SnapTimeConfig.cs`.
+- Expone listas `ImageExtensions` y `VideoExtensions` que el scanner usa como filtro.
+- Expone la configuración actual como `SnapTimeConfig Current`.
+- Expone un evento `event Action<SnapTimeConfig> OnConfigChanged`.
+- **FileSystemWatcher** sobre el archivo para detectar cambios externos (edición manual). (Pendiente de implementar)
+- Valida los valores (rangos, tipos) antes de aplicar. Si hay error, lo notifica y no aplica.
+- Cada cambio se registra en la tabla de auditoría (valor anterior → valor nuevo).
 
-1. Lee `snaptime.config.json` del disco y extrae `database.path` y `logging.*`.
-2. Conecta a SQLite usando `database.path`.
-3. Consulta la tabla `Settings`. Si no existe fila (BD nueva), la crea con los valores por defecto (definidos en el código de la entidad).
-4. Consulta la tabla `HeuristicConfig`. Si está vacía, la seed con las 6 heurísticas baseline.
-5. Expone `Current` como un objeto `SnapTimeConfig` que mezcla valores de bootstrap + runtime.
-
-### API pública
-
-- `ConfigService` es **Singleton** en DI.
-- `Current` → `SnapTimeConfig` (combinación de bootstrap + runtime).
-- `UpdateRuntime(SettingsChanges changes)` → valida, persiste en BD, emite `OnConfigChanged`.
-- `event Action<SnapTimeConfig>? OnConfigChanged` → notifica a consumidores (motor de heurísticas, workers, etc.).
-- Ya no hay `FileSystemWatcher` — la configuración runtime no se edita a mano.
-
-### Validación
-
-- `ConfidenceThreshold` se clamp a [0, 100].
-- `Weight` de cada heurística se clamp a >= 0.
-- Si hay error de validación, `UpdateRuntime` devuelve error sin persistir.
-
-## 4) Flujo de aplicación de cambios
+## 5) Flujo de aplicación de cambios
 
 ```
 Usuario edita en UI
        ↓
-UI llama a PATCH /api/config (o PUT)
+UI llama a ConfigService.Update(changes)
        ↓
 ConfigService valida → si error, devuelve error a UI
        ↓
-ConfigService persiste en BD (Settings + HeuristicConfig)
+ConfigService guarda JSON en disco
        ↓
 ConfigService registra auditoría en BD
        ↓
 ConfigService emite OnConfigChanged
        ↓
-Motor de heurísticas / Worker / etc. reaccionan
+Motor de heurísticas / Worker / etc. reaccionan con nuevos valores
 ```
 
-## 5) Precedencia
+## 6) Precedencia
 
-1. Bootstrap JSON (`snaptime.config.json`) — solo para `database.path` y `logging.*`.
-2. BD (`Settings` + `HeuristicConfig`) — fuente de verdad del runtime.
-3. UI escribe siempre a BD, nunca al JSON.
-
-## 6) Migración desde versión anterior (todo-en-JSON)
-
-Si al arrancar se detecta que el JSON contiene secciones `analysis`, `ollama`, `thumbnails` o `heuristics` (además de las de bootstrap), el sistema migra esos valores a BD automáticamente:
-
-1. Lee los valores del JSON.
-2. Los persiste en `Settings` y `HeuristicConfig`.
-3. Elimina esas secciones del JSON (deja solo `database` y `logging`).
-4. Continúa con el modelo híbrido normal.
-
-Esto garantiza que usuarios con configuraciones existentes no pierdan sus ajustes.
+1. Archivo JSON (`snaptime.config.json`) — fuente de verdad.
+2. UI escribe siempre al JSON, nunca bypass.
+3. Edición manual del JSON también se detecta y aplica en runtime.

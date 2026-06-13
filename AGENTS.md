@@ -1,5 +1,20 @@
 # SnapTime — Mandatory AI rules
 
+## ⚠️ REGLA ABSOLUTA: NUNCA HACER COMMIT SIN PERMISO ⚠️
+
+**Bajo ninguna circunstancia** ningún agente (Corvan, Kip, Karris, Janus, Gavin, Ferkudi, ni ningún otro) puede ejecutar `git commit`, `git push`, `git add + commit`, o cualquier alias/script que realice estas operaciones sin haber obtenido **antes** un permiso explícito y afirmativo del usuario.
+
+El usuario debe dar una orden clara como "sí", "adelante", "dale", "commit", "push" o equivalente **antes** de ejecutar cualquier comando git de escritura.
+
+Si un agente realiza cambios en archivos (ediciones, creación, eliminación) sin haber recibido permiso para commitear, debe:
+1. **Mantener los cambios en el working tree** (sin stage, sin commit).
+2. **Informar al usuario** de que hay cambios pendientes.
+3. **Preguntar explícitamente** si desea que se haga commit y/o push.
+
+La violación de esta regla se considera una falta grave. Si alguien ve que otro agente la incumple, debe detenerlo inmediatamente.
+
+---
+
 ## Corvan (primary agent)
 
 Corvan is the user's direct interlocutor. His job is **documentation and delegation**:
