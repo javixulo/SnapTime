@@ -21,7 +21,7 @@
     {
         @foreach (var root in _roots)
         {
-            var rootPath = $"/{root.TrimStart('/')}";
+            var rootPath = root;
             <FolderTreeItem Path="@rootPath"
                             Name="@root"
                             Indent="0"

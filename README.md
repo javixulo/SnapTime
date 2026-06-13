@@ -57,6 +57,7 @@ Todo el procesamiento es **100% local**. No se envía ninguna imagen, metadato n
 | [06 - Requisitos de UI](docs/06-requisitos-ui.md) | Estructura visual, árbol de carpetas, paginación, chat |
 | [07 - Contratos API](docs/07-api-contracts.md) | DTOs, endpoints REST, request/response |
 | [08 - Configuración](docs/08-configuracion.md) | Esquema de configuración JSON del sistema |
+| [RUNNING.md](RUNNING.md) | Cómo arrancar la aplicación paso a paso (API + frontend) |
 
 ## Licencia
 
