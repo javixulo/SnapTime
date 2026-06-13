@@ -146,7 +146,7 @@ public class ReviewEndpointsTests
         {
             Id = scanJobId,
             Status = JobStatus.Completed,
-            RootPath = rootPath,
+            RootPath = Path.GetFullPath(rootPath),
             CreatedAt = DateTime.UtcNow
         });
         var assetId = Guid.NewGuid();
@@ -154,7 +154,7 @@ public class ReviewEndpointsTests
         {
             Id = assetId,
             FileName = fileName,
-            FilePath = $"{rootPath}/{fileName}",
+            FilePath = Path.GetFullPath(Path.Combine(rootPath, fileName)),
             MediaType = MediaType.Image,
             Status = MediaStatus.HasSuggestion,
             FileSize = 1024,

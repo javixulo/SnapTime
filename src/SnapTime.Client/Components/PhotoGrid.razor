@@ -415,6 +415,11 @@ else
         {
             await OnPhotoSelected.InvokeAsync(item);
         }
+        else
+        {
+            // Single click on a directory clears the photo selection
+            await OnPhotoSelected.InvokeAsync(null);
+        }
     }
 
     private static string GetStatusClass(PhotoGridItem item)

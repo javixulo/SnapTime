@@ -96,8 +96,14 @@
         }
     }
 
-    private void HandlePhotoSelected(PhotoGridItem item)
+    private void HandlePhotoSelected(PhotoGridItem? item)
     {
+        if (item is null)
+        {
+            _selectedPhotoId = null;
+            _selectedPhotoPath = null;
+            return;
+        }
         _selectedPhotoPath = item.Path;
         _selectedPhotoId = item.Id != Guid.Empty ? item.Id : null;
     }

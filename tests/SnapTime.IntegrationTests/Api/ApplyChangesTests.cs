@@ -52,7 +52,7 @@ public class ApplyChangesTests
                 {
                     Id = scanJobId,
                     Status = JobStatus.Completed,
-                    RootPath = tempDir,
+                    RootPath = Path.GetFullPath(tempDir),
                     CreatedAt = DateTime.UtcNow
                 });
 
@@ -60,7 +60,7 @@ public class ApplyChangesTests
                 {
                     Id = id1,
                     FileName = Path.GetFileName(file1),
-                    FilePath = file1,
+                    FilePath = Path.GetFullPath(file1),
                     MediaType = MediaType.Image,
                     Status = MediaStatus.Pending,
                     FileSize = 123,
@@ -73,7 +73,7 @@ public class ApplyChangesTests
                 {
                     Id = id2,
                     FileName = Path.GetFileName(file2),
-                    FilePath = file2,
+                    FilePath = Path.GetFullPath(file2),
                     MediaType = MediaType.Image,
                     Status = MediaStatus.Pending,
                     FileSize = 456,
@@ -140,7 +140,7 @@ public class ApplyChangesTests
                 {
                     Id = scanJobId,
                     Status = JobStatus.Completed,
-                    RootPath = tempDir,
+                    RootPath = Path.GetFullPath(tempDir),
                     CreatedAt = DateTime.UtcNow
                 });
 
@@ -148,7 +148,7 @@ public class ApplyChangesTests
                 {
                     Id = idApproved,
                     FileName = Path.GetFileName(approvedFile),
-                    FilePath = approvedFile,
+                    FilePath = Path.GetFullPath(approvedFile),
                     MediaType = MediaType.Image,
                     Status = MediaStatus.Pending,
                     FileSize = 100,
@@ -161,7 +161,7 @@ public class ApplyChangesTests
                 {
                     Id = idUnapproved,
                     FileName = Path.GetFileName(unapprovedFile),
-                    FilePath = unapprovedFile,
+                    FilePath = Path.GetFullPath(unapprovedFile),
                     MediaType = MediaType.Image,
                     Status = MediaStatus.Pending,
                     FileSize = 200,

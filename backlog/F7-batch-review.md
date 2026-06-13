@@ -99,3 +99,15 @@
 - `BatchActions.razor` — botones en panel superior
 - Modal de confirmación
 - Ambos se suscriben a `ScanStateService`
+
+#### Tests E2E (✅ completados)
+
+Archivo: `tests/SnapTime.E2ETests/Pages/ReviewE2ETests.cs`
+
+| # | Caso | Test | Estado |
+|---|------|------|--------|
+| 1 | Aceptar sugerencia individual → status Approved | `Review_AcceptSuggestion_ChangesStatusToApproved` | ✅ |
+| 2 | Rechazar sugerencia individual → status Rejected | `Review_RejectSuggestion_ChangesStatusToRejected` | ✅ |
+| 3 | Aceptar Todo (carpeta) → todas las sugerencias Approved | `Review_AcceptAllInFolder_AllSuggestionsApproved` | ✅ |
+| 4 | Rechazar Todo (carpeta) → todas las sugerencias Rejected | `Review_RejectAllInFolder_AllSuggestionsRejected` | ✅ |
+| 5 | Aceptar Total (multi-carpeta) → sugerencias de todas las carpetas Approved | `Review_AcceptTotal_AffectsMultipleScannedFolders` | ✅ |

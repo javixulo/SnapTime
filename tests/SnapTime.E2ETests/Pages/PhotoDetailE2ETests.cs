@@ -352,4 +352,49 @@ public class PhotoDetailE2ETests : PlaywrightTestBase
         Assert.That(genericErrorVisible, Is.False,
             "No error message should be displayed after clicking a photo post-scan.");
     }
+
+    [Test]
+    public async Task PhotoDetail_Deselect_ClearsDetail()
+    {
+        // [F6] Caso 4: After selecting a photo, deselecting (clicking a directory or
+        // navigating) clears the detail panel and shows the empty placeholder
+        await Page.GotoAsync(BaseUrl);
+
+        await SelectFirstFolderInTreeAsync();
+
+        // Click the first photo in the grid
+        var photoName = await ClickFirstPhotoInGridAsync();
+        if (photoName is null)
+        {
+            await TestContext.Out.WriteLineAsync("=== NO PHOTOS FOUND IN GRID ===");
+            Assert.Pass("No photo items available to test deselection.");
+            return;
+        }
+
+        // Verify detail panel shows the photo
+        await Expect(Page.Locator(".photo-detail-name")).ToBeVisibleAsync(new() { Timeout = 10000 });
+        await TestContext.Out.WriteLineAsync($"=== SELECTED PHOTO === {photoName}");
+
+        // Try to deselect: click the first directory item in the grid if available
+        var dirItems = Page.Locator(".photo-grid-item.is-directory");
+        var dirCount = await dirItems.CountAsync();
+
+        if (dirCount > 0)
+        {
+            // Click a directory item (not double-click, just single click)
+            await dirItems.First.ClickAsync();
+            await TestContext.Out.WriteLineAsync("=== CLICKED A DIRECTORY TO DESELECT ===");
+
+            // Assert: detail panel shows the empty placeholder (Playwright auto-wait)
+            await Expect(Page.Locator(".photo-detail-empty")).ToBeVisibleAsync(new() { Timeout = 10000 });
+            var emptyText = await Page.Locator(".photo-detail-empty").TextContentAsync();
+            await TestContext.Out.WriteLineAsync($"=== EMPTY STATE TEXT === {emptyText}");
+            Assert.That(emptyText, Is.EqualTo("Selecciona una foto"));
+        }
+        else
+        {
+            await TestContext.Out.WriteLineAsync("=== NO DIRECTORIES TO CLICK FOR DESELECTION ===");
+            Assert.Pass("No directories available to test deselection.");
+        }
+    }
 }

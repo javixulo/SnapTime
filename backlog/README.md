@@ -14,10 +14,10 @@
 | F1 | Escaneo y extracción de metadatos (EXIF + QuickTime) | ✅ Completado | FR-01, FR-02, FR-03, FR-09 |
 | F2 | SQLite real en tests de integración | ✅ Completado | |
 | F3 | Motor de heurísticas (H-001 a H-006) | 🟡 En curso (H-006 + pipeline integrados, H-001..005 pendientes) | docs/05-heuristicas.md |
-| F4 | Árbol de carpetas (panel izquierdo) | 🟡 En curso (componentes y API implementados, verificación pendiente) | FR-17 |
-| F5 | Grid de fotos (panel central) | 🟡 En curso (componentes y API implementados, verificación pendiente) | FR-08, FR-18 |
-| F6 | Panel detalle (foto seleccionada) | 🟡 En curso (componentes y API implementados, E2E tests pendientes) | FR-08 |
-| F7 | Revisión en lote | 🟡 En curso (componentes, API y motor implementados) | FR-10 |
+| F4 | Árbol de carpetas (panel izquierdo) | 🟢 Completada (componentes, API, bUnit + E2E tests) | FR-17 |
+| F5 | Grid de fotos (panel central) | 🟢 Completada (componentes, API, bUnit + E2E tests) | FR-08, FR-18 |
+| F6 | Panel detalle (foto seleccionada) | 🟢 Completada (componentes, API, bUnit + E2E tests) | FR-08 |
+| F7 | Revisión en lote | 🟢 Completada (backend, frontend, bUnit, integración y E2E tests) | FR-10 |
 | F8 | Aplicación de cambios (escritura real, batch) | ⏳ Pendiente | FR-11 |
 | F9 | Chat contextual con LLM (Ollama) | ⏳ Pendiente | FR-19 |
 

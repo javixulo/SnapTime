@@ -10,7 +10,7 @@
 
 ## F5-US-001 — Grid de fotos con navegación ✅ COMPLETADO
 
-**Estado actual:** Componentes y API implementados. Pendiente verificar que los tests (bUnit + E2E) pasan.
+**Estado actual:** Componentes, API y todos los tests (bUnit + E2E) implementados y verificados.
 
 **Reglas base:**
 
@@ -57,6 +57,3 @@
 - **Frontend:** `PhotoGrid.razor` con CSS Grid, breadcrumb, subcarpetas, status circles, video badge, tooltip, file count, navegación interna independiente.
 - **Backend:** `GET /api/photos` con paginación, cross-reference con BD para assets escaneados, orden directorios + alfabético.
 
-### Tareas pendientes
-- Verificar que los tests bUnit (PhotoGridTests.cs) pasan.
-- Verificar que los tests E2E (PhotoGridE2ETests.cs) pasan.

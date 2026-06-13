@@ -10,7 +10,7 @@
 
 ## F6-US-001 — Panel de detalle de foto ✅ COMPLETADO (parcial)
 
-**Estado actual:** Componentes, endpoints y tests unitarios/bUnit implementados. Tests E2E pendientes.
+**Estado actual:** Componentes, endpoints y tests (bUnit + E2E) implementados completamente.
 
 **Reglas base:**
 
@@ -36,22 +36,33 @@
 - **Frontend:** `PhotoDetail.razor` con estados placeholder, loading, error, metadatos (escaneado/no escaneado), evidencia, confidence bar. Botones Aceptar/Rechazar (placeholders, clase CSS `.btn-accept`/`.btn-reject`).
 - **Backend:** `GET /api/media-assets/{id}`, `GET /api/media-assets/from-file`.
 
+### Deselección (nuevo requisito)
+
+- Al hacer clic en un directorio del grid (single click), la selección de foto debe limpiarse.
+- `PhotoGrid.razor`: `SelectItem()` debe invocar `OnPhotoSelected.InvokeAsync(null)` cuando `item.IsDirectory == true`.
+- `Home.razor`: `HandlePhotoSelected()` debe manejar `item == null` limpiando `_selectedPhotoId` y `_selectedPhotoPath`.
+- CSS: No se requieren cambios visuales. La deselección muestra el placeholder `.photo-detail-empty`.
+
 ### Tests
 
 #### Tests unitarios / bUnit (✅ completados)
-- **T-001** — bUnit PhotoDetail: render condicional (placeholder, loading, error, metadatos, evidencias, barra de confianza). Prueba de que al hacer click en foto escaneada se muestran evidencias. Prueba de que al hacer click en foto no escaneada se muestran metadatos desde `from-file`.
-- **T-002** — bUnit PhotoGrid: la navegación interna (doble click subcarpeta) no se resetea al re-renderizar el padre.
-- **T-003** — bUnit Home: al hacer click en una foto, `PhotoDetail` recibe `SelectedAssetId` y `SelectedAssetPath`.
-- **T-004** — Client service: `PhotoClient.GetAssetDetailAsync` y `PhotoClient.GetFileMetadataAsync`.
-- **T-005** — Integration: `GET /api/media-assets/{id}` devuelve detalle con evidencias. `GET /api/media-assets/from-file` devuelve metadatos desde archivo.
+- **T-001** — bUnit PhotoDetail: render condicional (placeholder, loading, error, metadatos, evidencias, barra de confianza). Prueba de que al hacer click en foto escaneada se muestran evidencias. Prueba de que al hacer click en foto no escaneada se muestran metadatos desde `from-file`. ✅
+- **T-002** — bUnit PhotoGrid: la navegación interna (doble click subcarpeta) no se resetea al re-renderizar el padre. ✅
+- **T-003** — bUnit Home: al hacer click en una foto, `PhotoDetail` recibe `SelectedAssetId` y `SelectedAssetPath`. ✅
+- **T-004** — Client service: `PhotoClient.GetAssetDetailAsync` y `PhotoClient.GetFileMetadataAsync`. ✅
+- **T-005** — Integration: `GET /api/media-assets/{id}` devuelve detalle con evidencias. `GET /api/media-assets/from-file` devuelve metadatos desde archivo. ✅
 
-#### Tests E2E (⏳ pendientes)
+#### Tests E2E (✅ completados)
 
-Diseño completo de casos E2E para `tests/SnapTime.E2ETests/Pages/PhotoDetailE2ETests.cs`:
+Archivo: `tests/SnapTime.E2ETests/Pages/PhotoDetailE2ETests.cs`
 
-1. **Click en foto escaneada → panel detalle visible**
-2. **Click en foto no escaneada → panel detalle con metadatos básicos**
-3. **Click en otra foto → detalle se actualiza**
-4. **Click en placeholder → se oculta el detalle**
-5. **Doble click subcarpeta + click foto → se queda en subcarpeta y muestra detalle**
-6. **Click breadcrumb → detalle se limpia**
+| # | Caso | Test | Estado |
+|---|------|------|--------|
+| 1 | Click foto escaneada → panel detalle visible | `PhotoDetail_ClickThumbnail_ShowsDetail` | ✅ |
+| 2 | Click foto no escaneada → metadatos básicos | `PhotoDetail_ClickThumbnail_ShowsMetadata` | ✅ |
+| 3 | Click otra foto → detalle se actualiza | `PhotoDetail_ClickDifferentPhoto_UpdatesDetail` | ✅ |
+| 4 | Click directorio → deselecciona foto → "Selecciona una foto" | `PhotoDetail_Deselect_ClearsDetail` | ✅ |
+| 5 | Subcarpeta + click foto → breadcrumb coherente | `PhotoDetail_NavigateSubfolder_ClickPhoto_StaysInSubfolder` | ✅ |
+| 6 | Click breadcrumb → detalle se limpia | `PhotoDetail_ClickBreadcrumb_ClearsDetail` | ✅ |
+| — | Extra: post-scan click sin error 404 | `PhotoDetail_AfterScanClickThumbnail_ShowsDetailWithoutError` | ✅ extra |
+

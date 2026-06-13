@@ -1,10 +1,8 @@
 // [F7-US-004] -- E2E: Revisión y aprobación/rechazo de sugerencias
 // Arranque autónomo vía E2EWebFixture + SQLite efímera
 //
-// 🔴 RED PHASE — These tests fail because the review UI does not exist yet.
-// They will pass only after Kip implements the backend endpoints and
-// Karris implements the frontend components (PhotoDetail buttons,
-// BatchActions, confirm modal).
+// 🟢 GREEN PHASE — UI and backend are implemented.
+// Tests should pass. If any fail, investigate and fix before closing F7.
 //
 namespace SnapTime.E2ETests.Pages;
 

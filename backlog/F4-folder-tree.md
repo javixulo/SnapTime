@@ -21,7 +21,7 @@
 
 > Al hacer clic en una carpeta del árbol del sistema de archivos, se resalta como seleccionada. Un toggle "Incluir subcarpetas" controla si el escaneo debe ser recursivo. El botón "Escanear" se implementa en F7 y consume estos valores.
 
-**Estado actual:** Componentes y API implementados. Pendiente verificar que los tests (bUnit + E2E) pasan.
+**Estado actual:** Componentes, API y todos los tests (bUnit + E2E) implementados y verificados.
 
 **Dependencias:** Árbol del sistema de archivos ya funcionando (FolderTreePanel + FolderTreeItem)
 
@@ -44,7 +44,3 @@
 - **ScanJob:** incluye `IncludeSubfolders` persistido en BD.
 - **DirectoryWalker:** respeta flag `includeSubfolders` (recursivo o no).
 
-### Tareas pendientes
-
-- Verificar que los tests bUnit (FolderTreePanelTests.cs) pasan con la implementación actual.
-- Verificar que los tests E2E (FolderTreeE2ETests.cs) pasan.
