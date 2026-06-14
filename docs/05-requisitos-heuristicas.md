@@ -39,40 +39,61 @@ Cada heurística se documentará con esta plantilla:
 
 ## 6) Fichas de heurísticas
 
-### H-006: Parseo de fecha en nombre de archivo (formato móvil)
+### H-006: Parseo de fecha en nombre de archivo (multipatrón)
 
 - **Identificador:** H-006
-- **Nombre:** Parseo de fecha en nombre de archivo (formato móvil)
-- **Descripción:** Los móviles y cámaras generan nombres de archivo con la fecha como prefijo (ej: `20250315_123456.jpg`, `20250315_123456.mp4`). Esta heurística extrae la fecha del nombre del archivo (funciona igual para imágenes y vídeos). Si existe fecha en metadatos (EXIF o QuickTime), compara contra ella. Si no existe, la fecha del nombre se usa directamente como sugerencia. En ambos casos, si hay discrepancia o ausencia de fecha en metadatos, se sugiere la fecha extraída del nombre con hora 5:00 AM.
+- **Nombre:** Parseo de fecha en nombre de archivo (multipatrón)
+- **Descripción:** Extrae fechas del nombre del archivo buscando múltiples patrones en cualquier posición del nombre (no solo al inicio). Soporta formatos numéricos y textuales con meses en español e inglés. Funciona igual para imágenes y vídeos. Si existe fecha en metadatos (EXIF o QuickTime), compara contra ella. Si no existe, la fecha del nombre se usa directamente como sugerencia. En ambos casos, si hay discrepancia o ausencia de fecha en metadatos, se sugiere la fecha extraída del nombre con hora 5:00 AM.
 - **Entradas necesarias:**
   - Nombre del archivo (sin extensión).
   - Fecha canónica del archivo (primer tag con valor en la lista de prioridad: `SubSecDateTimeOriginal` → `DateTimeOriginal` → `CreationDate` → etc.).
 - **Regla de cálculo / decisión:**
-  1. Intentar parsear el inicio del nombre del archivo con el patrón `yyyyMMdd` (año+mes+día, 8 dígitos consecutivos).
-  2. Si no coincide, intentar `yyyy-MM-dd` (con guiones).
-  3. Si no se puede parsear ninguna fecha → la heurística no emite señal.
+  1. Buscar en el nombre del archivo (en cualquier posición) los patrones de fecha en este orden de prioridad. Usar el **primer patrón que coincida**:
+     - **P1 — `yyyyMMdd`**: 8 dígitos consecutivos (ej: `20250315`). Sin ambigüedad.
+     - **P2 — `yyyy-MM-dd`**: con guiones (ej: `2025-03-15`). Sin ambigüedad.
+     - **P3 — `yyyy.MM.dd`**: con puntos (ej: `2025.03.15`). Sin ambigüedad.
+     - **P4 — `yyyy_MM_dd`**: con guión bajo (ej: `2025_03_15`). Sin ambigüedad.
+     - **P5 — `DD MMM YYYY`**: día numérico + abreviatura de mes (3 letras, inglés/español) + año de 4 dígitos (ej: `10 abr 2025`, `10 Apr 2025`). Sin ambigüedad porque el mes es textual. Case-insensitive.
+     - **P6 — `MMM DD YYYY`**: abreviatura de mes (3 letras, inglés/español) + día numérico + año de 4 dígitos (ej: `abr 10 2025`, `Apr 10 2025`). Sin ambigüedad. Case-insensitive.
+     - **P7 — `DD-MM-YYYY`**: día + mes + año con guiones (ej: `15-03-2025`). El parseo asume orden DD-MM (europeo).
+     - **P8 — `DD.MM.YYYY`**: día + mes + año con puntos (ej: `15.03.2025`). El parseo asume orden DD-MM (europeo).
+     - **P9 — `DD/MM/YYYY`**: día + mes + año con barras (ej: `15/03/2025`). El parseo asume orden DD-MM (europeo).
+  2. Si el patrón incluye hora opcional después de la fecha (ej: `10 abr 2025, 11_03_36`, `20250315_123456`, `Screenshot 2025-03-15 at 10.30.45`), se ignora la hora; solo se extrae año, mes y día.
+  3. Si no se encuentra ningún patrón → la heurística no emite señal.
   4. Si se extrae una fecha del nombre:
      - Si existe fecha canónica en los metadatos del archivo, comparar solo año, mes y día (la hora se ignora).
-       - Si coinciden → evidencia positiva (la fecha del nombre respalda la metadato).
+       - Si coinciden → evidencia positiva (la fecha del nombre respalda el metadato).
        - Si no coinciden → anomalía: la fecha del nombre sugiere que la fecha en metadatos podría ser incorrecta.
      - Si no existe fecha en metadatos → no hay fecha actual que evaluar; se propone la fecha del nombre como sugerencia directamente.
   5. En caso de anomalía o metadatos ausentes, la sugerencia se compone con la fecha extraída del nombre y hora fijada a las 5:00 AM.
+- **Abreviaturas de mes soportadas (case-insensitive):**
+  - **Español:** `ene`, `feb`, `mar`, `abr`, `may`, `jun`, `jul`, `ago`, `sep`, `oct`, `nov`, `dic`
+  - **Inglés:** `jan`, `feb`, `mar`, `apr`, `may`, `jun`, `jul`, `aug`, `sep`, `oct`, `nov`, `dec`
 - **Impacto esperado en score:**
   - Coincidencia: impacto positivo moderado (la EXIF se refuerza).
   - Discrepancia: impacto negativo significativo (la EXIF es sospechosa).
   - Sin fecha en nombre: sin impacto.
 - **Casos límite conocidos:**
   - Archivos renombrados por el usuario (pierden la fecha original del nombre).
-  - Formatos de fecha no estándar en el nombre (ej: `IMG_20250315.jpg` con prefijo variable).
-  - Teléfonos que usan `yyyyMMdd_HHmmss` (el parseo debe ignorar lo que sigue a los 8 dígitos).
+  - Múltiples patrones de fecha en el mismo nombre: se usa el primero que coincida según el orden de prioridad.
+  - Ambigüedad en patrones P7-P9 (DD-MM vs MM-DD): se asume orden europeo (día-mes). La implementación debe priorizar la interpretación DD-MM cuando ambos sean válidos.
+  - Meses en otros idiomas (francés, alemán, etc.) no están soportados en esta versión.
+  - Fechas con mes completo (`10 April 2025`, `10 abril 2025`) no están soportados en esta versión (solo abreviaturas de 3 letras).
 - **Tests unitarios mínimos asociados:**
-  - Nombre `20250315_123456.jpg` con metadatos del mismo día → coincide.
-  - Nombre `20250315_123456.jpg` con metadatos de 2024-07-10 → anomalía, sugerencia 2025-03-15 05:00.
-  - Nombre `20250315_123456.mp4` con metadatos del mismo día → coincide (vídeo).
-  - Nombre `20250315_123456.mp4` sin metadatos → sugerencia 2025-03-15 05:00 (vídeo).
-  - Nombre `IMG_20250315.jpg` → no se puede parsear (prefijo variable), sin señal.
+  - Nombre `20250315_123456.jpg` con metadatos del mismo día → coincide (P1).
+  - Nombre `20250315_123456.jpg` con metadatos de 2024-07-10 → anomalía, sugerencia 2025-03-15 05:00 (P1).
+  - Nombre `20250315_123456.mp4` con metadatos del mismo día → coincide (P1, vídeo).
+  - Nombre `20250315_123456.mp4` sin metadatos → sugerencia 2025-03-15 05:00 (P1, vídeo).
+  - Nombre `IMG_20250315.jpg` → P1 captura los 8 dígitos en cualquier posición → extrae 2025-03-15 (antes daba null por estar al inicio).
   - Nombre `vacaciones.jpg` → sin fecha, sin señal.
-  - Nombre `20250315_123456.jpg` sin metadatos → sugerencia 2025-03-15 05:00.
+  - Nombre `ChatGPT Image 10 abr 2025, 11_03_36.png` → P5 captura `10 abr 2025` → fecha 2025-04-10.
+  - Nombre `ChatGPT Image 10 Apr 2025, 11_03_36.png` → P5 captura `10 Apr 2025` → fecha 2025-04-10 (inglés).
+  - Nombre `Screenshot 2025-03-15 at 10.30.45.png` → P2 captura `2025-03-15` → fecha 2025-03-15.
+  - Nombre `vacaciones 2025.03.15.jpg` → P3 captura `2025.03.15` → fecha 2025-03-15.
+  - Nombre `foto 15-03-2025.jpg` → P7 captura `15-03-2025` → fecha 2025-03-15.
+  - Nombre `15.03.2025 cumpleaños.jpg` → P8 captura `15.03.2025` → fecha 2025-03-15.
+  - Nombre `abr 10 2025 selfie.jpg` → P6 captura `abr 10 2025` → fecha 2025-04-10.
+  - Nombre `20250315_123456.jpg` sin metadatos → sugerencia 2025-03-15 05:00 (P1).
 - **Estado:** activa.
 
 ## 7) Nota sobre dataset de validación

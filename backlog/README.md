@@ -13,7 +13,7 @@
 | F0 | Scaffolding del proyecto + UI testing infra | ✅ Completado | |
 | F1 | Escaneo y extracción de metadatos (EXIF + QuickTime) | ✅ Completado | FR-01, FR-02, FR-03, FR-09 |
 | F2 | SQLite real en tests de integración | ✅ Completado | |
-| F3 | Motor de heurísticas (H-001 a H-006) | 🟡 En curso (H-006 + pipeline integrados, H-001..005 pendientes) | docs/05-heuristicas.md |
+| F3 | Motor de heurísticas (H-001 a H-006) | 🟡 En curso (H-006 multipatrón completado, H-001..005 pendientes) | docs/05-heuristicas.md |
 | F4 | Árbol de carpetas (panel izquierdo) | 🟢 Completada (componentes, API, bUnit + E2E tests) | FR-17 |
 | F5 | Grid de fotos (panel central) | 🟢 Completada (componentes, API, bUnit + E2E tests) | FR-08, FR-18 |
 | F6 | Panel detalle (foto seleccionada) | 🟢 Completada (componentes, API, bUnit + E2E tests) | FR-08 |

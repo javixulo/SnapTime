@@ -1,4 +1,4 @@
-# F3 — Motor de heurísticas (H-001 a H-006)
+# F3 — Motor de heurísticas (H-001 a H-006) — H-006 actualizado a multipatrón
 
 > Implementar el motor de heurísticas que evalúa la confianza de la fecha canónica de cada archivo y genera sugerencias de corrección. Esta feature abarca TODAS las heurísticas (H-001 a H-006), pero se implementan de una en una.
 
@@ -37,7 +37,7 @@ Cada heurística implementa `IHeuristic`. El motor itera las heurísticas activa
   2. `20250315_123456.jpg`, metadatos 2024-07-10 → `Correction`, `SuggestedDate = 2025-03-15 05:00`
   3. `20250315_123456.mp4`, metadatos mismo día → `Positive` (vídeo)
   4. `20250315_123456.mp4`, sin metadatos → `Correction`, `SuggestedDate = 2025-03-15 05:00`
-  5. `IMG_20250315.jpg` → `null` (prefijo variable)
+  5. `IMG_20250315.jpg` → `null` (prefijo variable) ⚠️ OBSOLETO con H-006 multipatrón — P1 ahora captura `20250315` en cualquier posición
   6. `vacaciones.jpg` → `null` (sin fecha)
   7. `20250315_123456.jpg`, sin metadatos → `Correction`, `SuggestedDate = 2025-03-15 05:00`
 - Test: el método recibe `(string fileName, DateTime? canonicalDate)` o `(MediaAsset, IReadOnlyList<MetadataEntry>, CancellationToken)` según diseño
@@ -112,3 +112,57 @@ Cada heurística implementa `IHeuristic`. El motor itera las heurísticas activa
 > Comparar fecha canónica contra `ctime`/`mtime` del sistema de archivos.
 
 **Requiere ficha detallada.**
+
+---
+
+## F3-US-008 — H-006: extensión a multipatrón (fechas en cualquier posición + meses textuales ES/EN) ✅ COMPLETADO
+
+> Extender H-006 para buscar patrones de fecha en cualquier posición del nombre del archivo (no solo al inicio) y soportar 9 patrones distintos incluyendo meses abreviados en español e inglés.
+
+**Referencia:** `docs/05-requisitos-heuristicas.md` — sección H-006 actualizada.
+
+**Dependencias:** F3-US-001 (IHeuristic + H-006 base), F3-US-002 (pipeline)
+
+**Cambios respecto a versión anterior:**
+- Los patrones se buscan en **cualquier posición** del nombre, no solo al inicio.
+- Se añaden patrones con separadores: `yyyy.MM.dd`, `yyyy_MM_dd`, `DD-MM-YYYY`, `DD.MM.YYYY`, `DD/MM/YYYY`.
+- Se añaden patrones con mes textual (`DD MMM YYYY`, `MMM DD YYYY`) con soporte para abreviaturas de 3 letras en español e inglés.
+- Orden de prioridad de patrones (P1→P9) definido en la especificación.
+- ⚠️ El test anterior `IMG_20250315.jpg → null` ahora debe devolver `2025-03-15` (P1 captura los 8 dígitos en cualquier posición).
+
+### Tareas
+
+**🔴 T-001 — Actualizar tests de H-006 (Janus)**
+- Agregar nuevos tests unitarios para todos los patrones nuevos:
+  1. `ChatGPT Image 10 abr 2025, 11_03_36.png` → P5, extrae 2025-04-10
+  2. `ChatGPT Image 10 Apr 2025, 11_03_36.png` → P5, extrae 2025-04-10 (inglés)
+  3. `Screenshot 2025-03-15 at 10.30.45.png` → P2, extrae 2025-03-15
+  4. `vacaciones 2025.03.15.jpg` → P3, extrae 2025-03-15
+  5. `foto 15-03-2025.jpg` → P7, extrae 2025-03-15
+  6. `15.03.2025 cumpleaños.jpg` → P8, extrae 2025-03-15
+  7. `abr 10 2025 selfie.jpg` → P6, extrae 2025-04-10
+- Actualizar el test existente #5 (`IMG_20250315.jpg`):
+  - Antes: esperaba `null` (no parseaba por estar al inicio con prefijo)
+  - Ahora: debe esperar `2025-03-15` (P1 captura en cualquier posición)
+- Verificar que los 7 tests originales siguen pasando con la nueva lógica
+
+**🟢 T-002 — Refactorizar H006FilenameHeuristic.TryParseDate (Kip)**
+- Modificar `TryParseDate()` para que busque patrones en **cualquier posición** del string (no anclado al inicio con `^`).
+- Implementar los 9 patrones (P1-P9) en el orden de prioridad especificado.
+- Para P1 (`yyyyMMdd`): regex `\b\d{8}\b` o similar para capturar 8 dígitos consecutivos en cualquier posición.
+- Para P5 y P6 (mes textual): implementar un diccionario de meses español/inglés para convertir abreviatura → número de mes.
+- Para P7-P9 (orden DD-MM): parsear como DD-MM-YYYY usando `DateTime.TryParseExact` con formato `dd-MM-yyyy`.
+- Los patrones deben probarse secuencialmente; devolver el primer match.
+- La hora opcional tras la fecha debe ignorarse (solo año/mes/día se extraen).
+
+**🔵 T-003 — Refactor (Kip)**
+- Asegurar código limpio, expresiones regulares nombradas, diccionario de meses como static readonly.
+
+**👁 T-004 — Review (Gavin)**
+- Revisar que todos los patrones funcionan, cobertura de tests, casos límite.
+
+**Criterios de aceptación:**
+- [x] Los 16 tests unitarios pasan (7 originales actualizados + 9 nuevos)
+- [x] El archivo `ChatGPT Image 10 abr 2025, 11_03_36.png` extrae fecha 2025-04-10 correctamente
+- [x] Los tests de integración del pipeline (F3-US-002) siguen verdes (los 4 fallos son preexistentes, no relacionados)
+- [x] No se rompe ninguna funcionalidad existente (90/90 tests bUnit, 42/46 integración preexistente)
