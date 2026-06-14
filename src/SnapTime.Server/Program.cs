@@ -66,6 +66,7 @@ builder.Services.AddScoped<IHeuristicEngine>(sp =>
     return new HeuristicEngine(config.Current.Analysis.ConfidenceThreshold);
 });
 builder.Services.AddScoped<IScanJobService, ScanJobService>();
+builder.Services.AddScoped<IExifWriter, ExifWriter>();
 
 var app = builder.Build();
 
@@ -633,6 +634,54 @@ app.MapPost("/api/reviews/batch", async (BatchReviewRequest request, SnapTimeDbC
     return Results.Ok(updatedIds);
 })
 .WithName("ReviewBatch");
+
+// [F8-US-001] Apply approved suggestions to media assets
+app.MapPost("/api/apply", async (ApplyChangesRequest request, SnapTimeDbContext db) =>
+{
+    if (request.MediaAssetIds is null)
+        return Results.BadRequest(new { error = "mediaAssetIds is required" });
+
+    var results = new List<ApplyResult>(request.MediaAssetIds.Count);
+    var appliedCount = 0;
+
+    foreach (var id in request.MediaAssetIds)
+    {
+        var asset = await db.MediaAssets.FindAsync(id);
+        if (asset is null)
+        {
+            results.Add(new ApplyResult(id, string.Empty, false, "NotFound"));
+            continue;
+        }
+
+        if (asset.SuggestionStatus != SuggestionReviewStatus.Approved)
+        {
+            results.Add(new ApplyResult(id, asset.FileName, false, "NotApproved"));
+            continue;
+        }
+
+        if (asset.SuggestedDate is null)
+        {
+            results.Add(new ApplyResult(id, asset.FileName, false, "NoSuggestedDate"));
+            continue;
+        }
+
+        // TODO [F8-US-002] Replace with IExifWriter.WriteAsync
+        try
+        {
+            System.IO.File.SetLastWriteTime(asset.FilePath, asset.SuggestedDate.Value);
+            results.Add(new ApplyResult(id, asset.FileName, true, null));
+            appliedCount++;
+        }
+        catch (Exception ex)
+        {
+            results.Add(new ApplyResult(id, asset.FileName, false, ex.Message));
+        }
+    }
+
+    return Results.Ok(new ApplyChangesResponse(
+        results, appliedCount, results.Count - appliedCount, DateTime.UtcNow));
+})
+.WithName("ApplyChanges");
 
 if (app.Environment.IsDevelopment())
 {

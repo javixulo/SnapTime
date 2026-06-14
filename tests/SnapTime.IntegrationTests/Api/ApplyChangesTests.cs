@@ -118,6 +118,57 @@ public class ApplyChangesTests
     }
 
     [Fact]
+    public async Task PostApply_WithEmptyList_ReturnsSuccessWithZeroCounts()
+    {
+        var payload = new { mediaAssetIds = Array.Empty<Guid>() };
+        var json = JsonSerializer.Serialize(payload, WebJsonOptions);
+
+        var response = await _client.PostAsync(
+            "/api/apply",
+            new StringContent(json, Encoding.UTF8, "application/json"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var doc = await response.Content.ReadFromJsonAsync<JsonDocument>(WebJsonOptions);
+        doc.Should().NotBeNull();
+
+        var root = doc!.RootElement;
+        var results = root.GetProperty("results").EnumerateArray().ToList();
+        results.Should().BeEmpty();
+        root.GetProperty("appliedCount").GetInt32().Should().Be(0);
+        root.GetProperty("failedCount").GetInt32().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task PostApply_WithNonExistentIds_ReturnsNotFoundErrors()
+    {
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+        var payload = new { mediaAssetIds = new[] { id1, id2 } };
+        var json = JsonSerializer.Serialize(payload, WebJsonOptions);
+
+        var response = await _client.PostAsync(
+            "/api/apply",
+            new StringContent(json, Encoding.UTF8, "application/json"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var doc = await response.Content.ReadFromJsonAsync<JsonDocument>(WebJsonOptions);
+        doc.Should().NotBeNull();
+
+        var root = doc!.RootElement;
+        var results = root.GetProperty("results").EnumerateArray().ToList();
+        results.Should().HaveCount(2);
+        results.Should().AllSatisfy(r =>
+        {
+            r.GetProperty("success").GetBoolean().Should().BeFalse();
+            r.GetProperty("error").GetString().Should().Be("NotFound");
+        });
+        root.GetProperty("appliedCount").GetInt32().Should().Be(0);
+        root.GetProperty("failedCount").GetInt32().Should().Be(2);
+    }
+
+    [Fact]
     public async Task PostApply_SkipsNonApprovedAndReportsMissingAssets()
     {
         // Arrange
@@ -198,12 +249,12 @@ public class ApplyChangesTests
             // unapproved should be failed with NotApproved error
             var unapprovedResult = results.Single(r => r.GetProperty("mediaAssetId").GetGuid() == idUnapproved);
             unapprovedResult.GetProperty("success").GetBoolean().Should().BeFalse();
-            unapprovedResult.GetProperty("error").GetString().Should().BeOneOf("NotApproved", "notApproved", "NOT_APPROVED");
+            unapprovedResult.GetProperty("error").GetString().Should().Be("NotApproved");
 
             // missing should be failed with NotFound
             var missingResult = results.Single(r => r.GetProperty("mediaAssetId").GetGuid() == missingId);
             missingResult.GetProperty("success").GetBoolean().Should().BeFalse();
-            missingResult.GetProperty("error").GetString().Should().BeOneOf("NotFound", "notFound", "NOT_FOUND");
+            missingResult.GetProperty("error").GetString().Should().Be("NotFound");
 
             root.GetProperty("appliedCount").GetInt32().Should().Be(1);
         }

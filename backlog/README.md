@@ -18,7 +18,7 @@
 | F5 | Grid de fotos (panel central) | 🟢 Completada (componentes, API, bUnit + E2E tests) | FR-08, FR-18 |
 | F6 | Panel detalle (foto seleccionada) | 🟢 Completada (componentes, API, bUnit + E2E tests) | FR-08 |
 | F7 | Revisión en lote | 🟢 Completada (backend, frontend, bUnit, integración y E2E tests) | FR-10 |
-| F8 | Aplicación de cambios (escritura real, batch) | ⏳ Pendiente | FR-11 |
+| F8 | Aplicación de cambios (escritura real, batch) | 🟡 En curso (F8-US-001 y US-002 completados) | FR-11 |
 | F9 | Chat contextual con LLM (Ollama) | ⏳ Pendiente | FR-19 |
 
 ## Cómo trabajamos

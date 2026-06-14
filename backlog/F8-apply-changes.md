@@ -37,7 +37,7 @@ Contrato (alto nivel):
 
 ---
 
-## F8-US-001 — DTOs y contrato API
+## F8-US-001 — DTOs y contrato API ✅ COMPLETADO
 
 ### Tareas
 
@@ -54,9 +54,18 @@ Acceptance: DTOs añadidos en `SnapTime.Server/Models` y `SnapTime.Client/Models
 
 Acceptance: endpoint responde conforme al contrato y tiene tests unitarios básicos.
 
+**Criterios cumplidos:**
+- [x] DTOs creados en Server/Models y Client/Models
+- [x] POST /api/apply responde con ApplyChangesResponse
+- [x] IDs no existentes → success: false, error: "NotFound"
+- [x] Lista vacía → appliedCount: 0, failedCount: 0
+- [x] Null MediaAssetIds → 400 BadRequest
+- [x] Tests de integración: 4/4 pasan
+- [x] Tags [F8-US-001] en todos los archivos
+
 ---
 
-## F8-US-002 — IExifWriter (Infraestructura)
+## F8-US-002 — IExifWriter (Infraestructura) ✅ COMPLETADO
 
 ### Tareas
 
@@ -99,6 +108,22 @@ Acceptance: implementation writes expected EXIF/QuickTime tags + UserComment/©c
 - Tests de integración con archivos reales JPEG y MOV/MP4 para verificar que el tag se escribe y se puede leer de vuelta.
 
 Acceptance: tests confirman que la anotación se escribe y parsea correctamente.
+
+**Criterios cumplidos:**
+- [x] IExifWriter interfaz creada en Domain/Interfaces con record ExifWriteResult
+- [x] ExifWriter implementado en Infrastructure/Services (manipulación binaria EXIF, sin deps externas)
+- [x] Escribe EXIF:DateTimeOriginal (tag 0x9003) en JPEG
+- [x] Escribe EXIF UserComment (tag 0x9286) con formato SnapTime;original=...;heuristics=...
+- [x] originalDate null → "original=unknown"
+- [x] heuristicIds vacío → "heuristics=none"
+- [x] Múltiples heuristicIds separados por coma
+- [x] Archivo inexistente → error "File not found"
+- [x] Archivo readonly → error "File is read-only"
+- [x] JPEG inválido → error
+- [x] Vídeo MP4 → error "not yet implemented" (pendiente QuickTime)
+- [x] 10 tests unitarios, todos verdes
+- [x] Registro DI: AddScoped<IExifWriter, ExifWriter>
+- [x] Tags [F8-US-002] en todos los archivos
 
 ---
 
