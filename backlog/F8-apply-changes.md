@@ -33,6 +33,7 @@ Contrato (alto nivel):
 - Endpoint `POST /apply` con `ApplyChangesRequest / ApplyChangesResponse` (respuesta incluye resultado por archivo y listado de errores).
 - Componente Blazor `ApplyModal.razor` (modal de confirmación con lista y resumen final).
 - Tests: escritura real, archivo readonly, mezcla de éxitos/errores, auditoría registrada, y bloqueo si hay scan en curso.
+- Botón "Iniciar" en el panel superior: deshabilitado hasta que haya al menos un escaneo completado. Al pulsarlo se abre el `ApplyModal`.
 - Al escribir la fecha, se anota en los metadatos el valor original y los IDs de heurística (`EXIF UserComment` en fotos, `QuickTime ©cmt` en vídeos).
 
 ---

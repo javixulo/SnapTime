@@ -20,6 +20,7 @@
 | F7 | Revisión en lote | 🟢 Completada (backend, frontend, bUnit, integración y E2E tests) | FR-10 |
 | F8 | Aplicación de cambios (escritura real, batch) | 🟡 En curso (F8-US-001..008 implementados, pendiente revisión manual del usuario) | FR-11 |
 | F9 | Chat contextual con LLM (Ollama) | ⏳ Pendiente | FR-19 |
+| F10 | Limpieza de datos de escaneo | ⏳ Pendiente | FR-21 |
 
 ## Cómo trabajamos
 

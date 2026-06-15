@@ -28,9 +28,10 @@
 - La navegación es **independiente del árbol izquierdo** — el árbol mantiene su selección.
 - El grid expone una **miga de pan (breadcrumb)** para navegar hacia arriba.
 
-### Círculo de estado (MediaStatus)
+### Círculo de estado
 - Esquina superior derecha de cada miniatura, círculo pequeño (16px diámetro).
-- **Gris** (`Pending`), **Verde** (`Correct`), **Rojo** (`Error`), **Amarillo** (`NoSuggestion`), **Azul** (`HasSuggestion`).
+- **Gris** (`Pending`), **Verde** (`Correct`), **Rojo** (`Error`), **Amarillo** (`NoSuggestion`), **Azul claro** (`HasSuggestion`).
+- Cuando una sugerencia se acepta (`SuggestionStatus = Approved`), el círculo cambia a **azul oscuro (#1565C0)** independientemente del MediaStatus.
 
 ### Indicador de recuento
 - "N imágenes, M vídeos" alineado a la derecha en la barra de breadcrumb.

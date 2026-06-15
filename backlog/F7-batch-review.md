@@ -86,7 +86,7 @@
 ### Reglas base (implementadas)
 - **Sin selección múltiple en grid.**
 - **Aceptar/Rechazar individual:** botones funcionales en `PhotoDetail.razor`. Habilitados solo si scan completado + archivo tiene `SuggestedDate`.
-- **Aceptar Todo / Rechazar Todo:** opera sobre carpeta actual del grid.
+- **Aceptar Carpeta / Rechazar Carpeta:** opera sobre carpeta actual del grid.
 - **Aceptar Total / Rechazar Total:** opera sobre todos los archivos escaneados.
 - Persistencia inmediata en SQLite.
 - Modal de confirmación para operaciones por lote.

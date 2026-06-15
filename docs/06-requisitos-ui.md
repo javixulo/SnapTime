@@ -26,7 +26,7 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 
 ### 4.2) Panel central: grid de archivos multimedia
 - Cuadrícula de archivos con miniatura (fotos) o vídeo nativo con `<video preload="metadata">` (vídeos, badge ▶右下).
-- Indicadores visuales sobre la miniatura/icono: círculo de estado de 16px que muestra el **`MediaStatus`** del archivo (gris = Pending, verde = Correct, rojo = Error, #ffc107 = NoSuggestion, azul = HasSuggestion). El estado de revisión de la sugerencia (`SuggestionReviewStatus`) no se refleja en el círculo del grid en MVP.
+- Indicadores visuales sobre la miniatura/icono: círculo de estado de 16px que muestra el **`MediaStatus`** del archivo (gris = Pending, verde = Correct, rojo = Error, #ffc107 = NoSuggestion, azul = HasSuggestion). Además, cuando una sugerencia se acepta (`SuggestionStatus = Approved`), el círculo cambia a **azul oscuro (#1565C0)** para reflejar el estado de revisión.
 - Al hacer clic en una miniatura, se muestra el detalle en el panel derecho (no inline). Doble click en subcarpeta navega dentro del grid independientemente del árbol izquierdo.
 - **Solo visualización.** Sin acciones (aceptar/rechazar) desde el grid. Sin checkboxes ni selección múltiple. La aprobación/rechazo de sugerencias se hace desde el panel de detalle (individual) o desde los botones de lote en el panel superior.
 - **Sin Virtualize:** reemplazado por `@foreach` manual + llamada asíncrona con `CancellationTokenSource` para cancelar peticiones en curso al navegar rápido.
@@ -51,8 +51,9 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Botón para abrir configuración (modal).
 - Métricas: resumen de confianza post-scan (altas, revisar, sugerir corrección).
 - Estados de proceso visibles: idle, scanning, cancelled, completed, error.
-- Botones de revisión por lote: Aceptar Todo / Rechazar Todo (carpeta actual visible) y Aceptar Total / Rechazar Total (todo lo escaneado). Los botones de lote abren modal de confirmación con resumen antes de aplicar.
+- Botones de revisión por lote: Aceptar Carpeta / Rechazar Carpeta (carpeta actual visible) y Aceptar Total / Rechazar Total (todo lo escaneado). Los botones de lote abren modal de confirmación con resumen antes de aplicar.
 - Los botones de lote se habilitan solo si el scan no está activo y hay al menos un archivo con recomendación en el ámbito correspondiente.
+- Botón "Limpiar": elimina todos los datos de escaneo de la base de datos (assets, metadatos, evidencias, auditoría), conservando la configuración. Se muestra siempre activo cuando hay datos escaneados. Requiere confirmación explícita en modal antes de ejecutar.
 
 ### 4.5) Pantalla de configuración (modal)
 - Ventana modal flotante sobre el grid.
@@ -72,6 +73,7 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - Botón "Aplicar" o "Cancelar".
 - Requiere confirmación explícita.
 - Las fechas que se muestran al usuario deben formatearse como `dd/MM/yyyy`. Las fechas sugeridas deben resaltarse visualmente (por ejemplo con `<strong>`). El modal mostrará un resumen final con los archivos que fallaron y la causa.
+- Botón "Iniciar" en el panel superior: deshabilitado hasta que se complete al menos un escaneo. Al pulsarlo, abre el modal de confirmación con la lista de cambios a aplicar.
 
 ### 4.8) Filtros (Fase 2)
 - Los filtros por score, carpeta, rango de fechas, estado de revisión se implementan en Fase 2.

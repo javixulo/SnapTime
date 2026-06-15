@@ -77,7 +77,7 @@ La UI debe mostrar un grid navegable de miniaturas de archivos multimedia con re
 
 ### Criterios de aceptación
 
-- Grid de miniaturas con indicadores visuales de score y estado (círculo de 16px: gris pendiente, verde correcto, rojo error, #ffc107 sin sugerencia, azul con sugerencia).
+- Grid de miniaturas con indicadores visuales de score y estado (círculo de 16px: gris pendiente, verde correcto, rojo error, #ffc107 sin sugerencia, azul claro con sugerencia). Al aceptar una sugerencia, el círculo cambia a azul oscuro (#1565C0).
 - Al hacer clic en una miniatura se abre el detalle en el panel derecho (no inline): ruta, tamaño, fechas EXIF + filesystem, sugerencia, evidencias, barra de confianza.
 - Al hacer clic en otra miniatura, el detalle se actualiza. Al navegar (breadcrumb, subcarpeta), la selección se limpia.
 - Las miniaturas se sirven desde disco (`GET /api/thumbnails/from-file?path=`), no desde BD.
@@ -104,7 +104,7 @@ El sistema debe permitir aceptar/rechazar sugerencias por ítem o por lote.
 ### Criterios de aceptación
 
 - Soporta aprobación/rechazo individual desde el panel de detalle.
-- Soporta aprobación/rechazo por lote sobre la carpeta actual visible en el grid.
+- Soporta aprobación/rechazo por lote sobre la carpeta actual visible en el grid (botones "Aceptar Carpeta" / "Rechazar Carpeta").
 - Soporta aprobación/rechazo por lote sobre el total de archivos escaneados.
  - Muestra resumen previo en modal con lista de cambios: archivo, fecha actual → fecha nueva. (La ejecución es real only; el modal sirve para confirmar.)
 - Requiere confirmación explícita para aplicar (botón "Aplicar" / "Cancelar" en el modal).
@@ -119,6 +119,7 @@ El sistema debe escribir la fecha aceptada en metadatos de forma controlada.
 - Nunca modifica sin consentimiento explícita del usuario (modal de confirmación).
 - Proceso best-effort: aplica todo lo posible y devuelve listado de errores sin rollback.
 - Al modificar la fecha, anota en los metadatos del archivo el valor original y la heurística responsable: campo `EXIF UserComment` (0x9286) en fotos, `QuickTime ©cmt` (UserData Comment) en vídeos.
+- Botón "Iniciar" en UI: deshabilitado hasta que haya al menos un escaneo completado. Al pulsarlo se abre el modal de confirmación.
 
 ## FR-12 Auditoría y trazabilidad
 
@@ -226,3 +227,15 @@ El sistema debe presentar todas las fechas a los usuarios en formato `dd/MM/yyyy
 - Las heurísticas generan evidencias con fechas formateadas como `dd/MM/yyyy` envueltas en tags HTML `<strong>`.
 - El frontend Blazor renderiza estas descripciones como `MarkupString` para mostrar correctamente las etiquetas HTML.
 - La presentación es consistente en toda la aplicación (grid, detalle, listados).
+
+## FR-21 Limpieza de datos de escaneo
+
+El sistema debe permitir eliminar todos los datos de escaneo de la base de datos de forma controlada.
+
+### Criterios de aceptación
+
+- Elimina todos los MediaAssets, MetadataEntries, EvidenceEntries y AuditEntries.
+- Conserva la configuración (Settings, SnapTimeConfig) intacta.
+- Requiere confirmación explícita del usuario antes de ejecutar.
+- La UI muestra un botón "Limpiar" en el panel superior.
+- Al completar la limpieza, el grid de fotos se vacía y el estado del scan vuelve a idle.
