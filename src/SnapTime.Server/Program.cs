@@ -785,8 +785,20 @@ static string[] GetRootDirectories()
             .ToArray();
     }
 
-    // macOS / Linux: enumerate root "/" and return directory names only
-    return GetFilteredDirectoryNames("/");
+    // macOS / Linux: enumerate root "/" and return full paths
+    return Directory.EnumerateDirectories("/")
+        .Where(entry => {
+            try
+            {
+                var dirInfo = new DirectoryInfo(entry);
+                return !dirInfo.Attributes.HasFlag(FileAttributes.Hidden) &&
+                       !dirInfo.Attributes.HasFlag(FileAttributes.System) &&
+                       !IsSystemDirectoryName(dirInfo.Name) &&
+                       !HasSystemPathPrefix(entry);
+            }
+            catch { return false; }
+        })
+        .ToArray();
 }
 
 static string[] GetFilteredDirectoryNames(string path)

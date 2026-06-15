@@ -19,6 +19,6 @@ public record MediaAssetDetailDto(
     DateTime? SuggestedDate,
     string? SuggestedByHeuristic,
     MediaStatus Status,
-    SuggestionReviewStatus SuggestionStatus,
+    SuggestionReviewStatus SuggestionReviewStatus,
     List<EvidenceDto> Evidence
 );

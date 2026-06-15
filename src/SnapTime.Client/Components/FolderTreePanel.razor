@@ -22,8 +22,10 @@
         @foreach (var root in _roots)
         {
             var rootPath = root;
+            var rootName = rootPath.TrimEnd('/', '\\').Split('/', '\\').Last();
+            if (string.IsNullOrEmpty(rootName)) rootName = rootPath;
             <FolderTreeItem Path="@rootPath"
-                            Name="@root"
+                            Name="@rootName"
                             Indent="0"
                             OnSelect="@HandleFolderSelected"
                             SelectedPath="@SelectedPath" />

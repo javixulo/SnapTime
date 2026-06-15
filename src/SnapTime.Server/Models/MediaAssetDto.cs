@@ -15,7 +15,7 @@ namespace SnapTime.Server.Models;
 /// <param name="ConfidenceScore">Confidence score (0-100) of the suggestion.</param>
 /// <param name="SuggestedByHeuristic">ID of the heuristic that produced the suggestion.</param>
 /// <param name="Status">Analysis status of the asset (Pending, Correct, Error, NoSuggestion, HasSuggestion).</param>
-/// <param name="SuggestionStatus">Review status of the suggestion (Unreviewed, Approved, Rejected).</param>
+/// <param name="SuggestionReviewStatus">Review status of the suggestion (Unreviewed, Approved, Rejected).</param>
 public record MediaAssetDto(
     Guid Id,
     string FilePath,
@@ -26,5 +26,5 @@ public record MediaAssetDto(
     int ConfidenceScore,
     string? SuggestedByHeuristic,
     MediaStatus Status,
-    SuggestionReviewStatus SuggestionStatus
+    SuggestionReviewStatus SuggestionReviewStatus
 );
