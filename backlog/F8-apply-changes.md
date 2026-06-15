@@ -127,7 +127,7 @@ Acceptance: tests confirman que la anotación se escribe y parsea correctamente.
 
 ---
 
-## F8-US-003 — IApplyService (Domain/Server)
+## F8-US-003 — IApplyService (Domain/Server) 🟢 Implementado (pendiente validación manual)
 
 ### Tareas
 
@@ -164,7 +164,7 @@ Acceptance: Servicio pasa tests de integración y crea AuditEntry. Writer recibe
 
 ---
 
-## F8-US-004 — Endpoint POST /apply (Server)
+## F8-US-004 — Endpoint POST /apply (Server) 🟢 Implementado (pendiente validación manual)
 
 ### Tareas
 
@@ -178,7 +178,7 @@ Acceptance: Integration test con WebApplicationFactory confirma flujo end-to-end
 
 ---
 
-## F8-US-005 — Frontend: ApplyModal.razor (Karris)
+## F8-US-005 — Frontend: ApplyModal.razor (Karris) 🟢 Implementado (pendiente validación manual)
 
 ### Tareas
 
@@ -194,7 +194,7 @@ Acceptance: bUnit + Playwright E2E valida el flujo.
 
 ---
 
-## F8-US-006 — Tests E2E (Janus)
+## F8-US-006 — Tests E2E (Janus) 🟢 Implementado (pendiente validación manual)
 
 ### Tareas
 
@@ -211,7 +211,7 @@ Acceptance: E2E tests pasan en la suite autónoma (WebApplicationFactory + SQLit
 
 ---
 
-## F8-US-007 — DB / EF migration (Kip)
+## F8-US-007 — DB / EF migration (Kip) 🟢 Implementado (pendiente validación manual)
 
 ### Tareas
 
@@ -222,7 +222,7 @@ Acceptance: migration generada y test de smoke.
 
 ---
 
-## F8-US-008 — QA / Code review (Gavin)
+## F8-US-008 — QA / Code review (Gavin) 🟢 Implementado (pendiente validación manual)
 
 ### Tareas
 
@@ -231,7 +231,6 @@ Acceptance: migration generada y test de smoke.
 
 Acceptance: Gavin aprueba y lista comentarios a corregir (si hay).
 
----
 
 ## Notas finales
 
