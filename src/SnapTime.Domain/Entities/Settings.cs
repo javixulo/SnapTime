@@ -3,7 +3,7 @@ namespace SnapTime.Domain.Entities;
 public class Settings
 {
     public int Id { get; set; }
-    public int ConfidenceThreshold { get; set; } = 80;
+    public int ConfidenceThreshold { get; set; } = 70;
     public int MaxConcurrency { get; set; } = 4;
     public int BatchSize { get; set; } = 100;
     public string ImageExtensionsCsv { get; set; } = ".jpg,.jpeg";

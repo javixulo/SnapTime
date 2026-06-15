@@ -11,7 +11,7 @@ public class SettingsEntityTests
         var s = new Settings();
 
         s.Id.Should().Be(0);
-        s.ConfidenceThreshold.Should().Be(80);
+        s.ConfidenceThreshold.Should().Be(70);
         s.MaxConcurrency.Should().Be(4);
         s.BatchSize.Should().Be(100);
         s.ImageExtensionsCsv.Should().Be(".jpg,.jpeg");

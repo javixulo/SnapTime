@@ -27,7 +27,7 @@ public class HeuristicEngine : IHeuristicEngine
     /// Minimum percentage (weight × 100) required for a correction evidence
     /// to produce a suggestion. Default 80.
     /// </param>
-    public HeuristicEngine(int confidenceThreshold = 80)
+    public HeuristicEngine(int confidenceThreshold = 70)
     {
         _confidenceThreshold = confidenceThreshold;
     }

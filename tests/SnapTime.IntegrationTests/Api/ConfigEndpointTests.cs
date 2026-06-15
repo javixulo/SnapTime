@@ -29,7 +29,7 @@ public class ConfigEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var config = await response.Content.ReadFromJsonAsync<SnapTimeConfig>();
         config.Should().NotBeNull();
-        config!.Analysis.ConfidenceThreshold.Should().Be(80);
+        config!.Analysis.ConfidenceThreshold.Should().Be(70);
         config.Ollama.Model.Should().Be("qwen2.5-coder:14b");
         config.Thumbnails.MaxDimension.Should().Be(300);
         config.Heuristics.Should().HaveCount(6);

@@ -17,7 +17,7 @@ La configuración se almacena en un archivo JSON (`snaptime.config.json`) ubicad
 
   // --- Análisis ---
   "analysis": {
-    "confidenceThreshold": 80,
+    "confidenceThreshold": 70,
     "maxConcurrency": 4,
     "batchSize": 100,
     "imageExtensions": [".jpg", ".jpeg"],
@@ -88,7 +88,7 @@ La configuración se almacena en un archivo JSON (`snaptime.config.json`) ubicad
 ### analysis
 | Campo | Tipo | Default | Descripción |
 |-------|------|---------|-------------|
-| `confidenceThreshold` | int | `80` | Umbral global de confianza (0-100). Por debajo de este valor se genera sugerencia. |
+| `confidenceThreshold` | int | `70` | Umbral global de confianza (0-100). Una evidencia de corrección con `Weight * 100 >= threshold` genera sugerencia. |
 | `maxConcurrency` | int | `4` | Número máximo de análisis en paralelo. |
 | `batchSize` | int | `100` | Archivos por lote en cada iteración de escaneo. |
 | `imageExtensions` | string[] | `[".jpg", ".jpeg"]` | Extensiones de imagen a incluir en el escaneo. |

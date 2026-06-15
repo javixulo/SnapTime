@@ -180,7 +180,7 @@ public class SnapTimeConfig
     }
 
     public class AnalysisConfig {
-        public int ConfidenceThreshold { get; set; } = 80;
+        public int ConfidenceThreshold { get; set; } = 70;
         public int MaxConcurrency { get; set; } = 4;
         public int BatchSize { get; set; } = 100;
         public string[] ImageExtensions { get; set; } = [".jpg", ".jpeg"];

@@ -51,7 +51,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 3, 15, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 
@@ -63,7 +63,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 3, 15, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 
@@ -83,7 +83,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 3, 15, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 
@@ -95,7 +95,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 4, 10, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 
@@ -107,7 +107,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 4, 10, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 
@@ -119,7 +119,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 3, 15, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 
@@ -131,7 +131,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 3, 15, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 
@@ -143,7 +143,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 3, 15, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 
@@ -155,7 +155,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 3, 15, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 
@@ -167,7 +167,7 @@ public class H006FilenameHeuristicTests
         result.Should().NotBeNull();
         result!.Direction.Should().Be(EvidenceDirection.Correction);
         result.SuggestedDate.Should().Be(new DateTime(2025, 4, 10, 5, 0, 0));
-        result.Weight.Should().Be(0.5);
+        result.Weight.Should().Be(0.8);
         result.HeuristicId.Should().Be("H-006");
     }
 

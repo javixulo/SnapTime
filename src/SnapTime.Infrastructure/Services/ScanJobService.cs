@@ -377,6 +377,11 @@ public class ScanJobService : IScanJobService
                     existing.MetadataEntries.AddRange(asset.MetadataEntries);
                     existing.EvidenceEntries.Clear();
                     existing.EvidenceEntries.AddRange(asset.EvidenceEntries);
+                    existing.Status = asset.Status;
+                    existing.SuggestedDate = asset.SuggestedDate;
+                    existing.ConfidenceScore = asset.ConfidenceScore;
+                    existing.SuggestedByHeuristic = asset.SuggestedByHeuristic;
+                    existing.SuggestionStatus = asset.SuggestionStatus;
                 }
                 else
                 {

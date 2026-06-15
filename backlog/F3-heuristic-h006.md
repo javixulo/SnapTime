@@ -130,6 +130,11 @@ Cada heurística implementa `IHeuristic`. El motor itera las heurísticas activa
 - Orden de prioridad de patrones (P1→P9) definido en la especificación.
 - ⚠️ El test anterior `IMG_20250315.jpg → null` ahora debe devolver `2025-03-15` (P1 captura los 8 dígitos en cualquier posición).
 
+**Pesos de evidencia generados por H-006:**
+- `Positive` (filename coincide con metadata): **0.3**
+- `Correction` (filename discrepa de metadata): **0.7**
+- `Correction` (filename tiene fecha, no hay metadata): **0.8**
+
 ### Tareas
 
 **🔴 T-001 — Actualizar tests de H-006 (Janus)**

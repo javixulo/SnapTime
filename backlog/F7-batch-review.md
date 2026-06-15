@@ -44,8 +44,9 @@
 ### Reglas base (implementadas)
 - Se ejecuta como **paso final del pipeline de escaneo**, tras la extracción de metadatos y heurísticas.
 - Procesa las `EvidenceEntry` de cada `MediaAsset` y calcula `MediaStatus`, `ConfidenceScore`, `SuggestedDate`, `SuggestedByHeuristic`, `SuggestionReviewStatus`.
-- El umbral "suficiente peso" se vincula al `confidenceThreshold` configurable (defecto: 80).
+- El umbral "suficiente peso" se vincula al `confidenceThreshold` configurable (defecto: 70). Una evidencia de corrección genera sugerencia si `Weight * 100 >= threshold`.
 - Al reescanear una carpeta, se regeneran scores, status y sugerencias desde cero.
+- **Fix re-escaneo:** `PersistProgressCheckpointAsync` ahora actualiza también `Status`, `SuggestedDate`, `ConfidenceScore`, `SuggestedByHeuristic` y `SuggestionStatus` en assets existentes (no solo `MetadataEntries` y `EvidenceEntries`).
 
 ### Contrato (servicio interno)
 - `IHeuristicEngine` / `HeuristicEngine` — registra y ejecuta la agregación.
