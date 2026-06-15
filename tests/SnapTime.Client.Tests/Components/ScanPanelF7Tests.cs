@@ -1,4 +1,5 @@
 // [F7-US-001] -- bUnit tests for ScanPanel: progreso, cancelación y reescaneo
+using System.Net;
 using System.Net.Http;
 using Bunit;
 using FluentAssertions;
@@ -231,5 +232,163 @@ public class ScanPanelF7Tests : TestContext
             "debe mostrar el mensaje de error de la API");
         cut.Markup.Should().Contain("error",
             "el contenedor de error debe tener clase o texto indicativo");
+    }
+
+    [Theory]
+    [InlineData("Running")]
+    [InlineData("running")]
+    [InlineData("RUNNING")]
+    [InlineData("Paused")]
+    [InlineData("paused")]
+    public void ScanPanel_EstadoRunningCualquierCasing_NoRompePolling(string statusValue)
+    {
+        // Verifica que el polling continúa independientemente del casing del status.
+        // Bug anterior: comparación case-sensitive rompía el polling con "running" vs "Running".
+        var jobId = Guid.NewGuid();
+        var runningJob = new ScanJobDto
+        {
+            Id = jobId,
+            Status = statusValue,
+            RootPath = "test/",
+            TotalFiles = 10,
+            ProcessedFiles = 2,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _scanClient.StartScanAsync(Arg.Any<string>(), Arg.Any<bool>())
+            .Returns(runningJob);
+        _scanClient.GetJobAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns(runningJob);
+
+        var cut = RenderComponent<ScanPanel>();
+
+        // Act
+        cut.Find("button").Click();
+
+        // Assert: el polling no se rompe, la UI muestra progreso
+        cut.WaitForState(() =>
+        {
+            try { return cut.Markup.Contains("Cancelar"); }
+            catch { return false; }
+        }, TimeSpan.FromSeconds(3));
+
+        cut.Markup.Should().Contain("2",
+            "debe mostrar progreso: archivos procesados");
+        cut.Markup.Should().Contain("10",
+            "debe mostrar progreso: total de archivos");
+    }
+
+    [Theory]
+    [InlineData("Completed")]
+    [InlineData("completed")]
+    [InlineData("COMPLETED")]
+    public void ScanPanel_EstadoCompletadoCualquierCasing_DetectaFinDeEscaneo(string statusValue)
+    {
+        // Verifica que el scan se marca como completado independientemente del casing.
+        var jobId = Guid.NewGuid();
+        var completedJob = new ScanJobDto
+        {
+            Id = jobId,
+            Status = statusValue,
+            RootPath = "test/",
+            TotalFiles = 5,
+            ProcessedFiles = 5,
+            CreatedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow
+        };
+
+        _scanClient.StartScanAsync(Arg.Any<string>(), Arg.Any<bool>())
+            .Returns(completedJob);
+        _scanClient.GetJobAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns(completedJob);
+
+        var cut = RenderComponent<ScanPanel>();
+
+        // Act
+        cut.Find("button").Click();
+
+        // Assert
+        cut.WaitForState(() =>
+        {
+            try { return cut.Markup.Contains("Completed"); }
+            catch { return false; }
+        }, TimeSpan.FromSeconds(3));
+
+        _scanStateService.Received(1).NotifyScanComplete();
+    }
+
+    [Theory]
+    [InlineData("Cancelled")]
+    [InlineData("cancelled")]
+    [InlineData("CANCELLED")]
+    public void ScanPanel_EstadoCanceladoCualquierCasing_DetectaCancelacion(string statusValue)
+    {
+        // Verifica que la cancelación se detecta independientemente del casing.
+        var jobId = Guid.NewGuid();
+        var canceledJob = new ScanJobDto
+        {
+            Id = jobId,
+            Status = statusValue,
+            RootPath = "test/",
+            TotalFiles = 5,
+            ProcessedFiles = 5,
+            CreatedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow
+        };
+
+        _scanClient.StartScanAsync(Arg.Any<string>(), Arg.Any<bool>())
+            .Returns(canceledJob);
+        _scanClient.GetJobAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns(canceledJob);
+
+        var cut = RenderComponent<ScanPanel>();
+
+        // Act
+        cut.Find("button").Click();
+
+        // Assert
+        cut.WaitForState(() =>
+        {
+            try { return cut.Markup.Contains("Cancelled"); }
+            catch { return false; }
+        }, TimeSpan.FromSeconds(3));
+
+        _scanStateService.Received(1).NotifyScanCancelled();
+    }
+
+    [Theory]
+    [InlineData("Error")]
+    [InlineData("error")]
+    [InlineData("ERROR")]
+    public void ScanPanel_EstadoErrorCualquierCasing_DetectaError(string statusValue)
+    {
+        // Verifica que el error se detecta independientemente del casing.
+        var jobId = Guid.NewGuid();
+        var errorJob = new ScanJobDto
+        {
+            Id = jobId,
+            Status = statusValue,
+            RootPath = "test/",
+            TotalFiles = 0,
+            ProcessedFiles = 0,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _scanClient.StartScanAsync(Arg.Any<string>(), Arg.Any<bool>())
+            .Returns(errorJob);
+        _scanClient.GetJobAsync(jobId, Arg.Any<CancellationToken>())
+            .Returns(errorJob);
+
+        var cut = RenderComponent<ScanPanel>();
+
+        // Act
+        cut.Find("button").Click();
+
+        // Assert
+        cut.WaitForState(() =>
+        {
+            try { return cut.Markup.Contains("error"); }
+            catch { return false; }
+        }, TimeSpan.FromSeconds(3));
     }
 }
