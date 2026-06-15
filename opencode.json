@@ -3,13 +3,14 @@
   "default_agent": "planning",
   "agent": {
     "planning": {
-      "instructions": ["AGENTS.md"]
+      "instructions": ["AGENTS.md"],
+      "model": "opencode/deepseek-v4-flash-free"
     },
     "tdd": {
-      "model": "opencode/deepseek-v4-flash-free"
+      "model": "openai/gpt-oss-20b"
     },
     "backend": {
-      "model": "opencode/deepseek-v4-flash-free"
+      "model": "opencode/big-pickle"
     },
     "frontend": {
       "model": "opencode/deepseek-v4-flash-free"
