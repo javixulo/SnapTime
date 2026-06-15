@@ -14,6 +14,7 @@ namespace SnapTime.Server.Models;
 /// <param name="HasSuggestion">Whether the asset has a suggested date correction.</param>
 /// <param name="SuggestedDate">The suggested corrected date, if any.</param>
 /// <param name="MediaType">Type of media (Image or Video).</param>
+/// <param name="SuggestionStatus">Review status of the current suggestion.</param>
 public record PhotoGridItem(
     Guid Id,
     string Name,
@@ -23,5 +24,6 @@ public record PhotoGridItem(
     MediaStatus MediaStatus,
     bool HasSuggestion,
     DateTime? SuggestedDate,
-    MediaType MediaType
+    MediaType MediaType,
+    SuggestionReviewStatus SuggestionStatus
 );

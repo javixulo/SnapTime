@@ -63,8 +63,8 @@ public class PhotoGridTests : TestContext
         // [F5] Successful load renders thumbnails (image + name)
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "photo1.jpg", Path = "/test/photo1.jpg", IsDirectory = false, ThumbnailUrl = "/api/thumbnails/1" },
-            new() { Name = "photo2.jpg", Path = "/test/photo2.jpg", IsDirectory = false, ThumbnailUrl = "/api/thumbnails/2" }
+            new() { Name = "photo1.jpg", Path = "/test/photo1.jpg", IsDirectory = false, ThumbnailUrl = "/api/thumbnails/1", SuggestionStatus = "" },
+            new() { Name = "photo2.jpg", Path = "/test/photo2.jpg", IsDirectory = false, ThumbnailUrl = "/api/thumbnails/2", SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 2, Page = 1 });
@@ -86,9 +86,9 @@ public class PhotoGridTests : TestContext
         // [F5] Subdirectories appear before regular files in the grid
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "photo.jpg",   Path = "/test/photo.jpg",   IsDirectory = false },
-            new() { Name = "vacations",   Path = "/test/vacations",   IsDirectory = true },
-            new() { Name = "work",        Path = "/test/work",        IsDirectory = true }
+            new() { Name = "photo.jpg",   Path = "/test/photo.jpg",   IsDirectory = false, SuggestionStatus = "" },
+            new() { Name = "vacations",   Path = "/test/vacations",   IsDirectory = true, SuggestionStatus = "" },
+            new() { Name = "work",        Path = "/test/work",        IsDirectory = true, SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 3, Page = 1 });
@@ -115,7 +115,7 @@ public class PhotoGridTests : TestContext
                 {
                     Items = new List<PhotoGridItem>
                     {
-                        new() { Name = "subfolder", Path = "/test/subfolder", IsDirectory = true }
+                        new() { Name = "subfolder", Path = "/test/subfolder", IsDirectory = true, SuggestionStatus = "" }
                     },
                     TotalCount = 1,
                     Page = 1
@@ -137,8 +137,8 @@ public class PhotoGridTests : TestContext
         // [F5] Subfolder items display a folder icon
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "vacations", Path = "/test/vacations", IsDirectory = true },
-            new() { Name = "photo.jpg", Path = "/test/photo.jpg", IsDirectory = false }
+            new() { Name = "vacations", Path = "/test/vacations", IsDirectory = true, SuggestionStatus = "" },
+            new() { Name = "photo.jpg", Path = "/test/photo.jpg", IsDirectory = false, SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 2, Page = 1 });
@@ -203,8 +203,8 @@ public class PhotoGridTests : TestContext
         // [F5] A video asset shows a play-button badge (▶️) at bottom-right corner
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "video.mp4", Path = "/test/video.mp4", IsDirectory = false, MediaType = "Video", ThumbnailUrl = "/api/thumbnails/1" },
-            new() { Name = "photo.jpg", Path = "/test/photo.jpg", IsDirectory = false, MediaType = "Image", ThumbnailUrl = "/api/thumbnails/2" }
+            new() { Name = "video.mp4", Path = "/test/video.mp4", IsDirectory = false, MediaType = "Video", ThumbnailUrl = "/api/thumbnails/1", SuggestionStatus = "" },
+            new() { Name = "photo.jpg", Path = "/test/photo.jpg", IsDirectory = false, MediaType = "Image", ThumbnailUrl = "/api/thumbnails/2", SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 2, Page = 1 });
@@ -226,7 +226,7 @@ public class PhotoGridTests : TestContext
         // [F5] Pending status → gray circle
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "pending.jpg", Path = "/test/pending.jpg", MediaStatus = "Pending", HasSuggestion = false }
+            new() { Name = "pending.jpg", Path = "/test/pending.jpg", MediaStatus = "Pending", HasSuggestion = false, SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 1, Page = 1 });
@@ -243,7 +243,7 @@ public class PhotoGridTests : TestContext
         // [F5] Correct date → green circle
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "correct.jpg", Path = "/test/correct.jpg", MediaStatus = "Correct" }
+            new() { Name = "correct.jpg", Path = "/test/correct.jpg", MediaStatus = "Correct", SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 1, Page = 1 });
@@ -260,7 +260,7 @@ public class PhotoGridTests : TestContext
         // [F5] Error status → red circle
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "error.jpg", Path = "/test/error.jpg", MediaStatus = "Error" }
+            new() { Name = "error.jpg", Path = "/test/error.jpg", MediaStatus = "Error", SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 1, Page = 1 });
@@ -277,7 +277,7 @@ public class PhotoGridTests : TestContext
         // [F5] Scanned but no suggestion → yellow circle
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "nosug.jpg", Path = "/test/nosug.jpg", MediaStatus = "NoSuggestion", HasSuggestion = false }
+            new() { Name = "nosug.jpg", Path = "/test/nosug.jpg", MediaStatus = "NoSuggestion", HasSuggestion = false, SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 1, Page = 1 });
@@ -294,7 +294,7 @@ public class PhotoGridTests : TestContext
         // [F5] Has a date suggestion → blue circle
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "sug.jpg", Path = "/test/sug.jpg", MediaStatus = "HasSuggestion", HasSuggestion = true }
+            new() { Name = "sug.jpg", Path = "/test/sug.jpg", MediaStatus = "HasSuggestion", HasSuggestion = true, SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 1, Page = 1 });
@@ -303,6 +303,23 @@ public class PhotoGridTests : TestContext
 
         var circle = cut.Find(".photo-grid-status-circle");
         circle.ClassName.Should().Contain("status-suggestion");
+    }
+
+    [Fact]
+    public void photoGrid_statusCircle_darkBlue_whenApproved()
+    {
+        // [F5-US-002] Approved suggestion → dark blue circle regardless of MediaStatus
+        var items = new List<PhotoGridItem>
+        {
+            new() { Name = "approved.jpg", Path = "/test/approved.jpg", MediaStatus = "HasSuggestion", SuggestionStatus = "approved", HasSuggestion = true }
+        };
+        _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(new PhotoGridResponse { Items = items, TotalCount = 1, Page = 1 });
+
+        var cut = RenderComponent<PhotoGrid>(p => p.Add(c => c.SelectedFolderPath, "/test"));
+
+        var circle = cut.Find(".photo-grid-status-circle");
+        circle.ClassName.Should().Contain("status-approved");
     }
 
     // ──────────────────────────────────────────────
@@ -316,7 +333,7 @@ public class PhotoGridTests : TestContext
         var longName = "a-very-long-filename-that-should-be-truncated.jpg";
         var items = new List<PhotoGridItem>
         {
-            new() { Name = longName, Path = "/test/" + longName, IsDirectory = false, ThumbnailUrl = "/api/thumbnails/1" }
+            new() { Name = longName, Path = "/test/" + longName, IsDirectory = false, ThumbnailUrl = "/api/thumbnails/1", SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 1, Page = 1 });
@@ -339,7 +356,7 @@ public class PhotoGridTests : TestContext
         PhotoGridItem? selectedItem = null;
         var items = new List<PhotoGridItem>
         {
-            new() { Name = "photo1.jpg", Path = "/test/photo1.jpg", IsDirectory = false, ThumbnailUrl = "/api/thumbnails/1" }
+            new() { Name = "photo1.jpg", Path = "/test/photo1.jpg", IsDirectory = false, ThumbnailUrl = "/api/thumbnails/1", SuggestionStatus = "" }
         };
         _photoClient.GetPhotosAsync(Arg.Any<string?>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(new PhotoGridResponse { Items = items, TotalCount = 1, Page = 1 });
@@ -374,7 +391,7 @@ public class PhotoGridTests : TestContext
                 {
                     Items =
                     [
-                        new() { Name = "subfolder", Path = "/test/subfolder", IsDirectory = true }
+                        new() { Name = "subfolder", Path = "/test/subfolder", IsDirectory = true, SuggestionStatus = "" }
                     ],
                     TotalCount = 1,
                     Page = 1

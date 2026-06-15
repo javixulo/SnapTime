@@ -218,7 +218,8 @@ app.MapGet("/api/photos", async (
                             MediaStatus.Pending,
                             HasSuggestion: false,
                             SuggestedDate: null,
-                            MediaType.Image));
+                            MediaType.Image,
+                            SuggestionReviewStatus.Unreviewed));
                     }
                 }
                 catch (UnauthorizedAccessException) { }
@@ -265,7 +266,8 @@ app.MapGet("/api/photos", async (
                         computedStatus,
                         asset.SuggestedDate.HasValue,
                         asset.SuggestedDate,
-                        asset.MediaType));
+                        asset.MediaType,
+                        asset.SuggestionStatus));
                 }
                 else
                 {
@@ -278,7 +280,8 @@ app.MapGet("/api/photos", async (
                         MediaStatus.Pending,
                         HasSuggestion: false,
                         SuggestedDate: null,
-                        mediaType));
+                        mediaType,
+                        SuggestionReviewStatus.Unreviewed));
                 }
             }
         }
@@ -305,7 +308,8 @@ app.MapGet("/api/photos", async (
                     computedStatus,
                     asset.SuggestedDate.HasValue,
                     asset.SuggestedDate,
-                    asset.MediaType));
+                    asset.MediaType,
+                    asset.SuggestionStatus));
             }
         }
 

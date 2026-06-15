@@ -10,5 +10,6 @@ public class PhotoGridItem
     public string? ThumbnailUrl { get; set; }
     public string MediaStatus { get; set; } = "Pending";
     public bool HasSuggestion { get; set; }
+    public string SuggestionStatus { get; set; } = "";
     public string MediaType { get; set; } = "Image";
 }

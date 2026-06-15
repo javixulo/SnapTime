@@ -220,6 +220,11 @@ else
         background: #2196f3;
     }
 
+    .photo-grid-status-circle.status-approved {
+        background: #1565C0;
+        box-shadow: 0 0 0 1px #0d47a1;
+    }
+
     .photo-grid-play-badge {
         position: absolute;
         bottom: 4px;
@@ -424,6 +429,10 @@ else
 
     private static string GetStatusClass(PhotoGridItem item)
     {
+        // Approved suggestions always show dark blue regardless of MediaStatus
+        if (string.Equals(item.SuggestionStatus, "approved", StringComparison.OrdinalIgnoreCase))
+            return "status-approved";
+
         return (item.MediaStatus ?? "").ToLowerInvariant() switch
         {
             "pending" => "status-pending",

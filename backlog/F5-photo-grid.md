@@ -58,3 +58,33 @@
 - **Frontend:** `PhotoGrid.razor` con CSS Grid, breadcrumb, subcarpetas, status circles, video badge, tooltip, file count, navegación interna independiente.
 - **Backend:** `GET /api/photos` con paginación, cross-reference con BD para assets escaneados, orden directorios + alfabético.
 
+---
+
+## F5-US-002 — Círculo de estado refleja sugerencias aceptadas 🔴 Pendiente
+
+> Cuando el usuario acepta una sugerencia (`SuggestionStatus = Approved`), el círculo de estado en el grid debe cambiar a azul oscuro (#1565C0), independientemente del `MediaStatus` del asset.
+
+**Estado actual:** Pendiente de implementar.
+
+### Cambios necesarios
+
+#### Backend (Kip)
+1. Añadir campo `SuggestionStatus` al record `PhotoGridItem` en `src/SnapTime.Server/Models/PhotoGridItem.cs`.
+2. En el handler `GET /api/photos` de `Program.cs`, poblar `SuggestionStatus` desde `asset.SuggestionStatus` al crear `PhotoGridItem` para assets en BD.
+
+#### Frontend (Karris)
+1. Añadir propiedad `SuggestionStatus` al DTO `PhotoGridItem` en `src/SnapTime.Client/Models/PhotoGridItem.cs`.
+2. Actualizar `GetStatusClass` en `PhotoGrid.razor` para que, si `SuggestionStatus` es `"approved"`, devuelva `"status-approved"` (azul oscuro), independientemente del `MediaStatus`.
+3. Añadir CSS `.status-approved { background: #1565C0; }` en `PhotoGrid.razor`.
+
+#### Tests (Janus)
+1. Actualizar tests bUnit existentes para incluir `SuggestionStatus` en los mocks de `PhotoGridItem`.
+2. Añadir test `photoGrid_statusCircle_darkBlue_whenApproved` que verifique que el círculo tiene clase `status-approved` cuando `SuggestionStatus = "approved"`.
+
+### Criterios de aceptación
+- [ ] Backend: `PhotoGridItem` incluye `SuggestionStatus` poblado desde la BD.
+- [ ] Frontend: círculo del grid cambia a azul oscuro (#1565C0) cuando `SuggestionStatus` es Approved.
+- [ ] Frontend: el resto de colores se mantienen igual (gris, verde, rojo, amarillo, azul claro).
+- [ ] Tests bUnit: nuevo test para estado approved + tests existentes siguen verdes.
+- [ ] Compilación sin errores.
+
