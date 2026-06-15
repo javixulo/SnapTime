@@ -10,6 +10,7 @@ using SnapTime.Infrastructure.Config;
 using SnapTime.Infrastructure.Data;
 using SnapTime.Infrastructure.Logging;
 using SnapTime.Infrastructure.Services;
+using SnapTime.Domain.Models;
 using SnapTime.Server.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,6 +68,7 @@ builder.Services.AddScoped<IHeuristicEngine>(sp =>
 });
 builder.Services.AddScoped<IScanJobService, ScanJobService>();
 builder.Services.AddScoped<IExifWriter, ExifWriter>();
+builder.Services.AddScoped<IApplyService, ApplyService>();
 
 var app = builder.Build();
 
@@ -635,53 +637,24 @@ app.MapPost("/api/reviews/batch", async (BatchReviewRequest request, SnapTimeDbC
 })
 .WithName("ReviewBatch");
 
-// [F8-US-001] Apply approved suggestions to media assets
-app.MapPost("/api/apply", async (ApplyChangesRequest request, SnapTimeDbContext db) =>
+// [F8-US-003] Apply approved suggestions via IApplyService
+app.MapPost("/api/apply", async (ApplyChangesRequest request, IApplyService applyService, CancellationToken ct) =>
 {
     if (request.MediaAssetIds is null)
         return Results.BadRequest(new { error = "mediaAssetIds is required" });
 
-    var results = new List<ApplyResult>(request.MediaAssetIds.Count);
-    var appliedCount = 0;
-
-    foreach (var id in request.MediaAssetIds)
+    try
     {
-        var asset = await db.MediaAssets.FindAsync(id);
-        if (asset is null)
-        {
-            results.Add(new ApplyResult(id, string.Empty, false, "NotFound"));
-            continue;
-        }
-
-        if (asset.SuggestionStatus != SuggestionReviewStatus.Approved)
-        {
-            results.Add(new ApplyResult(id, asset.FileName, false, "NotApproved"));
-            continue;
-        }
-
-        if (asset.SuggestedDate is null)
-        {
-            results.Add(new ApplyResult(id, asset.FileName, false, "NoSuggestedDate"));
-            continue;
-        }
-
-        // TODO [F8-US-002] Replace with IExifWriter.WriteAsync
-        try
-        {
-            System.IO.File.SetLastWriteTime(asset.FilePath, asset.SuggestedDate.Value);
-            results.Add(new ApplyResult(id, asset.FileName, true, null));
-            appliedCount++;
-        }
-        catch (Exception ex)
-        {
-            results.Add(new ApplyResult(id, asset.FileName, false, ex.Message));
-        }
+        var response = await applyService.ApplyAsync(request, ct);
+        return Results.Ok(response);
     }
-
-    return Results.Ok(new ApplyChangesResponse(
-        results, appliedCount, results.Count - appliedCount, DateTime.UtcNow));
+    catch (InvalidOperationException ex) when (ex.Message.Contains("scan job is currently running"))
+    {
+        return Results.Conflict(new { error = ex.Message });
+    }
 })
-.WithName("ApplyChanges");
+.WithName("ApplyChanges")
+.WithTags("Apply");
 
 if (app.Environment.IsDevelopment())
 {

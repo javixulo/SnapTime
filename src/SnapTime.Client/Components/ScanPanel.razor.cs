@@ -128,7 +128,7 @@ public partial class ScanPanel : IAsyncDisposable
             while (await timer.WaitForNextTickAsync(ct))
             {
                 // If the job is no longer running, stop polling
-                if (_currentJob?.Status is not ("Running" or "Paused"))
+                if (_currentJob?.Status is not ("running" or "paused"))
                     break;
 
                 ScanJobDto? job;
@@ -155,7 +155,7 @@ public partial class ScanPanel : IAsyncDisposable
                 _processed = job.ProcessedFiles;
                 _total = job.TotalFiles;
 
-                if (job.Status is "Completed")
+                if (string.Equals(job.Status, "completed", StringComparison.OrdinalIgnoreCase))
                 {
                     _state = "Completed";
                     _isScanning = false;
@@ -163,7 +163,7 @@ public partial class ScanPanel : IAsyncDisposable
                     await InvokeAsync(StateHasChanged);
                     break;
                 }
-                if (job.Status is "Cancelled")
+                if (string.Equals(job.Status, "cancelled", StringComparison.OrdinalIgnoreCase))
                 {
                     _state = "Cancelled";
                     _isScanning = false;
@@ -171,7 +171,7 @@ public partial class ScanPanel : IAsyncDisposable
                     await InvokeAsync(StateHasChanged);
                     break;
                 }
-                if (job.Status is "Error")
+                if (string.Equals(job.Status, "error", StringComparison.OrdinalIgnoreCase))
                 {
                     _state = "error";
                     _error = "Error en el escaneo";

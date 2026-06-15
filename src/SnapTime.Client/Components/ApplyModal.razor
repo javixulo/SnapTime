@@ -1,0 +1,162 @@
+@* [F8-US-005] Apply confirmation modal *@
+@using SnapTime.Client.Models
+@inject HttpClient Http
+
+@if (_isVisible)
+{
+<div class="modal-overlay" @onclick="HandleOverlayClick">
+    <div class="modal-content apply-modal" @onclick:stopPropagation>
+        <div class="modal-header">
+            <h3>Aplicar cambios</h3>
+            <button class="modal-close" @onclick="HandleCancel">×</button>
+        </div>
+
+        @if (_isApplying)
+        {
+            <div class="modal-body">
+                <div class="apply-loading">Aplicando cambios...</div>
+            </div>
+        }
+        else if (_result != null)
+        {
+            <div class="modal-body">
+                <h4>Resultado</h4>
+                <div class="apply-summary">
+                    <span class="apply-success">Aplicados: @_result.AppliedCount</span>
+                    <span class="apply-failure">Fallos: @_result.FailedCount</span>
+                </div>
+                @if (_result.Results.Any(r => !r.Success))
+                {
+                    <div class="apply-errors">
+                        <h5>Errores:</h5>
+                        <ul>
+                            @foreach (var r in _result.Results.Where(r => !r.Success))
+                            {
+                                <li><strong>@r.FileName</strong>: @r.Error</li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" @onclick="HandleClose">Cerrar</button>
+            </div>
+        }
+        else
+        {
+            <div class="modal-body">
+                @if (_assets != null && _assets.Any())
+                {
+                    <p>Se van a aplicar cambios a <strong>@_assets.Count</strong> archivo(s):</p>
+                    <div class="apply-list">
+                        @foreach (var asset in _assets)
+                        {
+                            <div class="apply-item">
+                                <span class="apply-item-name">@asset.FileName</span>
+                                <span class="apply-item-old">@asset.DateTimeOriginal?.ToString("dd/MM/yyyy") ?? "—"</span>
+                                <span class="apply-item-arrow">→</span>
+                                <span class="apply-item-new"><strong>@asset.SuggestedDate?.ToString("dd/MM/yyyy")</strong></span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p>No hay archivos seleccionados para aplicar cambios.</p>
+                }
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="HandleCancel">Cancelar</button>
+                <button class="btn btn-primary" @onclick="HandleApply" disabled="@(!_canApply)">Aplicar</button>
+            </div>
+        }
+    </div>
+</div>
+}
+
+@code {
+    private bool _isVisible;
+    private bool _isApplying;
+    private bool _canApply = true;
+    private List<MediaAssetDto>? _assets;
+    private ApplyChangesResponse? _result;
+
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public List<MediaAssetDto>? Assets { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        _isVisible = IsVisible;
+        _assets = Assets;
+        _result = null;
+        _isApplying = false;
+        _canApply = Assets?.Any(a => a.SuggestedDate.HasValue) ?? false;
+    }
+
+    private async Task HandleApply()
+    {
+        if (_assets == null || !_assets.Any()) return;
+
+        _isApplying = true;
+        _canApply = false;
+
+        try
+        {
+            var request = new ApplyChangesRequest
+            {
+                MediaAssetIds = _assets.Select(a => a.Id).ToList()
+            };
+            var response = await Http.PostAsJsonAsync("/api/apply", request);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                _result = new ApplyChangesResponse
+                {
+                    Results = new List<ApplyResult>(),
+                    AppliedCount = 0,
+                    FailedCount = 0
+                };
+            }
+            else
+            {
+                response.EnsureSuccessStatusCode();
+                _result = await response.Content.ReadFromJsonAsync<ApplyChangesResponse>();
+            }
+        }
+        catch (Exception ex)
+        {
+            _result = new ApplyChangesResponse
+            {
+                Results = new List<ApplyResult>
+                {
+                    new() { Success = false, Error = ex.Message }
+                },
+                AppliedCount = 0,
+                FailedCount = 1
+            };
+        }
+        finally
+        {
+            _isApplying = false;
+        }
+    }
+
+    private async Task HandleCancel()
+    {
+        _isVisible = false;
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task HandleClose()
+    {
+        _isVisible = false;
+        await OnClose.InvokeAsync();
+    }
+
+    private void HandleOverlayClick()
+    {
+        if (!_isApplying)
+            _ = HandleCancel();
+    }
+}

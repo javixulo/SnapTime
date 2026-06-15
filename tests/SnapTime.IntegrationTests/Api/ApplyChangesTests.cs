@@ -39,8 +39,8 @@ public class ApplyChangesTests
             // Create two temp files that will be referenced by the seeded MediaAssets
             var file1 = Path.Combine(tempDir, "a.jpg");
             var file2 = Path.Combine(tempDir, "b.jpg");
-            File.WriteAllBytes(file1, new byte[] { 1, 2, 3 });
-            File.WriteAllBytes(file2, new byte[] { 4, 5, 6 });
+            CreateMinimalJpeg(file1);
+            CreateMinimalJpeg(file2);
 
             var id1 = Guid.NewGuid();
             var id2 = Guid.NewGuid();
@@ -177,8 +177,8 @@ public class ApplyChangesTests
         {
             var approvedFile = Path.Combine(tempDir, "approved.jpg");
             var unapprovedFile = Path.Combine(tempDir, "unapproved.jpg");
-            File.WriteAllBytes(approvedFile, new byte[] { 1 });
-            File.WriteAllBytes(unapprovedFile, new byte[] { 2 });
+            CreateMinimalJpeg(approvedFile);
+            CreateMinimalJpeg(unapprovedFile);
 
             var idApproved = Guid.NewGuid();
             var idUnapproved = Guid.NewGuid();
@@ -262,5 +262,18 @@ public class ApplyChangesTests
         {
             try { Directory.Delete(tempDir, recursive: true); } catch { }
         }
+    }
+
+    private static void CreateMinimalJpeg(string path)
+    {
+        var jpeg = new byte[]
+        {
+            0xFF, 0xD8,
+            0xFF, 0xE1,
+            0x00, 0x08,
+            0x45, 0x78, 0x69, 0x66, 0x00, 0x00,
+            0xFF, 0xD9
+        };
+        File.WriteAllBytes(path, jpeg);
     }
 }

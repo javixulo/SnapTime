@@ -424,13 +424,13 @@ else
 
     private static string GetStatusClass(PhotoGridItem item)
     {
-        return item.MediaStatus switch
+        return (item.MediaStatus ?? "").ToLowerInvariant() switch
         {
-            "Pending" => "status-pending",
-            "Correct" => "status-correct",
-            "Error" => "status-error",
-            "NoSuggestion" => "status-no-suggestion",
-            "HasSuggestion" => "status-suggestion",
+            "pending" => "status-pending",
+            "correct" => "status-correct",
+            "error" => "status-error",
+            "nosuggestion" => "status-no-suggestion",
+            "hassuggestion" => "status-suggestion",
             _ => "status-pending"
         };
     }
