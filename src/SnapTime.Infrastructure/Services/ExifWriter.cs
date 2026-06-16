@@ -138,7 +138,7 @@ public class ExifWriter : IExifWriter
         using var app1Writer = new BinaryWriter(app1Ms);
         app1Writer.Write((byte)0xFF);
         app1Writer.Write((byte)0xE1);
-        app1Writer.Write((short)(exifData.Length + 8));
+        app1Writer.Write((short)(exifData.Length + 6));
         app1Writer.Write(Encoding.ASCII.GetBytes("Exif\0\0"));
         app1Writer.Write(exifData);
 
