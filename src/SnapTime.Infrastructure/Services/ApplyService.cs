@@ -58,7 +58,7 @@ public class ApplyService : IApplyService
 
             // Get original date from metadata
             DateTime? originalDate = asset.MetadataEntries?
-                .FirstOrDefault(m => m.Tag == "EXIF:DateTimeOriginal" || m.Tag == "QuickTime:CreateDate")
+                .FirstOrDefault(m => m.Tag is "Exif SubIFD:Date/Time Original" or "Exif IFD0:Date/Time" or "QuickTime Movie Header:Created")
                 ?.Value is string dateStr && DateTime.TryParse(dateStr, out var parsed)
                 ? parsed
                 : null;

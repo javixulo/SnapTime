@@ -215,11 +215,15 @@ public class ExifWriter : IExifWriter
         var annotationBytes = Encoding.ASCII.GetBytes(annotation);
         var annotationPrefix = new byte[] { 0x41, 0x53, 0x43, 0x49, 0x49, 0x00, 0x00, 0x00 };
 
-        int tiffHeaderLen = 8;
-        int ifdEntries = 2;
-        int ifdHeaderLen = 2 + ifdEntries * 12 + 4;
-        int dateOffset = tiffHeaderLen + ifdHeaderLen;
-        int annotationOffset = dateOffset + dateBytes.Length;
+        int ifd0EntryCount = 1;
+        int ifd0Size = 2 + ifd0EntryCount * 12 + 4;
+
+        int exifEntryCount = 2;
+        int exifIfdSize = 2 + exifEntryCount * 12 + 4;
+
+        int exifIfdOffset = 8 + ifd0Size;
+        int dateOffset = exifIfdOffset + exifIfdSize;
+        int annotationOffset = dateOffset + 20;
 
         using var ms = new MemoryStream();
         using var writer = new BinaryWriter(ms);
@@ -229,7 +233,14 @@ public class ExifWriter : IExifWriter
         writer.Write((short)0x002A);
         writer.Write((int)8);
 
-        writer.Write((ushort)ifdEntries);
+        writer.Write((ushort)ifd0EntryCount);
+        writer.Write((ushort)0x8769);
+        writer.Write((ushort)4);
+        writer.Write((int)1);
+        writer.Write((int)exifIfdOffset);
+        writer.Write((int)0);
+
+        writer.Write((ushort)exifEntryCount);
 
         writer.Write((ushort)0x9003);
         writer.Write((ushort)2);
@@ -244,17 +255,18 @@ public class ExifWriter : IExifWriter
         writer.Write((int)0);
 
         writer.Write(dateBytes);
-
         writer.Write(annotationPrefix);
         writer.Write(annotationBytes);
 
         var exifData = ms.ToArray();
 
+        var len = (short)(exifData.Length + 8);
         using var app1Ms = new MemoryStream();
         using var app1Writer = new BinaryWriter(app1Ms);
         app1Writer.Write((byte)0xFF);
         app1Writer.Write((byte)0xE1);
-        app1Writer.Write((short)(exifData.Length + 6));
+        app1Writer.Write((byte)((len >> 8) & 0xFF));
+        app1Writer.Write((byte)(len & 0xFF));
         app1Writer.Write(Encoding.ASCII.GetBytes("Exif\0\0"));
         app1Writer.Write(exifData);
 

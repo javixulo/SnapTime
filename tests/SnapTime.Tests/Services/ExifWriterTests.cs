@@ -311,8 +311,30 @@ public class ExifWriterTests
 
         if (ifd0Start + 2 > bytes.Length) return null;
 
+        int ifdToSearch = ifd0Start;
+
         int entryCount = ReadTiffShort(bytes, ifd0Start, isLittleEndian);
         int entriesStart = ifd0Start + 2;
+
+        for (int i = 0; i < entryCount; i++)
+        {
+            int entryPos = entriesStart + i * 12;
+            if (entryPos + 12 > bytes.Length) break;
+
+            int tag = ReadTiffShort(bytes, entryPos, isLittleEndian);
+
+            if (tag == 0x8769)
+            {
+                int exifIfdOffset = ReadTiffInt(bytes, entryPos + 8, isLittleEndian);
+                ifdToSearch = tiffStart + exifIfdOffset;
+                break;
+            }
+        }
+
+        if (ifdToSearch + 2 > bytes.Length) return null;
+
+        entryCount = ReadTiffShort(bytes, ifdToSearch, isLittleEndian);
+        entriesStart = ifdToSearch + 2;
 
         for (int i = 0; i < entryCount; i++)
         {
