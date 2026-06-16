@@ -732,6 +732,20 @@ app.MapPut("/api/config", (ConfigUpdateRequest request, ConfigService config, Sn
     return Results.Ok(config.Current);
 });
 
+// [F10-US-001] Clear all scan data (preserves settings)
+app.MapPost("/api/clear", async (SnapTimeDbContext db) =>
+{
+    await db.MetadataEntries.ExecuteDeleteAsync();
+    await db.EvidenceEntries.ExecuteDeleteAsync();
+    await db.MediaAssets.ExecuteDeleteAsync();
+    await db.AuditEntries.ExecuteDeleteAsync();
+    await db.ScanJobs.ExecuteDeleteAsync();
+
+    return Results.Ok(new { cleared = true });
+})
+.WithName("ClearData")
+.WithTags("Maintenance");
+
 app.Run();
 
 static IResult? ValidateCreateJobRequest(CreateJobRequest request)

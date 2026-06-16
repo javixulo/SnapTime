@@ -9,6 +9,7 @@ public partial class BatchActions : IDisposable
     private IScanStateService? _scanStateService;
     private IReviewClient? _reviewClient;
     private bool _showConfirmModal;
+    private bool _showClearModal;
     private string? _errorMessage;
     private string _pendingStatus = "";
     private string _pendingScope = "";
@@ -94,6 +95,31 @@ public partial class BatchActions : IDisposable
         _errorMessage = null;
         _pendingScope = "";
         _pendingStatus = "";
+    }
+
+    private void OpenClearModal()
+    {
+        _showClearModal = true;
+    }
+
+    private void CancelClearModal()
+    {
+        _showClearModal = false;
+    }
+
+    private async Task ConfirmClearAsync()
+    {
+        _showClearModal = false;
+        try
+        {
+            var response = await Http.PostAsync("/api/clear", null);
+            response.EnsureSuccessStatusCode();
+            await OnBatchReviewCompleted.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error al limpiar datos: {ex.Message}";
+        }
     }
 
     private string AcceptAllClass => "btn-accept-all" + (IsDisabled ? " disabled" : "");
