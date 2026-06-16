@@ -4,6 +4,7 @@
 @implements IDisposable
 @inject IScanStateService ScanStateService
 @inject IPhotoClient PhotoClient
+@inject HttpClient Http
 
 <PageTitle>SnapTime</PageTitle>
 
@@ -16,6 +17,9 @@
             <BatchActions OnBatchReviewCompleted="@HandleBatchReviewCompleted" HasRecommendations="@_hasRecommendations"
                           RecommendationCount="@_recommendationCount"
                           CurrentFolderPath="@_selectedPath" />
+            <button class="btn-start" @onclick="HandleStartAsync" disabled="@(!_canStart)">
+                Iniciar
+            </button>
         </div>
     </div>
 
@@ -45,6 +49,10 @@
     </div>
 </div>
 
+<ApplyModal IsVisible="@_showApplyModal"
+            Assets="@_approvedAssets"
+            OnClose="@HandleApplyModalClose" />
+
 @code {
     private string? _selectedPath;
     private Guid? _selectedPhotoId;
@@ -52,10 +60,14 @@
     private bool _hasRecommendations;
     private int _recommendationCount;
     private int _gridRefreshCounter;
+    private bool _showApplyModal;
+    private List<MediaAssetDto>? _approvedAssets;
+    private bool _canStart;
 
     protected override void OnInitialized()
     {
         ScanStateService.StateChanged += OnScanStateChanged;
+        UpdateCanStart();
     }
 
     public void Dispose()
@@ -65,6 +77,7 @@
 
     private async void OnScanStateChanged()
     {
+        UpdateCanStart();
         if (ScanStateService is { HasCompletedScan: true, IsScanning: false })
         {
             // Increment to force PhotoGrid to reload with fresh data from the DB
@@ -130,6 +143,34 @@
     {
         _gridRefreshCounter++;
         await UpdateRecommendationCountAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateCanStart()
+    {
+        _canStart = ScanStateService is { HasCompletedScan: true, IsScanning: false };
+    }
+
+    private async Task HandleStartAsync()
+    {
+        try
+        {
+            var response = await Http.GetFromJsonAsync<List<MediaAssetDto>>("/api/reviews/approved");
+            _approvedAssets = response;
+            _showApplyModal = true;
+        }
+        catch
+        {
+            // Si falla la carga de assets aprobados, ignoramos silenciosamente
+        }
+    }
+
+    private async Task HandleApplyModalClose()
+    {
+        _showApplyModal = false;
+        _approvedAssets = null;
+        // Refrescar el grid después de aplicar cambios
+        _gridRefreshCounter++;
         await InvokeAsync(StateHasChanged);
     }
 }
@@ -199,5 +240,25 @@
         font-style: italic;
         padding: 24px;
         text-align: center;
+    }
+    .btn-start {
+        padding: 6px 14px;
+        border: 1px solid #1976d2;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        background: #1976d2;
+        color: #fff;
+        transition: background 0.15s;
+    }
+    .btn-start:hover:not(:disabled) {
+        background: #1565c0;
+    }
+    .btn-start:disabled {
+        background: #90caf9;
+        border-color: #90caf9;
+        color: #fff;
+        cursor: not-allowed;
     }
 </style>

@@ -641,6 +641,31 @@ app.MapPost("/api/reviews/batch", async (BatchReviewRequest request, SnapTimeDbC
 })
 .WithName("ReviewBatch");
 
+// [F8-US-005] Get approved assets for apply modal
+app.MapGet("/api/reviews/approved", async (SnapTimeDbContext db) =>
+{
+    var assets = await db.MediaAssets
+        .Where(a => a.SuggestionStatus == SuggestionReviewStatus.Approved && a.SuggestedDate != null)
+        .OrderBy(a => a.FileName)
+        .Select(a => new MediaAssetDto(
+            a.Id,
+            a.FilePath,
+            a.FileName,
+            a.MediaType,
+            null, // DateTimeOriginal - not stored directly on entity
+            a.SuggestedDate,
+            a.ConfidenceScore,
+            a.SuggestedByHeuristic,
+            a.Status,
+            a.SuggestionStatus
+        ))
+        .ToListAsync();
+
+    return Results.Ok(assets);
+})
+.WithName("GetApprovedAssets")
+.WithTags("Reviews");
+
 // [F8-US-003] Apply approved suggestions via IApplyService
 app.MapPost("/api/apply", async (ApplyChangesRequest request, IApplyService applyService, CancellationToken ct) =>
 {
