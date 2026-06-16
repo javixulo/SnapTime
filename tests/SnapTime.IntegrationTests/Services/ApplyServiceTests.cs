@@ -57,7 +57,7 @@ public class ApplyServiceTests
                 new()
                 {
                     Id = Guid.NewGuid(),
-                    Tag = "EXIF:DateTimeOriginal",
+                    Tag = "Exif SubIFD:Date/Time Original",
                     Value = dateTimeOriginal.Value.ToString("yyyy:MM:dd HH:mm:ss"),
                     Source = "exif",
                     MediaAssetId = asset.Id

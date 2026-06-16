@@ -25,8 +25,8 @@ public class IMetadataExtractorTests
 
         results.Should().HaveCount(4);
         results.Should().AllSatisfy(e => e.Source.Should().Be("exif"));
-        results.Should().ContainSingle(e => e.Tag == "Exif SubIFD:DateTime Original");
-        results.Should().ContainSingle(e => e.Tag == "Exif SubIFD:Sub Sec Time Original");
+        results.Should().ContainSingle(e => e.Tag == "Exif SubIFD:Date/Time Original");
+        results.Should().ContainSingle(e => e.Tag == "Exif SubIFD:Sub-Sec Time Original");
         results.Should().ContainSingle(e => e.Tag == "Exif IFD0:Date/Time Digitized");
         results.Should().ContainSingle(e => e.Tag == "Exif IFD0:Date/Time");
     }

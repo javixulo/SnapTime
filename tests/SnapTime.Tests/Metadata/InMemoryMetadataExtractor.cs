@@ -54,7 +54,7 @@ public class InMemoryMetadataExtractor : IMetadataExtractor
         {
             entries.Add(new MetadataEntry
             {
-                Tag = "Exif SubIFD:DateTime Original",
+                Tag = "Exif SubIFD:Date/Time Original",
                 Value = dateTimeOriginal.Value.ToString("yyyy:MM:dd HH:mm:ss"),
                 Source = "exif"
             });
@@ -64,7 +64,7 @@ public class InMemoryMetadataExtractor : IMetadataExtractor
         {
             entries.Add(new MetadataEntry
             {
-                Tag = "Exif SubIFD:Sub Sec Time Original",
+                Tag = "Exif SubIFD:Sub-Sec Time Original",
                 Value = subSecDateTimeOriginal,
                 Source = "exif"
             });

@@ -62,7 +62,7 @@ public class PersistenceTests
         [
             new MetadataEntry
             {
-                Tag = "Exif SubIFD:DateTime Original",
+                Tag = "Exif SubIFD:Date/Time Original",
                 Value = "2024:01:01 12:00:00",
                 Source = "exif"
             }

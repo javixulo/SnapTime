@@ -194,7 +194,7 @@ public class ScanJobServiceIntegrationTests
                 new()
                 {
                     Id = Guid.NewGuid(),
-                    Tag = "EXIF:DateTimeOriginal",
+                    Tag = "Exif SubIFD:Date/Time Original",
                     Value = "2024:07:10 12:34:56",
                     Source = "exif"
                 }

@@ -220,7 +220,7 @@ public class H006FilenameHeuristicTests
                 new()
                 {
                     Id = Guid.NewGuid(),
-                    Tag = "EXIF:DateTimeOriginal",
+                    Tag = "Exif SubIFD:Date/Time Original",
                     Value = canonicalDate.Value.ToString("yyyy:MM:dd HH:mm:ss"),
                     Source = "exif",
                     MediaAssetId = asset.Id

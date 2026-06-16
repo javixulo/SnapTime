@@ -12,12 +12,13 @@ public class H006FilenameHeuristic : IHeuristic
 {
     private static readonly string[] DateTagPriority =
     [
-        "EXIF:SubSecDateTimeOriginal",
-        "EXIF:SubSecCreateDate",
-        "EXIF:DateTimeOriginal",
-        "EXIF:CreationDate",
-        "EXIF:CreateDate",
-        "QuickTime:MediaCreateDate"
+        "Exif SubIFD:Sub-Sec Time Original",
+        "Exif SubIFD:Date/Time Original",
+        "Exif IFD0:Date/Time Digitized",
+        "Exif IFD0:Date/Time",
+        "QuickTime Movie Header:Created",
+        "QuickTime Metadata:Creation Date",
+        "QuickTime Track Header:Created"
     ];
 
     private static readonly string[] ExifDateFormats =

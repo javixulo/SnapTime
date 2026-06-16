@@ -1,4 +1,3 @@
-// [F8-US-002] ExifWriter - writes EXIF DateTimeOriginal + UserComment for JPEG
 using System.Text;
 using SnapTime.Domain.Enums;
 using SnapTime.Domain.Interfaces;
@@ -20,7 +19,6 @@ public class ExifWriter : IExifWriter
             if (!File.Exists(filePath))
                 return new ExifWriteResult(false, "File not found");
 
-            // Check if file is read-only
             if (new FileInfo(filePath).IsReadOnly)
                 return new ExifWriteResult(false, "File is read-only");
 
@@ -29,7 +27,6 @@ public class ExifWriter : IExifWriter
                 case MediaType.Image:
                     return await WriteJpegAsync(filePath, newDate, originalDate, heuristicIds, ct);
                 case MediaType.Video:
-                    // TODO: Implement QuickTime metadata writing (F8-US-002 future)
                     return new ExifWriteResult(false, "Video metadata writing not yet implemented");
                 default:
                     return new ExifWriteResult(false, $"Unsupported media type: {mediaType}");
@@ -53,30 +50,152 @@ public class ExifWriter : IExifWriter
         if (bytes.Length < 2 || bytes[0] != 0xFF || bytes[1] != 0xD8)
             return new ExifWriteResult(false, "Not a valid JPEG file (SOI marker not found)");
 
-        // Build the EXIF annotation string
         var annotation = BuildAnnotation(originalDate, heuristicIds);
+        var dateStr = newDate.ToString("yyyy:MM:dd HH:mm:ss").PadRight(20, ' ');
 
-        // Build the new APP1 EXIF segment with DateTimeOriginal and UserComment
-        var app1Segment = BuildApp1Segment(newDate, annotation);
-
-        // Find existing APP1 marker (0xFFE1)
         int app1Start = FindMarker(bytes, 0xFFE1, 2);
 
         byte[] result;
-        if (app1Start > 0)
+        if (app1Start > 0 && TryUpdateDateTimeOriginal(bytes, app1Start, dateStr, out var patched))
         {
-            // Replace existing APP1 segment
-            int app1Len = 2 + ((bytes[app1Start + 2] << 8) | bytes[app1Start + 3]) + 2;
-            result = ReplaceSegment(bytes, app1Start, app1Len, app1Segment);
+            result = patched;
+        }
+        else if (app1Start > 0)
+        {
+            var app1Segment = BuildApp1Segment(dateStr, annotation);
+            int oldLen = 2 + ((bytes[app1Start + 2] << 8) | bytes[app1Start + 3]) + 2;
+            result = ReplaceSegment(bytes, app1Start, oldLen, app1Segment);
         }
         else
         {
-            // Insert new APP1 segment after SOI
+            var app1Segment = BuildApp1Segment(dateStr, annotation);
             result = InsertAfterMarker(bytes, 0xFFD8, app1Segment);
         }
 
         await File.WriteAllBytesAsync(filePath, result, ct);
         return new ExifWriteResult(true, null);
+    }
+
+    private static bool TryUpdateDateTimeOriginal(byte[] bytes, int app1Start, string dateStr, out byte[] result)
+    {
+        result = null;
+
+        int exifOffset = app1Start + 4;
+        if (exifOffset + 6 > bytes.Length)
+            return false;
+
+        string exifId = Encoding.ASCII.GetString(bytes, exifOffset, 6);
+        if (exifId != "Exif\0\0")
+            return false;
+
+        int tiffStart = exifOffset + 6;
+        if (tiffStart + 8 > bytes.Length)
+            return false;
+
+        bool isLittleEndian = (bytes[tiffStart] == 0x49 && bytes[tiffStart + 1] == 0x49);
+        if (!isLittleEndian && !(bytes[tiffStart] == 0x4D && bytes[tiffStart + 1] == 0x4D))
+            return false;
+
+        ushort magic = ReadU16(bytes, tiffStart + 2, isLittleEndian);
+        if (magic != 0x002A)
+            return false;
+
+        uint ifd0Off = ReadU32(bytes, tiffStart + 4, isLittleEndian);
+
+        uint exifIfdOff = FindTagValueOffset(bytes, tiffStart, ifd0Off, 0x8769, isLittleEndian);
+        if (exifIfdOff == 0)
+            return false;
+
+        uint dateValueOff = FindTagDataOffset(bytes, tiffStart, exifIfdOff, 0x9003, isLittleEndian);
+        if (dateValueOff == 0)
+            return false;
+
+        int fileOff = tiffStart + (int)dateValueOff;
+        if (fileOff + 20 > bytes.Length)
+            return false;
+
+        var dateBytes = Encoding.ASCII.GetBytes(dateStr);
+        Array.Copy(dateBytes, 0, bytes, fileOff, 20);
+
+        result = bytes;
+        return true;
+    }
+
+    private static uint FindTagValueOffset(byte[] data, int tiffBase, uint ifdOffset, ushort targetTag, bool le)
+    {
+        int pos = tiffBase + (int)ifdOffset;
+        if (pos + 2 > data.Length) return 0;
+
+        ushort count = ReadU16(data, pos, le);
+        pos += 2;
+
+        for (int i = 0; i < count; i++)
+        {
+            if (pos + 12 > data.Length) return 0;
+            ushort tag = ReadU16(data, pos, le);
+            if (tag == targetTag)
+                return ReadU32(data, pos + 8, le);
+            pos += 12;
+        }
+
+        return 0;
+    }
+
+    private static uint FindTagDataOffset(byte[] data, int tiffBase, uint ifdOffset, ushort targetTag, bool le)
+    {
+        int pos = tiffBase + (int)ifdOffset;
+        if (pos + 2 > data.Length) return 0;
+
+        ushort count = ReadU16(data, pos, le);
+        pos += 2;
+
+        for (int i = 0; i < count; i++)
+        {
+            if (pos + 12 > data.Length) return 0;
+            ushort tag = ReadU16(data, pos, le);
+            ushort type = ReadU16(data, pos + 2, le);
+            uint typeCount = ReadU32(data, pos + 4, le);
+            uint valueOrOffset = ReadU32(data, pos + 8, le);
+
+            if (tag == targetTag)
+            {
+                int typeSize = GetTypeSize(type);
+                if (typeSize == 0) return 0;
+                long totalBytes = typeSize * typeCount;
+                if (totalBytes <= 4)
+                    return (uint)(pos - tiffBase + 8);
+                return valueOrOffset;
+            }
+            pos += 12;
+        }
+
+        return 0;
+    }
+
+    private static int GetTypeSize(ushort type)
+    {
+        return type switch
+        {
+            1 => 1, 2 => 1, 6 => 1, 7 => 1,
+            3 => 2, 8 => 2,
+            4 => 4, 9 => 4, 11 => 4,
+            5 => 8, 10 => 8, 12 => 8,
+            _ => 0
+        };
+    }
+
+    private static ushort ReadU16(byte[] data, int offset, bool le)
+    {
+        return le
+            ? (ushort)(data[offset] | (data[offset + 1] << 8))
+            : (ushort)((data[offset] << 8) | data[offset + 1]);
+    }
+
+    private static uint ReadU32(byte[] data, int offset, bool le)
+    {
+        return le
+            ? (uint)(data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24))
+            : (uint)((data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3]);
     }
 
     private static string BuildAnnotation(DateTime? originalDate, IReadOnlyList<string> heuristicIds)
@@ -90,10 +209,9 @@ public class ExifWriter : IExifWriter
         return $"SnapTime;original={origStr};heuristics={heurStr}";
     }
 
-    private static byte[] BuildApp1Segment(DateTime newDate, string annotation)
+    private static byte[] BuildApp1Segment(string dateStr, string annotation)
     {
-        var dateStr = newDate.ToString("yyyy:MM:dd HH:mm:ss");
-        var dateBytes = Encoding.ASCII.GetBytes(dateStr.PadRight(20, ' '));
+        var dateBytes = Encoding.ASCII.GetBytes(dateStr);
         var annotationBytes = Encoding.ASCII.GetBytes(annotation);
         var annotationPrefix = new byte[] { 0x41, 0x53, 0x43, 0x49, 0x49, 0x00, 0x00, 0x00 };
 
@@ -102,8 +220,6 @@ public class ExifWriter : IExifWriter
         int ifdHeaderLen = 2 + ifdEntries * 12 + 4;
         int dateOffset = tiffHeaderLen + ifdHeaderLen;
         int annotationOffset = dateOffset + dateBytes.Length;
-
-        int totalExifLen = tiffHeaderLen + ifdHeaderLen + dateBytes.Length + annotationBytes.Length + annotationPrefix.Length;
 
         using var ms = new MemoryStream();
         using var writer = new BinaryWriter(ms);
