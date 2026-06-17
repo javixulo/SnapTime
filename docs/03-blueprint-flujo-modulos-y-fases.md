@@ -119,6 +119,7 @@ flowchart TB
   - Fotos: se escribe en `EXIF:DateTimeOriginal`.
   - Vídeos: se escribe en `QuickTime:CreateDate`.
   - Junto con la fecha, se anota el valor original y la heurística responsable en `EXIF UserComment` (fotos) o `QuickTime ©cmt` (vídeos), con formato: `SnapTime;original=YYYY-MM-DDTHH:mm:ss;heuristics=H-XXX,H-YYY`.
+  - La escritura se realiza mediante **Magick.NET-Q16-AnyCPU** (ImageMagick wrapper), que reemplazó la manipulación binaria TIFF/JPEG casera (ver `backlog/F9-replace-exifwriter.md`).
 - Referencia: `docs/00-vision-y-alcance.md §8`.
 
 ### 4.2) Reglas baseline

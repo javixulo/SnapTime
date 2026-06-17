@@ -3,6 +3,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Magick.NET-Q16-AnyCPU" Version="14.14.0" />
     <PackageVersion Include="MetadataExtractor" Version="2.9.3" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11" />

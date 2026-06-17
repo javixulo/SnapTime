@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using FluentAssertions;
+using ImageMagick;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SnapTime.Domain.Entities;
 using SnapTime.Domain.Enums;
@@ -266,14 +267,8 @@ public class ApplyChangesTests
 
     private static void CreateMinimalJpeg(string path)
     {
-        var jpeg = new byte[]
-        {
-            0xFF, 0xD8,
-            0xFF, 0xE1,
-            0x00, 0x08,
-            0x45, 0x78, 0x69, 0x66, 0x00, 0x00,
-            0xFF, 0xD9
-        };
-        File.WriteAllBytes(path, jpeg);
+        using var image = new MagickImage(MagickColors.White, 1, 1);
+        image.Format = MagickFormat.Jpeg;
+        image.Write(path);
     }
 }

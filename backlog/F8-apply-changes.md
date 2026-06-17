@@ -110,9 +110,9 @@ Acceptance: implementation writes expected EXIF/QuickTime tags + UserComment/©c
 
 Acceptance: tests confirman que la anotación se escribe y parsea correctamente.
 
-**Criterios cumplidos:**
+**Criterios cumplidos (NOTA: implementación reemplazada por Magick.NET en F9):**
 - [x] IExifWriter interfaz creada en Domain/Interfaces con record ExifWriteResult
-- [x] ExifWriter implementado en Infrastructure/Services (manipulación binaria EXIF, sin deps externas)
+- [x] ~~ExifWriter implementado en Infrastructure/Services (manipulación binaria EXIF, sin deps externas)~~ → **Reemplazado por Magick.NET-Q16-AnyCPU en F9**
 - [x] Escribe EXIF:DateTimeOriginal (tag 0x9003) en JPEG
 - [x] Escribe EXIF UserComment (tag 0x9286) con formato SnapTime;original=...;heuristics=...
 - [x] originalDate null → "original=unknown"
