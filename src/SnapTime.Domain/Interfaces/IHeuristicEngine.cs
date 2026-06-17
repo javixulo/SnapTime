@@ -14,9 +14,11 @@ public interface IHeuristicEngine
     /// Evaluates a list of evidence entries and computes the analysis result.
     /// </summary>
     /// <param name="evidence">All evidence entries collected for a single media asset.</param>
+    /// <param name="currentCaptureDate">Current EXIF capture date of the asset, if available. Used to detect when heuristics confirm an existing date.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The computed heuristic result with status, score, and optional suggestion.</returns>
     Task<HeuristicResult> EvaluateAsync(
         IReadOnlyList<EvidenceEntry> evidence,
+        DateTime? currentCaptureDate,
         CancellationToken ct);
 }

@@ -115,7 +115,7 @@ public class ScanJobServiceIntegrationTests
             var jobRunner = Substitute.For<IBackgroundJobRunner>();
             var logger = Substitute.For<ILogger<ScanJobService>>();
             var heuristicEngine = Substitute.For<IHeuristicEngine>();
-            heuristicEngine.EvaluateAsync(Arg.Any<IReadOnlyList<EvidenceEntry>>(), Arg.Any<CancellationToken>())
+            heuristicEngine.EvaluateAsync(Arg.Any<IReadOnlyList<EvidenceEntry>>(), Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
                 .Returns(new HeuristicResult { Status = MediaStatus.Correct, ConfidenceScore = 0 });
 
             var services = new ServiceCollection();
@@ -264,7 +264,7 @@ public class ScanJobServiceIntegrationTests
         var jobRunner = Substitute.For<IBackgroundJobRunner>();
         var logger = Substitute.For<ILogger<ScanJobService>>();
         var heuristicEngine = Substitute.For<IHeuristicEngine>();
-        heuristicEngine.EvaluateAsync(Arg.Any<IReadOnlyList<EvidenceEntry>>(), Arg.Any<CancellationToken>())
+        heuristicEngine.EvaluateAsync(Arg.Any<IReadOnlyList<EvidenceEntry>>(), Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
             .Returns(new HeuristicResult { Status = MediaStatus.Correct, ConfidenceScore = 0 });
 
         var services = new ServiceCollection();

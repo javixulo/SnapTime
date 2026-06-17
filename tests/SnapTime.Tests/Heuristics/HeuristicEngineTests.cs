@@ -42,7 +42,7 @@ public class HeuristicEngineTests
         var engine = new HeuristicEngine(confidenceThreshold: 80);
 
         // Act
-        var result = await engine.EvaluateAsync(evidence, CancellationToken.None);
+        var result = await engine.EvaluateAsync(evidence, null, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -86,7 +86,7 @@ public class HeuristicEngineTests
         var engine = new HeuristicEngine(confidenceThreshold: 80);
 
         // Act
-        var result = await engine.EvaluateAsync(evidence, CancellationToken.None);
+        var result = await engine.EvaluateAsync(evidence, null, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -108,7 +108,7 @@ public class HeuristicEngineTests
         var engine = new HeuristicEngine(confidenceThreshold: 80);
 
         // Act
-        var result = await engine.EvaluateAsync(evidence, CancellationToken.None);
+        var result = await engine.EvaluateAsync(evidence, null, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -120,14 +120,15 @@ public class HeuristicEngineTests
     }
 
     /// <summary>
-    /// Correction evidence with weight ≥ confidenceThreshold (80%)
-    /// → SuggestedDate assigned, SuggestionReviewStatus = Unreviewed, AnalysisStatus = HasSuggestion.
+    /// Correction evidence with weight ≥ confidenceThreshold (80%) and SuggestedDate
+    /// differs from currentCaptureDate → HasSuggestion.
     /// </summary>
     [Fact]
-    public async Task EvaluateAsync_DominantCorrectionEvidence_ReturnsSuggestedDateAndUnreviewed()
+    public async Task EvaluateAsync_DominantCorrectionWithDifferentDate_ReturnsHasSuggestion()
     {
         // Arrange
         var assetId = Guid.NewGuid();
+        var currentDate = new DateTime(2024, 1, 1, 0, 0, 0);
         var suggestedDate = new DateTime(2025, 3, 15, 5, 0, 0);
         var evidence = new List<EvidenceEntry>
         {
@@ -146,7 +147,7 @@ public class HeuristicEngineTests
         var engine = new HeuristicEngine(confidenceThreshold: 80);
 
         // Act
-        var result = await engine.EvaluateAsync(evidence, CancellationToken.None);
+        var result = await engine.EvaluateAsync(evidence, currentDate, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -154,6 +155,46 @@ public class HeuristicEngineTests
         result.SuggestedByHeuristic.Should().Be("H-006");
         result.SuggestionReviewStatus.Should().Be(SuggestionReviewStatus.Unreviewed);
         result.Status.Should().Be(MediaStatus.HasSuggestion);
+        result.ConfidenceScore.Should().BeGreaterThan(0);
+    }
+
+    /// <summary>
+    /// Correction evidence with weight ≥ confidenceThreshold (80%) and SuggestedDate
+    /// matches currentCaptureDate (same day, different time) → Correct (no suggestion needed).
+    /// Solo se compara día, mes y año.
+    /// </summary>
+    [Fact]
+    public async Task EvaluateAsync_DominantCorrectionWithMatchingDate_ReturnsCorrect()
+    {
+        // Arrange
+        var assetId = Guid.NewGuid();
+        var currentDate = new DateTime(2025, 3, 15, 10, 30, 0);
+        var suggestedDate = new DateTime(2025, 3, 15, 5, 0, 0);
+        var evidence = new List<EvidenceEntry>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                HeuristicId = "H-006",
+                HeuristicName = "FilenameHeuristic",
+                Weight = 0.9,
+                Direction = EvidenceDirection.Correction,
+                SuggestedDate = suggestedDate,
+                MediaAssetId = assetId
+            }
+        };
+
+        var engine = new HeuristicEngine(confidenceThreshold: 80);
+
+        // Act
+        var result = await engine.EvaluateAsync(evidence, currentDate, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Status.Should().Be(MediaStatus.Correct);
+        result.SuggestedDate.Should().BeNull();
+        result.SuggestedByHeuristic.Should().BeNull();
+        result.SuggestionReviewStatus.Should().BeNull();
         result.ConfidenceScore.Should().BeGreaterThan(0);
     }
 
@@ -184,7 +225,7 @@ public class HeuristicEngineTests
         var engine = new HeuristicEngine(confidenceThreshold: 80);
 
         // Act
-        var result = await engine.EvaluateAsync(evidence, CancellationToken.None);
+        var result = await engine.EvaluateAsync(evidence, null, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -220,7 +261,7 @@ public class HeuristicEngineTests
         };
 
         // Act
-        var firstResult = await engine.EvaluateAsync(firstEvidence, CancellationToken.None);
+        var firstResult = await engine.EvaluateAsync(firstEvidence, null, CancellationToken.None);
 
         // Second evaluation: correction evidence → HasSuggestion with date
         var suggestedDate = new DateTime(2025, 6, 10, 5, 0, 0);
@@ -238,7 +279,7 @@ public class HeuristicEngineTests
             }
         };
 
-        var secondResult = await engine.EvaluateAsync(secondEvidence, CancellationToken.None);
+        var secondResult = await engine.EvaluateAsync(secondEvidence, null, CancellationToken.None);
 
         // Assert first result
         firstResult.Should().NotBeNull();

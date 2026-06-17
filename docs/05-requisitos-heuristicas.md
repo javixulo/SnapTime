@@ -96,6 +96,26 @@ Cada heurística se documentará con esta plantilla:
   - Nombre `20250315_123456.jpg` sin metadatos → sugerencia 2025-03-15 05:00 (P1).
 - **Estado:** activa.
 
-## 7) Nota sobre dataset de validación
+## 7) Reglas del motor heurístico (HeuristicEngine)
+
+El `HeuristicEngine` agrega todas las evidencias recolectadas y produce un `HeuristicResult` con estado, score y sugerencia opcional.
+
+### Reglas de asignación de estado
+
+| Condición | Estado asignado |
+|---|---|
+| Sin evidencias | `Correct` (verde) |
+| Corrección dominante con peso ≥ umbral y `SuggestedDate != currentCaptureDate` | `HasSuggestion` (azul) |
+| Corrección dominante con peso ≥ umbral y `SuggestedDate == currentCaptureDate` | `Correct` (verde) — la fecha ya es correcta |
+| Correcciones que no alcanzan el umbral | `NoSuggestion` (#ffc107) |
+| Evidencia mixta positiva/negativa con score ≥ umbral | `Correct` (verde) |
+| Evidencia mixta positiva/negativa con score < umbral | `NoSuggestion` (#ffc107) |
+
+### Comportamiento clave
+- Cuando una heurística (ej. H-006) extrae una fecha del nombre del archivo que **coincide exactamente** con la fecha EXIF del archivo, el motor asigna `Correct` en lugar de `HasSuggestion`. Esto evita mostrar sugerencias innecesarias para archivos cuya fecha ya es correcta.
+- La fecha EXIF actual se extrae de los metadatos del archivo (tags `Exif SubIFD:Date/Time Original`, `Exif IFD0:Date/Time` o `QuickTime Movie Header:Created`) y se pasa al engine como `currentCaptureDate`.
+- El estado `Error` (rojo) está definido en el enum `MediaStatus` pero **nunca se asigna en producción**. No tiene representación visual en la UI.
+
+## 8) Nota sobre dataset de validación
 - El dataset de validación real se incorporará progresivamente.
 - Mientras tanto, los escenarios relevantes se cubrirán mediante tests unitarios representativos.

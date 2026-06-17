@@ -20,6 +20,7 @@ public enum MediaType { Image, Video }
 public enum SelectionState { Selected, None, Partial }
 
 /// <summary>Estado del análisis de la foto. Determina el círculo de color en el grid.</summary>
+/// Nota: `Error` está definido en el enum pero nunca se asigna en producción (obsoleto).
 public enum MediaStatus { Pending, Correct, Error, NoSuggestion, HasSuggestion }
 
 /// <summary>Estado de revisión de la sugerencia (si existe).</summary>

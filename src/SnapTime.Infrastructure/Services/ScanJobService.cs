@@ -329,7 +329,12 @@ public class ScanJobService : IScanJobService
             }
 
             // [F7-US-002] Run HeuristicEngine after all evidence is collected
-            var heuristicResult = await _heuristicEngine.EvaluateAsync(asset.EvidenceEntries, ct);
+            var originalDate = asset.MetadataEntries?
+                .FirstOrDefault(m => m.Tag is "Exif SubIFD:Date/Time Original" or "Exif IFD0:Date/Time" or "QuickTime Movie Header:Created")
+                ?.Value is string dateStr && DateTime.TryParse(dateStr, out var parsed)
+                ? parsed
+                : (DateTime?)null;
+            var heuristicResult = await _heuristicEngine.EvaluateAsync(asset.EvidenceEntries, originalDate, ct);
             asset.Status = heuristicResult.Status;
             asset.ConfidenceScore = heuristicResult.ConfidenceScore;
             asset.SuggestedDate = heuristicResult.SuggestedDate;

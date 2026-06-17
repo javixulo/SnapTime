@@ -11,7 +11,7 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 - **Pantalla única** con paneles (sin navegación entre páginas).
 - **Panel superior**: estado del proceso, métricas básicas y botones de control. Ocupa todo el ancho.
 - **Panel izquierdo** (20%): estructura de carpetas en árbol estilo Windows.
-- **Panel central** (60%): grid de miniaturas. Barra de breadcrumb con contador de archivos. Sin Virtualize — carga manual con `@foreach` + `CancellationTokenSource`. Navegación interna (doble click subcarpeta) independiente del árbol izquierdo. Estados visuales: círculo de 16px (gris pendiente, verde correcto, rojo error, #ffc107 sin sugerencia, azul con sugerencia). Vídeos con `<video preload="metadata">`, badge ▶. Miniaturas servidas desde disco vía `GET /api/thumbnails/from-file?path=`, sin dependencia de BD.
+- **Panel central** (60%): grid de miniaturas. Barra de breadcrumb con contador de archivos. Sin Virtualize — carga manual con `@foreach` + `CancellationTokenSource`. Navegación interna (doble click subcarpeta) independiente del árbol izquierdo. Estados visuales: círculo de 16px (gris pendiente, verde correcto, #ffc107 sin sugerencia, azul con sugerencia). Vídeos con `<video preload="metadata">`, badge ▶. Miniaturas servidas desde disco vía `GET /api/thumbnails/from-file?path=`, sin dependencia de BD.
 - **Panel derecho** (20%): dos subpaneles apilados verticalmente con `display: flex; flex-direction: column`. Arriba, detalle de la foto seleccionada (metadatos, evidencias, barra de confianza; botones Aceptar/Rechazar como placeholders no funcionales hasta F7). Abajo, chat conversacional Ollama.
 - **Ventana modal de configuración**, abierta desde un botón del panel superior.
 
@@ -26,7 +26,11 @@ La UI debe permitir al usuario operar todo el flujo de análisis y revisión de 
 
 ### 4.2) Panel central: grid de archivos multimedia
 - Cuadrícula de archivos con miniatura (fotos) o vídeo nativo con `<video preload="metadata">` (vídeos, badge ▶右下).
-- Indicadores visuales sobre la miniatura/icono: círculo de estado de 16px que muestra el **`MediaStatus`** del archivo (gris = Pending, verde = Correct, rojo = Error, #ffc107 = NoSuggestion, azul = HasSuggestion). Además, cuando una sugerencia se acepta (`SuggestionStatus = Approved`), el círculo cambia a **azul oscuro (#1565C0)** para reflejar el estado de revisión.
+- Indicadores visuales sobre la miniatura/icono: círculo de estado de 16px que muestra el **`MediaStatus`** del archivo (gris = Pending, verde = Correct, #ffc107 = NoSuggestion, azul = HasSuggestion). El rojo (`Error`) no se usa en producción (estado obsoleto). Además, cuando una sugerencia se acepta (`SuggestionStatus = Approved`), el círculo cambia a **azul oscuro (#1565C0)** para reflejar el estado de revisión.
+- **Verde (Correct)** se asigna en estos casos:
+  1. No hay evidencias recolectadas (ninguna heurística encontró señal).
+  2. Solo hay evidencia positiva/negativa con score de confianza ≥ umbral.
+  3. Una heurística de corrección encuentra una fecha sugerida que **coincide con la fecha EXIF actual** del archivo (se considera que la fecha ya es correcta, no se necesita sugerencia).
 - Al hacer clic en una miniatura, se muestra el detalle en el panel derecho (no inline). Doble click en subcarpeta navega dentro del grid independientemente del árbol izquierdo.
 - **Solo visualización.** Sin acciones (aceptar/rechazar) desde el grid. Sin checkboxes ni selección múltiple. La aprobación/rechazo de sugerencias se hace desde el panel de detalle (individual) o desde los botones de lote en el panel superior.
 - **Sin Virtualize:** reemplazado por `@foreach` manual + llamada asíncrona con `CancellationTokenSource` para cancelar peticiones en curso al navegar rápido.

@@ -35,6 +35,7 @@ public class HeuristicEngine : IHeuristicEngine
     /// <inheritdoc />
     public Task<HeuristicResult> EvaluateAsync(
         IReadOnlyList<EvidenceEntry> evidence,
+        DateTime? currentCaptureDate,
         CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -62,11 +63,19 @@ public class HeuristicEngine : IHeuristicEngine
 
         if (dominantCorrection is not null)
         {
-            // Dominant correction with sufficient weight → HasSuggestion
-            status = MediaStatus.HasSuggestion;
-            suggestedDate = dominantCorrection.SuggestedDate;
-            suggestedByHeuristic = dominantCorrection.HeuristicId;
-            suggestionReviewStatus = SuggestionReviewStatus.Unreviewed;
+            if (currentCaptureDate.HasValue && dominantCorrection.SuggestedDate?.Date == currentCaptureDate.Value.Date)
+            {
+                // Correction confirms existing date → Correct (no suggestion needed)
+                status = MediaStatus.Correct;
+            }
+            else
+            {
+                // Dominant correction with sufficient weight → HasSuggestion
+                status = MediaStatus.HasSuggestion;
+                suggestedDate = dominantCorrection.SuggestedDate;
+                suggestedByHeuristic = dominantCorrection.HeuristicId;
+                suggestionReviewStatus = SuggestionReviewStatus.Unreviewed;
+            }
         }
         else if (evidence.Count == 0)
         {

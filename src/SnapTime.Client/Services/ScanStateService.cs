@@ -6,6 +6,7 @@ public class ScanStateService : IScanStateService
     public bool IsScanning { get; private set; }
     public bool HasCompletedScan { get; private set; }
     public event Action? StateChanged;
+    public event Action? ApplyCompleted;
 
     public void NotifyScanStart()
     {
@@ -24,6 +25,11 @@ public class ScanStateService : IScanStateService
     {
         IsScanning = false;
         StateChanged?.Invoke();
+    }
+
+    public void NotifyApplyCompleted()
+    {
+        ApplyCompleted?.Invoke();
     }
 
     public void Reset()

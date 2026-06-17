@@ -6,8 +6,10 @@ public interface IScanStateService
     bool IsScanning { get; }
     bool HasCompletedScan { get; }
     event Action? StateChanged;
+    event Action? ApplyCompleted;
     void NotifyScanStart();
     void NotifyScanComplete();
     void NotifyScanCancelled();
+    void NotifyApplyCompleted();
     void Reset();
 }

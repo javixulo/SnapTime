@@ -41,6 +41,7 @@ public partial class PhotoDetail : IDisposable
         if (_scanStateService is not null)
         {
             _scanStateService.StateChanged += OnScanStateChanged;
+            _scanStateService.ApplyCompleted += OnApplyCompleted;
         }
     }
 
@@ -49,6 +50,7 @@ public partial class PhotoDetail : IDisposable
         if (_scanStateService is not null)
         {
             _scanStateService.StateChanged -= OnScanStateChanged;
+            _scanStateService.ApplyCompleted -= OnApplyCompleted;
         }
     }
 
@@ -106,10 +108,28 @@ public partial class PhotoDetail : IDisposable
         }
     }
 
-    private void OnScanStateChanged()
+    private async void OnScanStateChanged()
     {
         UpdateCanAccept();
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void OnApplyCompleted()
+    {
+        // Reload detail after apply so metadata, status and dates reflect changes
+        if (SelectedAssetId.HasValue)
+        {
+            try
+            {
+                _detail = await PhotoClient.GetAssetDetailAsync(SelectedAssetId.Value);
+                UpdateCanAccept();
+            }
+            catch
+            {
+                // Keep stale data if reload fails
+            }
+        }
+        await InvokeAsync(StateHasChanged);
     }
 
     private void UpdateCanAccept()

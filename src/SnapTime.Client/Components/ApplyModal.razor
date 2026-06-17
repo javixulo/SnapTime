@@ -1,6 +1,8 @@
 @* [F8-US-005] Apply confirmation modal *@
 @using SnapTime.Client.Models
+@using SnapTime.Client.Services
 @inject HttpClient Http
+@inject IScanStateService ScanState
 
 @if (_isVisible)
 {
@@ -151,6 +153,7 @@
     private async Task HandleClose()
     {
         _isVisible = false;
+        ScanState.NotifyApplyCompleted();
         await OnClose.InvokeAsync();
     }
 
