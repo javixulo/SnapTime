@@ -254,9 +254,7 @@ app.MapGet("/api/photos", async (
 
                 if (assetMap.TryGetValue(filePath, out var asset))
                 {
-                    var computedStatus = asset.SuggestedDate.HasValue
-                        ? MediaStatus.HasSuggestion
-                        : MediaStatus.NoSuggestion;
+                    var computedStatus = asset.Status;
                     items.Add(new PhotoGridItem(
                         asset.Id,
                         fileName,
@@ -296,9 +294,7 @@ app.MapGet("/api/photos", async (
 
             foreach (var asset in assets)
             {
-                var computedStatus = asset.SuggestedDate.HasValue
-                    ? MediaStatus.HasSuggestion
-                    : MediaStatus.NoSuggestion;
+                var computedStatus = asset.Status;
                 items.Add(new PhotoGridItem(
                     asset.Id,
                     asset.FileName,
