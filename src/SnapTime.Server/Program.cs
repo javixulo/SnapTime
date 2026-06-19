@@ -347,26 +347,30 @@ app.MapGet("/api/photos", async (
 .WithName("GetPhotos");
 
 // [F6] Media asset detail — returns full detail with evidence and metadata
-app.MapGet("/api/media-assets/{id:guid}", async (Guid id, SnapTimeDbContext db) =>
+app.MapGet("/api/media-assets/{id:guid}", async (Guid id, SnapTimeDbContext db, ILogger<Program> logger) =>
 {
-    var asset = await db.MediaAssets
-        .Include(a => a.EvidenceEntries)
-        .Include(a => a.MetadataEntries)
-        .FirstOrDefaultAsync(a => a.Id == id);
+    try
+    {
+        var asset = await db.MediaAssets
+            .Include(a => a.EvidenceEntries)
+            .Include(a => a.MetadataEntries)
+            .FirstOrDefaultAsync(a => a.Id == id);
 
-    if (asset is null)
-        return Results.NotFound();
+        if (asset is null)
+            return Results.NotFound();
 
-    var metadata = asset.MetadataEntries
-        .ToDictionary(m => m.Tag, m => m.Value, StringComparer.OrdinalIgnoreCase);
+        var metadata = asset.MetadataEntries
+            .GroupBy(m => m.Tag, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Value, StringComparer.OrdinalIgnoreCase);
 
-    return Results.Ok(new MediaAssetDetailDto(
+        return Results.Ok(new MediaAssetDetailDto(
         asset.Id,
         asset.FilePath,
         asset.FileName,
         asset.MediaType,
         asset.FileSize,
-        DateTimeOriginal: TryParseMetadataDate(metadata, "Exif SubIFD:Date/Time Original"),
+        DateTimeOriginal: TryParseMetadataDate(metadata, "Exif SubIFD:Date/Time Original")
+                          ?? TryParseMetadataDate(metadata, "QuickTime Movie Header:Created"),
         SubSecDateTimeOriginal: metadata.TryGetValue("Exif SubIFD:Sub-Sec Time Original", out var sub) ? sub : null,
         CreateDate: TryParseMetadataDate(metadata, "Exif IFD0:Date/Time Digitized")
                     ?? TryParseMetadataDate(metadata, "QuickTime Movie Header:Created"),
@@ -387,6 +391,12 @@ app.MapGet("/api/media-assets/{id:guid}", async (Guid id, SnapTimeDbContext db) 
             e.Description
         )).ToList()
     ));
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error getting asset detail for {AssetId}", id);
+        return Results.Problem(detail: ex.ToString(), statusCode: 500, title: "Internal Server Error");
+    }
 })
 .WithName("GetMediaAssetDetail");
 
@@ -420,7 +430,8 @@ app.MapGet("/api/media-assets/from-file", async (string path, IMetadataExtractor
             resolved,
             fileInfo.Name,
             fileInfo.Length,
-            DateTimeOriginal: TryParseMetadataDate(metadataDict, "Exif SubIFD:Date/Time Original"),
+            DateTimeOriginal: TryParseMetadataDate(metadataDict, "Exif SubIFD:Date/Time Original")
+                              ?? TryParseMetadataDate(metadataDict, "QuickTime Movie Header:Created"),
             SubSecDateTimeOriginal: metadataDict.TryGetValue("Exif SubIFD:Sub-Sec Time Original", out var sub) ? sub : null,
             CreateDate: TryParseMetadataDate(metadataDict, "Exif IFD0:Date/Time Digitized")
                         ?? TryParseMetadataDate(metadataDict, "QuickTime Movie Header:Created"),
@@ -925,7 +936,9 @@ public partial class Program
         "yyyy:MM:dd HH:mm:ss.fff",
         "yyyy-MM-dd HH:mm:ss",
         "yyyy-MM-ddTHH:mm:ss",
-        "yyyy-MM-dd"
+        "yyyy-MM-dd",
+        "ddd MMM dd HH:mm:ss yyyy",
+        "ddd MMM dd yyyy HH:mm:ss",
     ];
 
     /// <summary>
@@ -954,6 +967,12 @@ public partial class Program
             return date;
 
         if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out date))
+            return date;
+
+        if (DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out date))
+            return date;
+
+        if (DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out date))
             return date;
 
         return null;

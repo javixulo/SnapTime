@@ -41,7 +41,7 @@ public class MetadataExtractorService(ILogger<MetadataExtractorService> logger) 
             var directories = await Task.Run(() => ImageMetadataReader.ReadMetadata(filePath), ct);
             var targetDirectories = mediaType == MediaType.Image ? ImageTargetDirectories : VideoTargetDirectories;
             var source = mediaType == MediaType.Image ? ExifSource : QuickTimeSource;
-            List<MetadataEntry> entries = [];
+            var entries = new Dictionary<string, MetadataEntry>(StringComparer.Ordinal);
 
             foreach (var directory in directories)
             {
@@ -55,16 +55,20 @@ public class MetadataExtractorService(ILogger<MetadataExtractorService> logger) 
                     if (!targetTags.Contains(tag.Name))
                         continue;
 
-                    entries.Add(new MetadataEntry
+                    var key = $"{directory.Name}:{tag.Name}";
+                    if (entries.ContainsKey(key))
+                        continue;
+
+                    entries[key] = new MetadataEntry
                     {
-                        Tag = $"{directory.Name}:{tag.Name}",
+                        Tag = key,
                         Value = tag.Description,
                         Source = source
-                    });
+                    };
                 }
             }
 
-            return entries;
+            return entries.Values.ToList();
         }
         catch (ImageProcessingException ex)
         {
